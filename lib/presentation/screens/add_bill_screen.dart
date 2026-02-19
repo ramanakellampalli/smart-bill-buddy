@@ -21,7 +21,8 @@ const _red = Color(0xFFDC2626);
 // ── Screen ─────────────────────────────────────────────────────────────────────
 
 class AddBillScreen extends StatefulWidget {
-  const AddBillScreen({super.key});
+  final BillModel? bill; // null = add mode, non-null = edit mode
+  const AddBillScreen({super.key, this.bill});
 
   @override
   State<AddBillScreen> createState() => _AddBillScreenState();
@@ -39,6 +40,24 @@ class _AddBillScreenState extends State<AddBillScreen> {
   bool _remind5 = true;
   bool _remind2 = true;
   bool _remindDue = true;
+
+  bool get _isEditing => widget.bill != null;
+
+  @override
+  void initState() {
+    super.initState();
+    final b = widget.bill;
+    if (b != null) {
+      _nameCtrl.text = b.name;
+      _amountCtrl.text = b.amount?.toString() ?? '';
+      _dueDate = b.dueDate;
+      _frequency = b.frequency;
+      _category = b.category;
+      _remind5 = b.remind5Days;
+      _remind2 = b.remind2Days;
+      _remindDue = b.remindDueDay;
+    }
+  }
 
   @override
   void dispose() {
@@ -76,20 +95,25 @@ class _AddBillScreenState extends State<AddBillScreen> {
     final amount = t.isEmpty ? null : double.tryParse(t);
 
     final bill = BillModel(
-      id: const Uuid().v4(),
+      id: _isEditing ? widget.bill!.id : const Uuid().v4(),
       name: _nameCtrl.text.trim(),
       amount: amount,
       dueDate: _dueDate,
       frequency: _frequency,
       category: _category,
-      isPaid: false,
+      isPaid: _isEditing ? widget.bill!.isPaid : false,
       remind5Days: _remind5,
       remind2Days: _remind2,
       remindDueDay: _remindDue,
+      createdAt: _isEditing ? widget.bill!.createdAt : null,
     );
 
     final provider = context.read<BillsProvider>();
-    await provider.add(bill);
+    if (_isEditing) {
+      await provider.update(bill);
+    } else {
+      await provider.add(bill);
+    }
 
     if (!mounted) return;
     if (provider.error == null) {
@@ -117,9 +141,9 @@ class _AddBillScreenState extends State<AddBillScreen> {
               size: 18, color: _textPrimary),
           onPressed: () => Navigator.pop(context),
         ),
-        title: const Text(
-          'Add Bill',
-          style: TextStyle(
+        title: Text(
+          _isEditing ? 'Edit Bill' : 'Add Bill',
+          style: const TextStyle(
               fontSize: 18, fontWeight: FontWeight.w700, color: _textPrimary),
         ),
       ),
@@ -283,8 +307,9 @@ class _AddBillScreenState extends State<AddBillScreen> {
                           child: CircularProgressIndicator(
                               strokeWidth: 2.5, color: Colors.white),
                         )
-                      : const Text('Save Bill',
-                          style: TextStyle(
+                      : Text(
+                          _isEditing ? 'Update Bill' : 'Save Bill',
+                          style: const TextStyle(
                               fontSize: 16,
                               fontWeight: FontWeight.w700,
                               color: Colors.white)),

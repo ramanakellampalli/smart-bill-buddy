@@ -1,8 +1,11 @@
 import 'package:flutter/material.dart';
 import 'package:provider/provider.dart';
 
+import 'data/models/bill_model.dart';
 import 'data/repositories/bills_repository.dart';
+import 'data/repositories/budgets_repository.dart';
 import 'presentation/state/bills_provider.dart';
+import 'presentation/state/budgets_provider.dart';
 import 'presentation/state/user_provider.dart';
 import 'presentation/screens/auth_wrapper.dart';
 import 'presentation/screens/home_shell.dart';
@@ -21,8 +24,12 @@ class SmartBillApp extends StatelessWidget {
     return MultiProvider(
       providers: [
         Provider(create: (_) => BillsRepository()),
+        Provider(create: (_) => BudgetsRepository()),
         ChangeNotifierProvider(
           create: (ctx) => BillsProvider(ctx.read<BillsRepository>()),
+        ),
+        ChangeNotifierProvider(
+          create: (ctx) => BudgetsProvider(ctx.read<BudgetsRepository>()),
         ),
         ChangeNotifierProvider(create: (_) => UserProvider()),
       ],
@@ -104,7 +111,9 @@ class SmartBillApp extends StatelessWidget {
           '/home': (_) => const HomeShell(),
           '/register': (_) => const RegisterScreen(),
           '/profile': (_) => const ProfileScreen(),
-          '/add-bill': (_) => const AddBillScreen(),
+          '/add-bill': (ctx) => AddBillScreen(
+                bill: ModalRoute.of(ctx)!.settings.arguments as BillModel?,
+              ),
           '/settings': (_) => const SettingsScreen(),
           '/about': (_) => const AboutScreen(),
         },
