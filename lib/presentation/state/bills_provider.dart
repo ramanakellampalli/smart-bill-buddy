@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../data/models/bill_model.dart';
 import '../../data/repositories/bills_repository.dart';
+import '../../services/notification_service.dart';
 
 class BillsProvider extends ChangeNotifier {
   final BillsRepository _repo;
@@ -53,6 +54,22 @@ class BillsProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _repo.addBill(bill);
+      await NotificationService.scheduleBill(bill);
+    } catch (e) {
+      error = e.toString();
+    } finally {
+      saving = false;
+      notifyListeners();
+    }
+  }
+
+  Future<void> update(BillModel bill) async {
+    saving = true;
+    error = null;
+    notifyListeners();
+    try {
+      await _repo.updateBill(bill);
+      await NotificationService.scheduleBill(bill);
     } catch (e) {
       error = e.toString();
     } finally {
@@ -64,6 +81,12 @@ class BillsProvider extends ChangeNotifier {
   Future<void> setPaid(String billId, bool isPaid) async {
     try {
       await _repo.markPaid(billId: billId, isPaid: isPaid);
+      if (isPaid) {
+        await NotificationService.cancelBill(billId);
+      } else {
+        final bill = bills.firstWhere((b) => b.id == billId);
+        await NotificationService.scheduleBill(bill.copyWith(isPaid: false));
+      }
     } catch (e) {
       error = e.toString();
       notifyListeners();
@@ -73,6 +96,7 @@ class BillsProvider extends ChangeNotifier {
   Future<void> remove(String billId) async {
     try {
       await _repo.deleteBill(billId);
+      await NotificationService.cancelBill(billId);
     } catch (e) {
       error = e.toString();
       notifyListeners();

@@ -261,6 +261,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   dateText: df.format(b.dueDate),
                   amountText: b.amount == null ? '' : money.format(b.amount),
                   isToday: _isSameDay(b.dueDate, now),
+                  onTap: () => Navigator.pushNamed(context, '/add-bill',
+                      arguments: b),
                   onMarkPaid: () =>
                       context.read<BillsProvider>().setPaid(b.id, true),
                 )),
@@ -498,6 +500,7 @@ class _BillCard extends StatelessWidget {
   final String amountText;
   final bool isToday;
   final VoidCallback onMarkPaid;
+  final VoidCallback onTap;
 
   const _BillCard({
     required this.bill,
@@ -505,11 +508,14 @@ class _BillCard extends StatelessWidget {
     required this.amountText,
     required this.isToday,
     required this.onMarkPaid,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
       margin: const EdgeInsets.only(bottom: 10),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
@@ -595,7 +601,8 @@ class _BillCard extends StatelessWidget {
           ),
         ],
       ),
-    );
+    ),
+  );
   }
 
   static String _capitalize(String s) =>

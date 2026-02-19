@@ -35,6 +35,28 @@ class BillsScreen extends StatefulWidget {
 class _BillsScreenState extends State<BillsScreen> {
   _Filter _filter = _Filter.all;
 
+  void _handleDelete(BuildContext context, BillModel bill) {
+    context.read<BillsProvider>().remove(bill.id);
+    ScaffoldMessenger.of(context)
+      ..hideCurrentSnackBar()
+      ..showSnackBar(
+        SnackBar(
+          content: Text('${bill.name} deleted'),
+          duration: const Duration(seconds: 4),
+          backgroundColor: _textPrimary,
+          behavior: SnackBarBehavior.floating,
+          shape:
+              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+          margin: const EdgeInsets.all(16),
+          action: SnackBarAction(
+            label: 'Undo',
+            textColor: _primary,
+            onPressed: () => context.read<BillsProvider>().add(bill),
+          ),
+        ),
+      );
+  }
+
   @override
   Widget build(BuildContext context) {
     final p = context.watch<BillsProvider>();
@@ -149,11 +171,13 @@ class _BillsScreenState extends State<BillsScreen> {
                         amountText: b.amount == null
                             ? ''
                             : money.format(b.amount),
+                        onTap: () => Navigator.pushNamed(
+                            context, '/add-bill',
+                            arguments: b),
                         onMarkPaid: () => context
                             .read<BillsProvider>()
                             .setPaid(b.id, !b.isPaid),
-                        onDelete: () =>
-                            context.read<BillsProvider>().remove(b.id),
+                        onDelete: () => _handleDelete(context, b),
                       );
                     },
                   ),
@@ -241,6 +265,7 @@ class _BillCard extends StatelessWidget {
   final BillModel bill;
   final String dateText;
   final String amountText;
+  final VoidCallback onTap;
   final VoidCallback onMarkPaid;
   final VoidCallback onDelete;
 
@@ -249,6 +274,7 @@ class _BillCard extends StatelessWidget {
     required this.bill,
     required this.dateText,
     required this.amountText,
+    required this.onTap,
     required this.onMarkPaid,
     required this.onDelete,
   });
@@ -285,7 +311,9 @@ class _BillCard extends StatelessWidget {
           ],
         ),
       ),
-      child: Container(
+      child: GestureDetector(
+        onTap: onTap,
+        child: Container(
         margin: const EdgeInsets.only(bottom: 10),
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
         decoration: BoxDecoration(
@@ -422,7 +450,8 @@ class _BillCard extends StatelessWidget {
           ],
         ),
       ),
-    );
+    ),
+  );
   }
 }
 

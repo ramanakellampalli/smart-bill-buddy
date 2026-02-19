@@ -36,6 +36,13 @@ class BillsRepository {
         .timeout(const Duration(seconds: 10));
   }
 
+  Future<void> updateBill(BillModel bill) async {
+    await _billsCol
+        .doc(bill.id)
+        .set(bill.toMap())
+        .timeout(const Duration(seconds: 10));
+  }
+
   Future<void> markPaid({required String billId, required bool isPaid}) async {
     await _billsCol.doc(billId).update({
       'isPaid': isPaid,
