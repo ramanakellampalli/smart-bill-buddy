@@ -128,32 +128,35 @@ class _LoginScreenState extends State<LoginScreen>
                 child: Column(
                   crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    // Logo
-                    Container(
-                      width: 58,
-                      height: 58,
-                      decoration: BoxDecoration(
-                        color: _primary.withOpacity(0.10),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: _primary.withOpacity(0.20)),
-                      ),
-                      child: const Icon(
-                          Icons.account_balance_wallet_rounded,
-                          color: _primary,
-                          size: 30),
-                    ),
-                    const SizedBox(height: 30),
-
-                    // Heading
-                    const Text(
-                      'Smart Bill\nReminder',
-                      style: TextStyle(
-                        fontSize: 34,
-                        fontWeight: FontWeight.w800,
-                        color: _textPrimary,
-                        height: 1.15,
-                        letterSpacing: -0.8,
-                      ),
+                    // Logo + name inline
+                    Row(
+                      crossAxisAlignment: CrossAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 48,
+                          height: 48,
+                          decoration: BoxDecoration(
+                            color: _primary.withOpacity(0.10),
+                            borderRadius: BorderRadius.circular(14),
+                            border: Border.all(color: _primary.withOpacity(0.20)),
+                          ),
+                          child: const Icon(
+                            Icons.account_balance_wallet_rounded,
+                            color: _primary,
+                            size: 26,
+                          ),
+                        ),
+                        const SizedBox(width: 14),
+                        const Text(
+                          'Bill Buddy',
+                          style: TextStyle(
+                            fontSize: 30,
+                            fontWeight: FontWeight.w800,
+                            color: _textPrimary,
+                            letterSpacing: -0.6,
+                          ),
+                        ),
+                      ],
                     ),
                     const SizedBox(height: 10),
                     const Text(

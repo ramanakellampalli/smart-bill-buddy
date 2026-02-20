@@ -1,4 +1,6 @@
 import 'package:flutter/material.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:url_launcher/url_launcher.dart';
 import '../widgets/auth_guard.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
@@ -21,8 +23,37 @@ class AboutScreen extends StatefulWidget {
 }
 
 class _AboutScreenState extends State<AboutScreen> {
-  static const String _appVersion = '1.0.0';
-  static const String _buildNumber = '1';
+  String _appVersion = '';
+  String _buildNumber = '';
+  String _packageName = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _loadPackageInfo();
+  }
+
+  Future<void> _loadPackageInfo() async {
+    final info = await PackageInfo.fromPlatform();
+    if (mounted) {
+      setState(() {
+        _appVersion = info.version;
+        _buildNumber = info.buildNumber;
+        _packageName = info.packageName;
+      });
+    }
+  }
+
+  Future<void> _launch(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.externalApplication)) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          const SnackBar(content: Text('Could not open link')),
+        );
+      }
+    }
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -48,8 +79,8 @@ class _AboutScreenState extends State<AboutScreen> {
             // App Icon and Name
             _AppInfoCard(
               icon: Icons.receipt_long_rounded,
-              title: 'Smart Bill Reminder',
-              subtitle: 'Version $_appVersion',
+              title: 'Bill Buddy',
+              subtitle: _appVersion.isEmpty ? 'Loading...' : 'Version $_appVersion',
               description: 'Your smart companion for managing bills and payments',
             ),
             const SizedBox(height: 24),
@@ -110,6 +141,7 @@ class _AboutScreenState extends State<AboutScreen> {
                     icon: Icons.email_rounded,
                     label: 'Contact',
                     value: 'support@smartbill.app',
+                    onTap: () => _launch('mailto:support@smartbill.app'),
                   ),
                 ],
               ),
@@ -126,21 +158,21 @@ class _AboutScreenState extends State<AboutScreen> {
                     icon: Icons.privacy_tip_outlined,
                     title: 'Privacy Policy',
                     subtitle: 'How we protect your data',
-                    onTap: () {},
+                    onTap: () => _launch('https://billbuddy.app/privacy'),
                   ),
                   const SizedBox(height: 12),
                   _LinkItem(
                     icon: Icons.description_outlined,
                     title: 'Terms of Service',
                     subtitle: 'Rules and guidelines',
-                    onTap: () {},
+                    onTap: () => _launch('https://billbuddy.app/terms'),
                   ),
                   const SizedBox(height: 12),
                   _LinkItem(
                     icon: Icons.code_outlined,
                     title: 'Open Source',
                     subtitle: 'View source code',
-                    onTap: () {},
+                    onTap: () => _launch('https://github.com/billbuddy/app'),
                   ),
                 ],
               ),
@@ -156,19 +188,19 @@ class _AboutScreenState extends State<AboutScreen> {
                   _InfoItem(
                     icon: Icons.info_outline_rounded,
                     label: 'Version',
-                    value: _appVersion,
+                    value: _appVersion.isEmpty ? '—' : _appVersion,
                   ),
                   const SizedBox(height: 12),
                   _InfoItem(
                     icon: Icons.build_rounded,
                     label: 'Build',
-                    value: _buildNumber,
+                    value: _buildNumber.isEmpty ? '—' : _buildNumber,
                   ),
                   const SizedBox(height: 12),
                   _InfoItem(
                     icon: Icons.apps_rounded,
                     label: 'Package',
-                    value: 'com.smartbill.reminder',
+                    value: _packageName.isEmpty ? '—' : _packageName,
                   ),
                 ],
               ),

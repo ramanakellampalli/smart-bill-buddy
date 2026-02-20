@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../state/app_settings_provider.dart';
 import '../state/bills_provider.dart';
 import '../widgets/category_logo.dart';
 import '../../data/models/bill_model.dart';
@@ -93,8 +94,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .toList()
       ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
 
-    final money =
-        NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final money = context.watch<AppSettingsProvider>().money;
     final df = DateFormat('EEE, dd MMM');
     final dayLabel = DateFormat('EEEE').format(now);
     final dateLabel = DateFormat('d MMM').format(now);

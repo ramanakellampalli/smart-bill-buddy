@@ -1,7 +1,10 @@
-import 'package:flutter/material.dart';
-import 'package:provider/provider.dart';
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
+import 'package:firebase_storage/firebase_storage.dart';
+import 'package:flutter/material.dart';
+import 'package:image_picker/image_picker.dart';
 import 'package:intl/intl.dart';
+import 'package:provider/provider.dart';
 import '../state/user_provider.dart';
 import '../../data/models/user_model.dart';
 import '../state/bills_provider.dart';
@@ -69,6 +72,124 @@ class _ProfileScreenState extends State<_ProfileScreenContent> {
   void _cancelEditing() {
     setState(() => _isEditing = false);
     _displayNameController.clear();
+  }
+
+  void _showPhotoOptions(BuildContext context) {
+    final uid = FirebaseAuth.instance.currentUser?.uid;
+    if (uid == null) return;
+    final hasPhoto = context.read<UserProvider>().profile?.photoUrl != null;
+    showModalBottomSheet<void>(
+      context: context,
+      backgroundColor: Colors.transparent,
+      builder: (_) => Container(
+        decoration: const BoxDecoration(
+          color: _card,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: _border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 20),
+            const Align(
+              alignment: Alignment.centerLeft,
+              child: Text(
+                'Profile Photo',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _textPrimary,
+                ),
+              ),
+            ),
+            const SizedBox(height: 16),
+            _PhotoOption(
+              icon: Icons.camera_alt_rounded,
+              label: 'Take Photo',
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndUpload(ImageSource.camera, uid);
+              },
+            ),
+            const SizedBox(height: 8),
+            _PhotoOption(
+              icon: Icons.photo_library_rounded,
+              label: 'Choose from Library',
+              onTap: () {
+                Navigator.pop(context);
+                _pickAndUpload(ImageSource.gallery, uid);
+              },
+            ),
+            if (hasPhoto) ...[
+              const SizedBox(height: 8),
+              _PhotoOption(
+                icon: Icons.delete_outline_rounded,
+                label: 'Remove Photo',
+                color: _red,
+                onTap: () {
+                  Navigator.pop(context);
+                  _removePhoto(uid);
+                },
+              ),
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  Future<void> _pickAndUpload(ImageSource source, String uid) async {
+    final picker = ImagePicker();
+    final XFile? picked = await picker.pickImage(
+      source: source,
+      imageQuality: 80,
+      maxWidth: 512,
+      maxHeight: 512,
+    );
+    if (picked == null || !mounted) return;
+
+    try {
+      final ref = FirebaseStorage.instance
+          .ref()
+          .child('users/$uid/avatar.jpg');
+      final bytes = await picked.readAsBytes();
+      await ref.putData(bytes, SettableMetadata(contentType: 'image/jpeg'));
+      final url = await ref.getDownloadURL();
+      if (!mounted) return;
+      await context.read<UserProvider>().updatePhotoUrl(url);
+    } catch (e) {
+      if (mounted) {
+        ScaffoldMessenger.of(context).showSnackBar(
+          SnackBar(
+            backgroundColor: _red,
+            content: Text('Upload failed: $e'),
+            behavior: SnackBarBehavior.floating,
+          ),
+        );
+      }
+    }
+  }
+
+  Future<void> _removePhoto(String uid) async {
+    try {
+      await FirebaseStorage.instance
+          .ref()
+          .child('users/$uid/avatar.jpg')
+          .delete();
+    } catch (_) {
+      // If delete fails (file may not exist), still clear the URL
+    }
+    if (mounted) {
+      await context.read<UserProvider>().updatePhotoUrl(null);
+    }
   }
 
   @override
@@ -143,6 +264,7 @@ class _ProfileScreenState extends State<_ProfileScreenContent> {
             profile: profile,
             isEditing: _isEditing,
             displayNameController: _displayNameController,
+            onPhotoTap: () => _showPhotoOptions(context),
           ),
           const SizedBox(height: 24),
 
@@ -176,11 +298,13 @@ class _ProfileHeader extends StatelessWidget {
   final UserProfile profile;
   final bool isEditing;
   final TextEditingController displayNameController;
+  final VoidCallback onPhotoTap;
 
   const _ProfileHeader({
     required this.profile,
     required this.isEditing,
     required this.displayNameController,
+    required this.onPhotoTap,
   });
 
   @override
@@ -202,28 +326,53 @@ class _ProfileHeader extends StatelessWidget {
         children: [
           Row(
             children: [
-              Container(
-                width: 80,
-                height: 80,
-                decoration: BoxDecoration(
-                  gradient: LinearGradient(
-                    colors: [_primary, _purple],
-                    begin: Alignment.topLeft,
-                    end: Alignment.bottomRight,
-                  ),
-                  borderRadius: BorderRadius.circular(20),
-                ),
-                child: profile.photoUrl != null
-                    ? ClipRRect(
-                        borderRadius: BorderRadius.circular(20),
-                        child: Image.network(
-                          profile.photoUrl!,
-                          fit: BoxFit.cover,
-                          errorBuilder: (context, error, stackTrace) =>
-                              _buildInitials(profile),
+              GestureDetector(
+                onTap: onPhotoTap,
+                child: Stack(
+                  children: [
+                    Container(
+                      width: 80,
+                      height: 80,
+                      decoration: BoxDecoration(
+                        gradient: LinearGradient(
+                          colors: [_primary, _purple],
+                          begin: Alignment.topLeft,
+                          end: Alignment.bottomRight,
                         ),
-                      )
-                    : _buildInitials(profile),
+                        borderRadius: BorderRadius.circular(20),
+                      ),
+                      child: profile.photoUrl != null
+                          ? ClipRRect(
+                              borderRadius: BorderRadius.circular(20),
+                              child: Image.network(
+                                profile.photoUrl!,
+                                fit: BoxFit.cover,
+                                errorBuilder: (context, error, stackTrace) =>
+                                    _buildInitials(profile),
+                              ),
+                            )
+                          : _buildInitials(profile),
+                    ),
+                    Positioned(
+                      right: 0,
+                      bottom: 0,
+                      child: Container(
+                        width: 24,
+                        height: 24,
+                        decoration: BoxDecoration(
+                          color: _primary,
+                          borderRadius: BorderRadius.circular(8),
+                          border: Border.all(color: _card, width: 2),
+                        ),
+                        child: const Icon(
+                          Icons.camera_alt_rounded,
+                          color: Colors.white,
+                          size: 12,
+                        ),
+                      ),
+                    ),
+                  ],
+                ),
               ),
               const SizedBox(width: 20),
               Expanded(
@@ -901,28 +1050,285 @@ void _showSignOutDialog(BuildContext context) {
 void _showDeleteAccountDialog(BuildContext context) {
   showDialog(
     context: context,
-    builder: (context) => AlertDialog(
-      title: const Text('Delete Account'),
-      content: const Text(
-        'This action cannot be undone. All your data will be permanently deleted.',
+    barrierDismissible: false,
+    builder: (_) => const _DeleteAccountDialog(),
+  );
+}
+
+// ── Delete Account Dialog ─────────────────────────────────────────────────────
+
+class _DeleteAccountDialog extends StatefulWidget {
+  const _DeleteAccountDialog();
+
+  @override
+  State<_DeleteAccountDialog> createState() => _DeleteAccountDialogState();
+}
+
+class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
+  int _step = 0; // 0 = warning, 1 = password confirmation
+  final _pwCtrl = TextEditingController();
+  bool _loading = false;
+  String? _error;
+  bool _obscure = true;
+
+  @override
+  void dispose() {
+    _pwCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _deleteAccount() async {
+    final user = FirebaseAuth.instance.currentUser;
+    if (user == null) return;
+
+    final pw = _pwCtrl.text.trim();
+    if (pw.isEmpty) {
+      setState(() => _error = 'Please enter your password');
+      return;
+    }
+
+    setState(() {
+      _loading = true;
+      _error = null;
+    });
+
+    try {
+      // Re-authenticate so Firebase allows deletion
+      final cred =
+          EmailAuthProvider.credential(email: user.email!, password: pw);
+      await user.reauthenticateWithCredential(cred);
+
+      final db = FirebaseFirestore.instance;
+      final uid = user.uid;
+
+      // Delete all bills in the subcollection
+      final billsSnap = await db
+          .collection('users')
+          .doc(uid)
+          .collection('bills')
+          .get();
+      await Future.wait(billsSnap.docs.map((d) => d.reference.delete()));
+
+      // Delete the user document itself
+      await db.collection('users').doc(uid).delete();
+
+      // Delete Firebase Auth account — must be last
+      await user.delete();
+
+      // AuthWrapper automatically redirects to login when auth state changes
+      if (mounted) Navigator.of(context).pop();
+    } on FirebaseAuthException catch (e) {
+      final msg =
+          (e.code == 'wrong-password' || e.code == 'invalid-credential')
+              ? 'Incorrect password. Please try again.'
+              : (e.message ?? 'Authentication failed. Please try again.');
+      setState(() {
+        _error = msg;
+        _loading = false;
+      });
+    } catch (_) {
+      setState(() {
+        _error = 'Something went wrong. Please try again.';
+        _loading = false;
+      });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_step == 0) {
+      return AlertDialog(
+        backgroundColor: _card,
+        shape:
+            RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+        title: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(8),
+              decoration: BoxDecoration(
+                color: _red.withOpacity(0.10),
+                shape: BoxShape.circle,
+              ),
+              child:
+                  const Icon(Icons.warning_rounded, color: _red, size: 20),
+            ),
+            const SizedBox(width: 12),
+            const Text(
+              'Delete Account',
+              style: TextStyle(
+                fontSize: 17,
+                fontWeight: FontWeight.w700,
+                color: _textPrimary,
+              ),
+            ),
+          ],
+        ),
+        content: const Text(
+          'This will permanently delete your account and all your bills. This action cannot be undone.',
+          style: TextStyle(
+            fontSize: 14,
+            color: _textSecondary,
+            height: 1.5,
+          ),
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context),
+            child: const Text(
+              'Cancel',
+              style: TextStyle(
+                  color: _textSecondary, fontWeight: FontWeight.w500),
+            ),
+          ),
+          ElevatedButton(
+            onPressed: () => setState(() => _step = 1),
+            style: ElevatedButton.styleFrom(
+              backgroundColor: _red,
+              foregroundColor: Colors.white,
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(10)),
+            ),
+            child: const Text('Continue',
+                style: TextStyle(fontWeight: FontWeight.w600)),
+          ),
+        ],
+      );
+    }
+
+    // Step 1 — password confirmation
+    return AlertDialog(
+      backgroundColor: _card,
+      shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(20)),
+      title: const Text(
+        'Confirm Deletion',
+        style: TextStyle(
+          fontSize: 17,
+          fontWeight: FontWeight.w700,
+          color: _textPrimary,
+        ),
+      ),
+      content: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          const Text(
+            'Enter your password to permanently delete your account.',
+            style: TextStyle(
+                fontSize: 14, color: _textSecondary, height: 1.4),
+          ),
+          const SizedBox(height: 16),
+          TextField(
+            controller: _pwCtrl,
+            obscureText: _obscure,
+            autofocus: true,
+            onSubmitted: (_) => _loading ? null : _deleteAccount(),
+            style: const TextStyle(fontSize: 15, color: _textPrimary),
+            decoration: InputDecoration(
+              hintText: 'Your password',
+              hintStyle: const TextStyle(color: _textTertiary),
+              errorText: _error,
+              filled: true,
+              fillColor: const Color(0xFFF5F0EA),
+              border: OutlineInputBorder(
+                borderRadius: BorderRadius.circular(12),
+                borderSide: BorderSide.none,
+              ),
+              contentPadding: const EdgeInsets.symmetric(
+                  horizontal: 14, vertical: 12),
+              suffixIcon: IconButton(
+                icon: Icon(
+                  _obscure
+                      ? Icons.visibility_off_outlined
+                      : Icons.visibility_outlined,
+                  color: _textTertiary,
+                  size: 20,
+                ),
+                onPressed: () => setState(() => _obscure = !_obscure),
+              ),
+            ),
+          ),
+        ],
       ),
       actions: [
         TextButton(
-          onPressed: () => Navigator.pop(context),
-          child: const Text('Cancel'),
+          onPressed: _loading ? null : () => Navigator.pop(context),
+          child: const Text(
+            'Cancel',
+            style: TextStyle(
+                color: _textSecondary, fontWeight: FontWeight.w500),
+          ),
         ),
         ElevatedButton(
-          onPressed: () {
-            Navigator.pop(context);
-            // TODO: Implement account deletion
-            ScaffoldMessenger.of(context).showSnackBar(
-              const SnackBar(content: Text('Account deletion not implemented yet')),
-            );
-          },
-          style: ElevatedButton.styleFrom(backgroundColor: _red),
-          child: const Text('Delete'),
+          onPressed: _loading ? null : _deleteAccount,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: _red,
+            foregroundColor: Colors.white,
+            elevation: 0,
+            shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10)),
+          ),
+          child: _loading
+              ? const SizedBox(
+                  width: 16,
+                  height: 16,
+                  child: CircularProgressIndicator(
+                      strokeWidth: 2, color: Colors.white),
+                )
+              : const Text('Delete Forever',
+                  style: TextStyle(fontWeight: FontWeight.w600)),
         ),
       ],
-    ),
-  );
+    );
+  }
+}
+
+// ── Photo option row ───────────────────────────────────────────────────────────
+
+class _PhotoOption extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  final Color? color;
+
+  const _PhotoOption({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+    this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final c = color ?? _textPrimary;
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(12),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 14),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: c.withOpacity(0.08),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: c, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 15,
+                fontWeight: FontWeight.w500,
+                color: c,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

@@ -14,25 +14,37 @@ class BillsProvider extends ChangeNotifier {
 
   List<BillModel> bills = [];
   bool saving = false;
+  bool isLoading = true;
   String? error;
 
-  BillsProvider(this._repo) {
-    // Re-subscribe to Firestore every time the signed-in user changes.
-    _authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
-      _billsSub?.cancel();
-      _billsSub = null;
+  String? _currentUid;
 
+  BillsProvider(this._repo) {
+    // Only re-subscribe when the uid actually changes.
+    _authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
       if (user == null) {
+        if (_currentUid == null) return; // already signed out, no-op
+        _currentUid = null;
+        _billsSub?.cancel();
+        _billsSub = null;
         bills = [];
+        isLoading = false;
         notifyListeners();
-      } else {
+      } else if (user.uid != _currentUid) {
+        _currentUid = user.uid;
+        _billsSub?.cancel();
+        _billsSub = null;
+        isLoading = true;
+        notifyListeners();
         _billsSub = _repo.watchBills(user.uid).listen(
           (items) {
             bills = items;
+            isLoading = false;
             error = null;
             notifyListeners();
           },
           onError: (e) {
+            isLoading = false;
             error = e.toString();
             notifyListeners();
           },

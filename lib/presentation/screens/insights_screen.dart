@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/bill_model.dart';
+import '../state/app_settings_provider.dart';
 import '../state/bills_provider.dart';
 import '../widgets/category_logo.dart';
 
@@ -58,8 +59,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
   Widget build(BuildContext context) {
     final p = context.watch<BillsProvider>();
     final monthEnd = DateTime(_month.year, _month.month + 1, 1);
-    final money =
-        NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final money = context.watch<AppSettingsProvider>().money;
 
     final monthBills = p.bills
         .where((b) =>

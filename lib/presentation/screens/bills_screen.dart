@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/bill_model.dart';
+import '../state/app_settings_provider.dart';
 import '../state/bills_provider.dart';
 import '../widgets/category_logo.dart';
 
@@ -60,8 +61,7 @@ class _BillsScreenState extends State<BillsScreen> {
   @override
   Widget build(BuildContext context) {
     final p = context.watch<BillsProvider>();
-    final money =
-        NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final money = context.watch<AppSettingsProvider>().money;
     final df = DateFormat('d MMM yyyy');
 
     final filtered = p.bills.where((b) {

@@ -3,6 +3,7 @@ import 'package:flutter/services.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/budget_model.dart';
+import '../state/app_settings_provider.dart';
 import '../state/bills_provider.dart';
 import '../state/budgets_provider.dart';
 import '../widgets/category_logo.dart';
@@ -75,8 +76,7 @@ class BudgetsScreen extends StatelessWidget {
     final now = DateTime.now();
     final monthStart = DateTime(now.year, now.month, 1);
     final monthEnd = DateTime(now.year, now.month + 1, 1);
-    final money =
-        NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final money = context.watch<AppSettingsProvider>().money;
     final monthLabel = DateFormat('MMMM yyyy').format(now).toUpperCase();
 
     // Per-category spend from bills this month (all bills, paid or not)
@@ -123,7 +123,7 @@ class BudgetsScreen extends StatelessWidget {
             icon: const Icon(Icons.add_circle_outline_rounded,
                 color: _primary, size: 24),
             tooltip: 'Add Budget',
-            onPressed: bp.budgets.length >= _allCats.length
+            onPressed: bp.isLoading || bp.budgets.length >= _allCats.length
                 ? null
                 : () => _openSheet(context),
           ),
@@ -131,7 +131,14 @@ class BudgetsScreen extends StatelessWidget {
         ],
       ),
       body: SelectionArea(
-        child: bp.budgets.isEmpty
+        child: bp.isLoading
+            ? const Center(
+                child: CircularProgressIndicator(
+                  strokeWidth: 2.5,
+                  color: _primary,
+                ),
+              )
+            : bp.budgets.isEmpty
             ? _EmptyState(onAdd: () => _openSheet(context))
             : ListView(
                 padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
@@ -806,9 +813,9 @@ class _BudgetSheetState extends State<_BudgetSheet> {
             const SizedBox(height: 20),
 
             // Amount field
-            const Text(
-              'Monthly Limit (₹)',
-              style: TextStyle(
+            Text(
+              'Monthly Limit (${context.watch<AppSettingsProvider>().currency.symbol})',
+              style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
                 color: _textSecondary,
@@ -825,7 +832,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
                 color: _textPrimary,
               ),
               decoration: InputDecoration(
-                prefixText: '₹ ',
+                prefixText: '${context.watch<AppSettingsProvider>().currency.symbol} ',
                 prefixStyle: const TextStyle(
                   fontSize: 22,
                   fontWeight: FontWeight.w700,

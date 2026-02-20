@@ -10,28 +10,39 @@ class BudgetsProvider extends ChangeNotifier {
 
   StreamSubscription<User?>? _authSub;
   StreamSubscription<List<BudgetModel>>? _budgetsSub;
+  String? _currentUid;
 
   List<BudgetModel> budgets = [];
+  bool isLoading = true;
   bool saving = false;
   String? error;
 
   BudgetsProvider(this._repo) {
     _authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
-      _budgetsSub?.cancel();
-      _budgetsSub = null;
-
       if (user == null) {
+        if (_currentUid == null) return; // already signed out, no-op
+        _currentUid = null;
+        _budgetsSub?.cancel();
+        _budgetsSub = null;
         budgets = [];
+        isLoading = false;
         notifyListeners();
-      } else {
+      } else if (user.uid != _currentUid) {
+        _currentUid = user.uid;
+        _budgetsSub?.cancel();
+        isLoading = true;
+        notifyListeners();
+
         _budgetsSub = _repo.watchBudgets(user.uid).listen(
           (items) {
             budgets = items;
+            isLoading = false;
             error = null;
             notifyListeners();
           },
           onError: (e) {
             error = e.toString();
+            isLoading = false;
             notifyListeners();
           },
         );
