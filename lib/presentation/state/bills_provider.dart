@@ -2,9 +2,23 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
+import 'package:uuid/uuid.dart';
 import '../../data/models/bill_model.dart';
 import '../../data/repositories/bills_repository.dart';
 import '../../services/notification_service.dart';
+
+// ── Helpers ───────────────────────────────────────────────────────────────────
+
+DateTime _nextDueDate(DateTime from, String frequency) {
+  return switch (frequency) {
+    'quarterly' => DateTime(from.year, from.month + 3, from.day),
+    'yearly'    => DateTime(from.year + 1, from.month, from.day),
+    _           => DateTime(from.year, from.month + 1, from.day), // monthly
+  };
+}
+
+bool _isSameDay(DateTime a, DateTime b) =>
+    a.year == b.year && a.month == b.month && a.day == b.day;
 
 class BillsProvider extends ChangeNotifier {
   final BillsRepository _repo;
@@ -92,11 +106,34 @@ class BillsProvider extends ChangeNotifier {
 
   Future<void> setPaid(String billId, bool isPaid) async {
     try {
+      final bill = bills.firstWhere((b) => b.id == billId);
       await _repo.markPaid(billId: billId, isPaid: isPaid);
+
       if (isPaid) {
         await NotificationService.cancelBill(billId);
+
+        // Auto-advance: create the next occurrence if one doesn't already exist.
+        final nextDate = _nextDueDate(bill.dueDate, bill.frequency);
+        final alreadyExists = bills.any(
+          (b) => b.name == bill.name && _isSameDay(b.dueDate, nextDate),
+        );
+        if (!alreadyExists) {
+          final next = BillModel(
+            id: const Uuid().v4(),
+            name: bill.name,
+            amount: bill.amount,
+            dueDate: nextDate,
+            frequency: bill.frequency,
+            category: bill.category,
+            isPaid: false,
+            remind5Days: bill.remind5Days,
+            remind2Days: bill.remind2Days,
+            remindDueDay: bill.remindDueDay,
+          );
+          await _repo.addBill(next);
+          await NotificationService.scheduleBill(next);
+        }
       } else {
-        final bill = bills.firstWhere((b) => b.id == billId);
         await NotificationService.scheduleBill(bill.copyWith(isPaid: false));
       }
     } catch (e) {

@@ -1,13 +1,18 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
 import 'package:flutter_timezone/flutter_timezone.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'package:timezone/data/latest_all.dart' as tz_data;
 import 'package:timezone/timezone.dart' as tz;
 import '../data/models/bill_model.dart';
+import '../presentation/state/app_settings_provider.dart';
 
 class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
 
   static Future<void> init() async {
+    if (kIsWeb) return;
+
     tz_data.initializeTimeZones();
     final tzName = await FlutterTimezone.getLocalTimezone();
     tz.setLocalLocation(tz.getLocation(tzName));
@@ -29,15 +34,37 @@ class NotificationService {
         ?.requestExactAlarmsPermission();
   }
 
+  /// Request POST_NOTIFICATIONS permission (Android 13+) or prompt iOS again.
+  static Future<void> requestPermission() async {
+    if (kIsWeb) return;
+    await _plugin
+        .resolvePlatformSpecificImplementation<
+            AndroidFlutterLocalNotificationsPlugin>()
+        ?.requestNotificationsPermission();
+    await _plugin
+        .resolvePlatformSpecificImplementation<
+            IOSFlutterLocalNotificationsPlugin>()
+        ?.requestPermissions(alert: true, badge: true, sound: true);
+  }
+
   // Stable int ID for each bill + offset (0=5d, 1=2d, 2=due)
   static int _notifId(String billId, int offset) =>
       (billId.hashCode & 0x7FFFFFFF) % 100000 * 3 + offset;
 
+  static Future<String> _currencySymbol() async {
+    final prefs = await SharedPreferences.getInstance();
+    final idx = (prefs.getInt('currency_index') ?? 0)
+        .clamp(0, kCurrencies.length - 1);
+    return kCurrencies[idx].symbol;
+  }
+
   static Future<void> scheduleBill(BillModel bill) async {
+    if (kIsWeb) return;
     await cancelBill(bill.id);
     if (bill.isPaid) return;
 
     final now = DateTime.now();
+    final symbol = await _currencySymbol();
     final slots = [
       (bill.remind5Days, 0, bill.dueDate.subtract(const Duration(days: 5))),
       (bill.remind2Days, 1, bill.dueDate.subtract(const Duration(days: 2))),
@@ -49,7 +76,7 @@ class NotificationService {
       if (!enabled || !time.isAfter(now)) continue;
       final labels = ['in 5 days', 'in 2 days', 'today'];
       final body = bill.amount != null
-          ? '₹${bill.amount!.toStringAsFixed(0)} due ${labels[offset]}'
+          ? '$symbol${bill.amount!.toStringAsFixed(0)} due ${labels[offset]}'
           : 'Payment due ${labels[offset]}';
       await _schedule(
         id: _notifId(bill.id, offset),
@@ -61,6 +88,7 @@ class NotificationService {
   }
 
   static Future<void> cancelBill(String billId) async {
+    if (kIsWeb) return;
     await Future.wait([
       _plugin.cancel(_notifId(billId, 0)),
       _plugin.cancel(_notifId(billId, 1)),
