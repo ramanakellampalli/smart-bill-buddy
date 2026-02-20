@@ -86,6 +86,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ? 0.0
         : (paidThisMonth / totalThisMonth).clamp(0.0, 1.0);
 
+    final overdue = p.bills
+        .where((b) => !b.isPaid && b.dueDate.isBefore(today))
+        .toList()
+      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+
     final upcoming = p.bills
         .where((b) =>
             !b.isPaid &&
@@ -206,6 +211,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
 
           const SizedBox(height: 28),
+
+          // ── Overdue section ───────────────────────────────────────────────
+          if (overdue.isNotEmpty) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Overdue',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: _red),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _red.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${overdue.length} ${overdue.length == 1 ? 'bill' : 'bills'}',
+                    style:
+                        const TextStyle(fontSize: 11, color: _red),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...overdue.map((b) => _BillCard(
+                  bill: b,
+                  dateText: df.format(b.dueDate),
+                  amountText:
+                      b.amount == null ? '' : money.format(b.amount),
+                  isToday: false,
+                  isOverdue: true,
+                  onTap: () => Navigator.pushNamed(context, '/add-bill',
+                      arguments: b),
+                  onMarkPaid: () =>
+                      context.read<BillsProvider>().setPaid(b.id, true),
+                )),
+            const SizedBox(height: 24),
+          ],
 
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -499,6 +547,7 @@ class _BillCard extends StatelessWidget {
   final String dateText;
   final String amountText;
   final bool isToday;
+  final bool isOverdue;
   final VoidCallback onMarkPaid;
   final VoidCallback onTap;
 
@@ -507,6 +556,7 @@ class _BillCard extends StatelessWidget {
     required this.dateText,
     required this.amountText,
     required this.isToday,
+    this.isOverdue = false,
     required this.onMarkPaid,
     required this.onTap,
   });
@@ -522,7 +572,7 @@ class _BillCard extends StatelessWidget {
         color: _card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: isToday ? _red.withOpacity(0.3) : _border),
+            color: (isToday || isOverdue) ? _red.withOpacity(0.3) : _border),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withOpacity(0.04),
@@ -546,7 +596,7 @@ class _BillCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 Row(
                   children: [
-                    if (isToday)
+                    if (isOverdue || isToday)
                       Container(
                         margin: const EdgeInsets.only(right: 6),
                         padding: const EdgeInsets.symmetric(
@@ -555,8 +605,8 @@ class _BillCard extends StatelessWidget {
                           color: _red.withOpacity(0.10),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text('Due Today',
-                            style: TextStyle(
+                        child: Text(isOverdue ? 'Overdue' : 'Due Today',
+                            style: const TextStyle(
                                 fontSize: 10,
                                 color: _red,
                                 fontWeight: FontWeight.w600)),

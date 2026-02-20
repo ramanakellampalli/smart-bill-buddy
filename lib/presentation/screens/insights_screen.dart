@@ -105,7 +105,11 @@ class _InsightsScreenState extends State<InsightsScreen> {
           ),
         ),
       ),
-      body: SelectionArea(
+      body: p.isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                  strokeWidth: 2.5, color: _primary))
+          : SelectionArea(
         child: ListView(
           padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
           children: [

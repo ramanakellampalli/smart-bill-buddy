@@ -35,6 +35,20 @@ class BillsScreen extends StatefulWidget {
 
 class _BillsScreenState extends State<BillsScreen> {
   _Filter _filter = _Filter.all;
+  final _searchCtrl = TextEditingController();
+  String _query = '';
+
+  @override
+  void initState() {
+    super.initState();
+    _searchCtrl.addListener(() => setState(() => _query = _searchCtrl.text));
+  }
+
+  @override
+  void dispose() {
+    _searchCtrl.dispose();
+    super.dispose();
+  }
 
   void _handleDelete(BuildContext context, BillModel bill) {
     context.read<BillsProvider>().remove(bill.id);
@@ -64,9 +78,11 @@ class _BillsScreenState extends State<BillsScreen> {
     final money = context.watch<AppSettingsProvider>().money;
     final df = DateFormat('d MMM yyyy');
 
+    final q = _query.trim().toLowerCase();
     final filtered = p.bills.where((b) {
-      if (_filter == _Filter.unpaid) return !b.isPaid;
-      if (_filter == _Filter.paid) return b.isPaid;
+      if (_filter == _Filter.unpaid && b.isPaid) return false;
+      if (_filter == _Filter.paid && !b.isPaid) return false;
+      if (q.isNotEmpty && !b.name.toLowerCase().contains(q)) return false;
       return true;
     }).toList()
       ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
@@ -126,7 +142,45 @@ class _BillsScreenState extends State<BillsScreen> {
               ],
             ),
           ),
-          const SizedBox(height: 12),
+          const SizedBox(height: 10),
+
+          // ── Search bar ───────────────────────────────────────────────────
+          Padding(
+            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
+            child: TextField(
+              controller: _searchCtrl,
+              style: const TextStyle(fontSize: 14, color: _textPrimary),
+              decoration: InputDecoration(
+                hintText: 'Search bills...',
+                hintStyle:
+                    const TextStyle(color: _textTertiary, fontSize: 14),
+                prefixIcon: const Icon(Icons.search_rounded,
+                    color: _textTertiary, size: 20),
+                suffixIcon: _query.isNotEmpty
+                    ? GestureDetector(
+                        onTap: () => _searchCtrl.clear(),
+                        child: const Icon(Icons.close_rounded,
+                            color: _textTertiary, size: 18),
+                      )
+                    : null,
+                filled: true,
+                fillColor: _card,
+                contentPadding: const EdgeInsets.symmetric(
+                    horizontal: 16, vertical: 12),
+                border: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _border)),
+                enabledBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide: const BorderSide(color: _border)),
+                focusedBorder: OutlineInputBorder(
+                    borderRadius: BorderRadius.circular(12),
+                    borderSide:
+                        const BorderSide(color: _primary, width: 1.5)),
+              ),
+            ),
+          ),
+          const SizedBox(height: 10),
 
           // ── Error banner ─────────────────────────────────────────────────
           if (p.error != null)
@@ -157,7 +211,11 @@ class _BillsScreenState extends State<BillsScreen> {
 
           // ── List ────────────────────────────────────────────────────────
           Expanded(
-            child: filtered.isEmpty
+            child: p.isLoading
+                ? const Center(
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2.5, color: _primary))
+                : filtered.isEmpty
                 ? _EmptyState(filter: _filter)
                 : ListView.builder(
                     padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
