@@ -93,12 +93,6 @@ class _SettingsScreenContent extends StatelessWidget {
             subtitle: 'Choose app language',
             onTap: () {},
           ),
-          _SettingsTile(
-            icon: Icons.palette_outlined,
-            title: 'Appearance',
-            subtitle: _themeModeLabel(context.watch<AppSettingsProvider>().themeMode),
-            onTap: () => _showAppearancePicker(context),
-          ),
           const SizedBox(height: 24),
 
           // Support Section
@@ -574,17 +568,6 @@ class _RemindersSheet extends StatelessWidget {
 
 // ── Currency picker ───────────────────────────────────────────────────────────
 
-String _themeModeLabel(ThemeMode mode) {
-  switch (mode) {
-    case ThemeMode.light:
-      return 'Light';
-    case ThemeMode.dark:
-      return 'Dark';
-    case ThemeMode.system:
-      return 'System default';
-  }
-}
-
 void _showCurrencyPicker(BuildContext context) {
   final settings = context.read<AppSettingsProvider>();
   showModalBottomSheet<void>(
@@ -687,135 +670,6 @@ class _CurrencyPickerSheet extends StatelessWidget {
                           ),
                           Text(
                             c.code,
-                            style: const TextStyle(
-                              fontSize: 12,
-                              color: _textSecondary,
-                            ),
-                          ),
-                        ],
-                      ),
-                    ),
-                    if (selected)
-                      const Icon(Icons.check_circle_rounded,
-                          color: _primary, size: 20),
-                  ],
-                ),
-              ),
-            );
-          }),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Appearance picker ─────────────────────────────────────────────────────────
-
-void _showAppearancePicker(BuildContext context) {
-  final settings = context.read<AppSettingsProvider>();
-  showModalBottomSheet<void>(
-    context: context,
-    backgroundColor: Colors.transparent,
-    builder: (_) => _AppearancePickerSheet(settings: settings),
-  );
-}
-
-class _AppearancePickerSheet extends StatelessWidget {
-  final AppSettingsProvider settings;
-
-  const _AppearancePickerSheet({required this.settings});
-
-  @override
-  Widget build(BuildContext context) {
-    final options = [
-      (ThemeMode.system, Icons.brightness_auto_rounded, 'System default',
-          'Follow device setting'),
-      (ThemeMode.light, Icons.light_mode_rounded, 'Light',
-          'Always use light theme'),
-      (ThemeMode.dark, Icons.dark_mode_rounded, 'Dark',
-          'Always use dark theme'),
-    ];
-
-    return Container(
-      decoration: const BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
-      ),
-      padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
-              decoration: BoxDecoration(
-                color: _border,
-                borderRadius: BorderRadius.circular(2),
-              ),
-            ),
-          ),
-          const SizedBox(height: 20),
-          const Text(
-            'Appearance',
-            style: TextStyle(
-              fontSize: 18,
-              fontWeight: FontWeight.w700,
-              color: _textPrimary,
-            ),
-          ),
-          const SizedBox(height: 16),
-          ...options.map((opt) {
-            final (mode, icon, label, desc) = opt;
-            final selected = settings.themeMode == mode;
-            return InkWell(
-              onTap: () {
-                settings.setThemeMode(mode);
-                Navigator.pop(context);
-              },
-              borderRadius: BorderRadius.circular(12),
-              child: Container(
-                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-                decoration: BoxDecoration(
-                  color: selected ? _primary.withOpacity(0.08) : Colors.transparent,
-                  borderRadius: BorderRadius.circular(12),
-                  border: selected
-                      ? Border.all(color: _primary.withOpacity(0.3))
-                      : null,
-                ),
-                child: Row(
-                  children: [
-                    Container(
-                      width: 40,
-                      height: 40,
-                      decoration: BoxDecoration(
-                        color: selected
-                            ? _primary.withOpacity(0.15)
-                            : _border.withOpacity(0.5),
-                        borderRadius: BorderRadius.circular(10),
-                      ),
-                      child: Icon(
-                        icon,
-                        color: selected ? _primary : _textSecondary,
-                        size: 20,
-                      ),
-                    ),
-                    const SizedBox(width: 14),
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            label,
-                            style: TextStyle(
-                              fontSize: 15,
-                              fontWeight: FontWeight.w600,
-                              color: selected ? _primary : _textPrimary,
-                            ),
-                          ),
-                          Text(
-                            desc,
                             style: const TextStyle(
                               fontSize: 12,
                               color: _textSecondary,

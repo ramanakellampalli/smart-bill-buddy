@@ -30,16 +30,13 @@ const List<CurrencyOption> kCurrencies = [
 // ── Keys ──────────────────────────────────────────────────────────────────────
 
 const _kCurrencyIndex = 'currency_index';
-const _kThemeMode    = 'theme_mode'; // 0=system, 1=light, 2=dark
 
 // ── Provider ──────────────────────────────────────────────────────────────────
 
 class AppSettingsProvider extends ChangeNotifier {
   int _currencyIndex = 0;
-  ThemeMode _themeMode = ThemeMode.system;
 
   int get currencyIndex => _currencyIndex;
-  ThemeMode get themeMode => _themeMode;
 
   CurrencyOption get currency => kCurrencies[_currencyIndex];
 
@@ -57,8 +54,6 @@ class AppSettingsProvider extends ChangeNotifier {
     final prefs = await SharedPreferences.getInstance();
     _currencyIndex = (prefs.getInt(_kCurrencyIndex) ?? 0)
         .clamp(0, kCurrencies.length - 1);
-    _themeMode = ThemeMode.values[
-        (prefs.getInt(_kThemeMode) ?? 0).clamp(0, ThemeMode.values.length - 1)];
     notifyListeners();
   }
 
@@ -68,12 +63,5 @@ class AppSettingsProvider extends ChangeNotifier {
     notifyListeners();
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_kCurrencyIndex, index);
-  }
-
-  Future<void> setThemeMode(ThemeMode mode) async {
-    _themeMode = mode;
-    notifyListeners();
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setInt(_kThemeMode, mode.index);
   }
 }
