@@ -9,6 +9,7 @@ import '../state/user_provider.dart';
 import '../../data/models/user_model.dart';
 import '../state/bills_provider.dart';
 import '../widgets/auth_guard.dart';
+import 'insights_screen.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 
@@ -275,6 +276,10 @@ class _ProfileScreenState extends State<_ProfileScreenContent> {
           ),
           const SizedBox(height: 24),
 
+          // ── Insights shortcut ────────────────────────────────────────────
+          _InsightsShortcut(),
+          const SizedBox(height: 24),
+
           _PreferencesSection(profile: profile),
           const SizedBox(height: 24),
 
@@ -476,7 +481,6 @@ class _StatsSection extends StatelessWidget {
     final bills = billsProvider.bills;
     final totalBills = bills.length;
     final paidBills = bills.where((bill) => bill.isPaid).length;
-    final unpaidBills = totalBills - paidBills;
     final completionRate = totalBills > 0 ? (paidBills / totalBills * 100) : 0.0;
     final totalSpent = bills
         .where((bill) => bill.isPaid && bill.amount != null)
@@ -611,6 +615,87 @@ class _StatCard extends StatelessWidget {
           ),
         ],
       ),
+    );
+  }
+}
+
+// ── Insights Shortcut ─────────────────────────────────────────────────────────
+
+class _InsightsShortcut extends StatelessWidget {
+  const _InsightsShortcut();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        const Text(
+          'Analytics',
+          style: TextStyle(
+            fontSize: 16,
+            fontWeight: FontWeight.w700,
+            color: _textPrimary,
+          ),
+        ),
+        const SizedBox(height: 12),
+        GestureDetector(
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const InsightsScreen()),
+          ),
+          child: Container(
+            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+            decoration: BoxDecoration(
+              color: _card,
+              borderRadius: BorderRadius.circular(16),
+              border: Border.all(color: _border),
+              boxShadow: [
+                BoxShadow(
+                  color: Colors.black.withOpacity(0.04),
+                  blurRadius: 8,
+                  offset: const Offset(0, 2),
+                ),
+              ],
+            ),
+            child: Row(
+              children: [
+                Container(
+                  padding: const EdgeInsets.all(10),
+                  decoration: BoxDecoration(
+                    color: _primary.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: const Icon(Icons.bar_chart_rounded,
+                      color: _primary, size: 20),
+                ),
+                const SizedBox(width: 14),
+                const Expanded(
+                  child: Column(
+                    crossAxisAlignment: CrossAxisAlignment.start,
+                    children: [
+                      Text(
+                        'Spending Insights',
+                        style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w600,
+                          color: _textPrimary,
+                        ),
+                      ),
+                      SizedBox(height: 2),
+                      Text(
+                        'Monthly breakdown by category',
+                        style: TextStyle(fontSize: 12, color: _textSecondary),
+                      ),
+                    ],
+                  ),
+                ),
+                const Icon(Icons.chevron_right_rounded,
+                    color: _textTertiary, size: 20),
+              ],
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
