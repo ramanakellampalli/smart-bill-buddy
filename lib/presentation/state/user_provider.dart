@@ -1,3 +1,4 @@
+import 'dart:async';
 import 'package:flutter/foundation.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
@@ -6,9 +7,12 @@ import '../../data/models/user_model.dart';
 class UserProvider extends ChangeNotifier {
   final FirebaseFirestore _firestore = FirebaseFirestore.instance;
   final FirebaseAuth _auth = FirebaseAuth.instance;
-  
+
+  StreamSubscription<User?>? _authSub;
+  String? _currentUid;
+
   UserProfile? _profile;
-  bool _isLoading = false;
+  bool _isLoading = true; // start true so splash shows until first load
   String? _error;
 
   UserProfile? get profile => _profile;
@@ -16,14 +20,24 @@ class UserProvider extends ChangeNotifier {
   String? get error => _error;
 
   UserProvider() {
-    _initializeUser();
+    // Auto-react to auth changes — same pattern as BillsProvider.
+    _authSub = _auth.authStateChanges().listen((user) {
+      if (user == null) {
+        _currentUid = null;
+        _profile = null;
+        _isLoading = false;
+        notifyListeners();
+      } else if (user.uid != _currentUid) {
+        _currentUid = user.uid;
+        loadUserProfile(user.uid);
+      }
+    });
   }
 
-  Future<void> _initializeUser() async {
-    final currentUser = _auth.currentUser;
-    if (currentUser != null) {
-      await loadUserProfile(currentUser.uid);
-    }
+  @override
+  void dispose() {
+    _authSub?.cancel();
+    super.dispose();
   }
 
   Future<void> loadUserProfile(String uid) async {
@@ -64,6 +78,21 @@ class UserProvider extends ChangeNotifier {
       notifyListeners();
     } finally {
       _setLoading(false);
+    }
+  }
+
+  Future<void> updatePhotoUrl(String? photoUrl) async {
+    if (_profile == null) return;
+    try {
+      _profile = _profile!.copyWith(
+        photoUrl: photoUrl,
+        lastActiveAt: DateTime.now(),
+      );
+      await _saveUserProfile();
+      notifyListeners();
+    } catch (e) {
+      _error = 'Failed to update photo: ${e.toString()}';
+      notifyListeners();
     }
   }
 

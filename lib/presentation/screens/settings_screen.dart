@@ -1,8 +1,12 @@
+import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import 'package:url_launcher/url_launcher.dart';
+import '../state/app_settings_provider.dart';
 import '../state/user_provider.dart';
 import '../widgets/auth_guard.dart';
+import '../../services/notification_service.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 
@@ -64,13 +68,13 @@ class _SettingsScreenContent extends StatelessWidget {
             icon: Icons.notifications_outlined,
             title: 'Notifications',
             subtitle: 'Configure notification preferences',
-            onTap: () {},
+            onTap: () => _showNotificationsSheet(context),
           ),
           _SettingsTile(
             icon: Icons.alarm_outlined,
             title: 'Reminders',
             subtitle: 'Set bill payment reminders',
-            onTap: () {},
+            onTap: () => _showRemindersSheet(context),
           ),
           const SizedBox(height: 24),
 
@@ -78,10 +82,10 @@ class _SettingsScreenContent extends StatelessWidget {
           _SectionHeader(title: 'Preferences'),
           const SizedBox(height: 8),
           _SettingsTile(
-            icon: Icons.currency_rupee_rounded,
+            icon: Icons.currency_exchange_rounded,
             title: 'Currency',
-            subtitle: 'Change default currency',
-            onTap: () {},
+            subtitle: context.watch<AppSettingsProvider>().currency.label,
+            onTap: () => _showCurrencyPicker(context),
           ),
           _SettingsTile(
             icon: Icons.language_outlined,
@@ -92,8 +96,8 @@ class _SettingsScreenContent extends StatelessWidget {
           _SettingsTile(
             icon: Icons.palette_outlined,
             title: 'Appearance',
-            subtitle: 'Customize app appearance',
-            onTap: () {},
+            subtitle: _themeModeLabel(context.watch<AppSettingsProvider>().themeMode),
+            onTap: () => _showAppearancePicker(context),
           ),
           const SizedBox(height: 24),
 
@@ -116,7 +120,10 @@ class _SettingsScreenContent extends StatelessWidget {
             icon: Icons.privacy_tip_outlined,
             title: 'Privacy Policy',
             subtitle: 'Read our privacy policy',
-            onTap: () {},
+            onTap: () => launchUrl(
+              Uri.parse('https://billbuddy.app/privacy'),
+              mode: LaunchMode.externalApplication,
+            ),
           ),
           const SizedBox(height: 24),
 
@@ -288,6 +295,550 @@ class _SignOutTile extends StatelessWidget {
     );
   }
 }
+
+// ── Notifications sheet ───────────────────────────────────────────────────────
+
+void _showNotificationsSheet(BuildContext context) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (_) => const _NotificationsSheet(),
+  );
+}
+
+class _NotificationsSheet extends StatelessWidget {
+  const _NotificationsSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: _border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: _primary.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.notifications_rounded,
+                    color: _primary, size: 22),
+              ),
+              const SizedBox(width: 14),
+              const Text(
+                'Notifications',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          if (kIsWeb) ...[
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: _border.withOpacity(0.5),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Row(
+                children: [
+                  Icon(Icons.info_outline_rounded,
+                      color: _textSecondary, size: 18),
+                  SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      'Push notifications are not supported in the browser. '
+                      'Use the mobile app to receive bill reminders.',
+                      style: TextStyle(fontSize: 13, color: _textSecondary),
+                    ),
+                  ),
+                ],
+              ),
+            ),
+          ] else ...[
+            const Text(
+              'Bill Buddy sends you timely reminders before bills are due so '
+              'you never miss a payment.',
+              style: TextStyle(
+                  fontSize: 14, color: _textSecondary, height: 1.5),
+            ),
+            const SizedBox(height: 20),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton.icon(
+                onPressed: () async {
+                  await NotificationService.requestPermission();
+                  if (context.mounted) Navigator.pop(context);
+                },
+                icon: const Icon(Icons.check_circle_outline_rounded, size: 18),
+                label: const Text(
+                  'Enable Notifications',
+                  style: TextStyle(
+                      fontSize: 14, fontWeight: FontWeight.w600),
+                ),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: _primary,
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                    borderRadius: BorderRadius.circular(12),
+                  ),
+                ),
+              ),
+            ),
+          ],
+          const SizedBox(height: 8),
+          SizedBox(
+            width: double.infinity,
+            child: TextButton(
+              onPressed: () => Navigator.pop(context),
+              child: const Text(
+                'Close',
+                style:
+                    TextStyle(fontSize: 14, color: _textSecondary),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Reminders sheet ───────────────────────────────────────────────────────────
+
+void _showRemindersSheet(BuildContext context) {
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (_) => const _RemindersSheet(),
+  );
+}
+
+class _RemindersSheet extends StatelessWidget {
+  const _RemindersSheet();
+
+  @override
+  Widget build(BuildContext context) {
+    const items = [
+      (Icons.notifications_active_rounded, '5 days before',
+          'Get a heads-up to prepare payment'),
+      (Icons.alarm_rounded, '2 days before',
+          'A closer reminder before the due date'),
+      (Icons.today_rounded, 'On the due date',
+          'A final reminder on the day itself'),
+    ];
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: _border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          Row(
+            children: [
+              Container(
+                width: 44,
+                height: 44,
+                decoration: BoxDecoration(
+                  color: _primary.withOpacity(0.10),
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.alarm_rounded,
+                    color: _primary, size: 22),
+              ),
+              const SizedBox(width: 14),
+              const Text(
+                'Bill Reminders',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _textPrimary,
+                ),
+              ),
+            ],
+          ),
+          const SizedBox(height: 12),
+          const Text(
+            'Reminders are configured per bill. Choose which alerts to '
+            'receive when adding or editing any bill.',
+            style: TextStyle(
+                fontSize: 14, color: _textSecondary, height: 1.5),
+          ),
+          const SizedBox(height: 20),
+          ...items.map((item) {
+            final (icon, label, desc) = item;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 14),
+              child: Row(
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: _primary.withOpacity(0.08),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Icon(icon, color: _primary, size: 20),
+                  ),
+                  const SizedBox(width: 14),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          style: const TextStyle(
+                            fontSize: 14,
+                            fontWeight: FontWeight.w600,
+                            color: _textPrimary,
+                          ),
+                        ),
+                        Text(
+                          desc,
+                          style: const TextStyle(
+                              fontSize: 12, color: _textSecondary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ],
+              ),
+            );
+          }),
+          const SizedBox(height: 4),
+          SizedBox(
+            width: double.infinity,
+            child: ElevatedButton(
+              onPressed: () => Navigator.pop(context),
+              style: ElevatedButton.styleFrom(
+                backgroundColor: _primary,
+                foregroundColor: Colors.white,
+                padding: const EdgeInsets.symmetric(vertical: 14),
+                elevation: 0,
+                shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(12),
+                ),
+              ),
+              child: const Text(
+                'Got it',
+                style: TextStyle(
+                    fontSize: 14, fontWeight: FontWeight.w600),
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Currency picker ───────────────────────────────────────────────────────────
+
+String _themeModeLabel(ThemeMode mode) {
+  switch (mode) {
+    case ThemeMode.light:
+      return 'Light';
+    case ThemeMode.dark:
+      return 'Dark';
+    case ThemeMode.system:
+      return 'System default';
+  }
+}
+
+void _showCurrencyPicker(BuildContext context) {
+  final settings = context.read<AppSettingsProvider>();
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    isScrollControlled: true,
+    builder: (_) => _CurrencyPickerSheet(settings: settings),
+  );
+}
+
+class _CurrencyPickerSheet extends StatelessWidget {
+  final AppSettingsProvider settings;
+
+  const _CurrencyPickerSheet({required this.settings});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: const BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: _border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Select Currency',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: _textPrimary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ...List.generate(kCurrencies.length, (i) {
+            final c = kCurrencies[i];
+            final selected = settings.currencyIndex == i;
+            return InkWell(
+              onTap: () {
+                settings.setCurrency(i);
+                Navigator.pop(context);
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: selected ? _primary.withOpacity(0.08) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  border: selected
+                      ? Border.all(color: _primary.withOpacity(0.3))
+                      : null,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? _primary.withOpacity(0.15)
+                            : _border.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Center(
+                        child: Text(
+                          c.symbol,
+                          style: TextStyle(
+                            fontSize: 18,
+                            fontWeight: FontWeight.w700,
+                            color: selected ? _primary : _textSecondary,
+                          ),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            c.label,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: selected ? _primary : _textPrimary,
+                            ),
+                          ),
+                          Text(
+                            c.code,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: _textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (selected)
+                      const Icon(Icons.check_circle_rounded,
+                          color: _primary, size: 20),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Appearance picker ─────────────────────────────────────────────────────────
+
+void _showAppearancePicker(BuildContext context) {
+  final settings = context.read<AppSettingsProvider>();
+  showModalBottomSheet<void>(
+    context: context,
+    backgroundColor: Colors.transparent,
+    builder: (_) => _AppearancePickerSheet(settings: settings),
+  );
+}
+
+class _AppearancePickerSheet extends StatelessWidget {
+  final AppSettingsProvider settings;
+
+  const _AppearancePickerSheet({required this.settings});
+
+  @override
+  Widget build(BuildContext context) {
+    final options = [
+      (ThemeMode.system, Icons.brightness_auto_rounded, 'System default',
+          'Follow device setting'),
+      (ThemeMode.light, Icons.light_mode_rounded, 'Light',
+          'Always use light theme'),
+      (ThemeMode.dark, Icons.dark_mode_rounded, 'Dark',
+          'Always use dark theme'),
+    ];
+
+    return Container(
+      decoration: const BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 36,
+              height: 4,
+              decoration: BoxDecoration(
+                color: _border,
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+          ),
+          const SizedBox(height: 20),
+          const Text(
+            'Appearance',
+            style: TextStyle(
+              fontSize: 18,
+              fontWeight: FontWeight.w700,
+              color: _textPrimary,
+            ),
+          ),
+          const SizedBox(height: 16),
+          ...options.map((opt) {
+            final (mode, icon, label, desc) = opt;
+            final selected = settings.themeMode == mode;
+            return InkWell(
+              onTap: () {
+                settings.setThemeMode(mode);
+                Navigator.pop(context);
+              },
+              borderRadius: BorderRadius.circular(12),
+              child: Container(
+                padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+                decoration: BoxDecoration(
+                  color: selected ? _primary.withOpacity(0.08) : Colors.transparent,
+                  borderRadius: BorderRadius.circular(12),
+                  border: selected
+                      ? Border.all(color: _primary.withOpacity(0.3))
+                      : null,
+                ),
+                child: Row(
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: selected
+                            ? _primary.withOpacity(0.15)
+                            : _border.withOpacity(0.5),
+                        borderRadius: BorderRadius.circular(10),
+                      ),
+                      child: Icon(
+                        icon,
+                        color: selected ? _primary : _textSecondary,
+                        size: 20,
+                      ),
+                    ),
+                    const SizedBox(width: 14),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            label,
+                            style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: selected ? _primary : _textPrimary,
+                            ),
+                          ),
+                          Text(
+                            desc,
+                            style: const TextStyle(
+                              fontSize: 12,
+                              color: _textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
+                    if (selected)
+                      const Icon(Icons.check_circle_rounded,
+                          color: _primary, size: 20),
+                  ],
+                ),
+              ),
+            );
+          }),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Sign out dialog ───────────────────────────────────────────────────────────
 
 void _showSignOutDialog(BuildContext context) {
   showDialog(

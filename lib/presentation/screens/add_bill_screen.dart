@@ -3,6 +3,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import 'package:uuid/uuid.dart';
 import '../../data/models/bill_model.dart';
+import '../state/app_settings_provider.dart';
 import '../state/bills_provider.dart';
 import '../widgets/auth_guard.dart';
 
@@ -17,6 +18,14 @@ const _textPrimary = Color(0xFF1C1917);
 const _textSecondary = Color(0xFF78716C);
 const _textTertiary = Color(0xFFA8A29E);
 const _red = Color(0xFFDC2626);
+
+IconData _currencyIcon(String code) => switch (code) {
+  'USD' || 'AUD' => Icons.attach_money_rounded,
+  'EUR'          => Icons.euro_rounded,
+  'GBP'          => Icons.currency_pound_rounded,
+  'JPY'          => Icons.currency_yen_rounded,
+  _              => Icons.currency_rupee_rounded,
+};
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
 
@@ -128,6 +137,7 @@ class _AddBillScreenState extends State<AddBillScreen> {
   @override
   Widget build(BuildContext context) {
     final saving = context.watch<BillsProvider>().saving;
+    final currencyCode = context.watch<AppSettingsProvider>().currency.code;
     final df = DateFormat('EEE, d MMM yyyy');
 
     return Scaffold(
@@ -175,7 +185,7 @@ class _AddBillScreenState extends State<AddBillScreen> {
                   _StyledField(
                     controller: _amountCtrl,
                     hint: '0',
-                    icon: Icons.currency_rupee_rounded,
+                    icon: _currencyIcon(currencyCode),
                     keyboardType: const TextInputType.numberWithOptions(
                         decimal: true),
                     validator: (v) {

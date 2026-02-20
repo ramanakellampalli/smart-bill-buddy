@@ -1,9 +1,13 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import '../state/bills_provider.dart';
 import '../state/user_provider.dart';
 import 'login_screen.dart';
 import 'home_shell.dart';
+
+// UserProvider and BillsProvider both self-manage via their own auth listeners.
+// AuthWrapper only needs to watch loading state — no manual triggers needed.
 
 class AuthWrapper extends StatelessWidget {
   const AuthWrapper({super.key});
@@ -13,67 +17,132 @@ class AuthWrapper extends StatelessWidget {
     return StreamBuilder<User?>(
       stream: FirebaseAuth.instance.authStateChanges(),
       builder: (context, snapshot) {
-        // Loading state
         if (snapshot.connectionState == ConnectionState.waiting) {
-          return const Scaffold(
-            backgroundColor: Color(0xFFFAF8F5),
-            body: Center(
-              child: CircularProgressIndicator(
-                color: Color(0xFFF97316),
-              ),
-            ),
-          );
+          return const _SplashScreen();
         }
 
-        // Error state
         if (snapshot.hasError) {
-          return Scaffold(
-            backgroundColor: const Color(0xFFFAF8F5),
-            body: Center(
-              child: Column(
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  const Icon(
-                    Icons.error_outline_rounded,
-                    color: Color(0xFFDC2626),
-                    size: 48,
-                  ),
-                  const SizedBox(height: 16),
-                  const Text(
-                    'Authentication Error',
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w600,
-                      color: Color(0xFF1C1917),
-                    ),
-                  ),
-                  const SizedBox(height: 8),
-                  Text(
-                    'Please check your connection and try again.',
-                    style: TextStyle(
-                      fontSize: 14,
-                      color: Colors.grey[600],
-                    ),
-                  ),
-                ],
-              ),
-            ),
-          );
+          return const _ErrorScreen();
         }
 
-        // Authenticated user
         if (snapshot.hasData) {
-          final user = snapshot.data!;
-          // Initialize user provider when user is authenticated
-          WidgetsBinding.instance.addPostFrameCallback((_) {
-            context.read<UserProvider>().loadUserProfile(user.uid);
-          });
+          final billsLoading = context.watch<BillsProvider>().isLoading;
+          final userLoading  = context.watch<UserProvider>().isLoading;
+
+          if (billsLoading || userLoading) {
+            return const _SplashScreen();
+          }
+
           return const HomeShell();
         }
 
-        // Not authenticated - show login screen
         return const LoginScreen();
       },
+    );
+  }
+}
+
+// ── Splash ────────────────────────────────────────────────────────────────────
+
+class _SplashScreen extends StatelessWidget {
+  const _SplashScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0xFFFAF8F5),
+      body: Center(
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Row(
+              mainAxisSize: MainAxisSize.min,
+              crossAxisAlignment: CrossAxisAlignment.center,
+              children: [
+                _LogoBox(),
+                SizedBox(width: 14),
+                Text(
+                  'Bill Buddy',
+                  style: TextStyle(
+                    fontSize: 28,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1C1917),
+                    letterSpacing: -0.6,
+                  ),
+                ),
+              ],
+            ),
+            SizedBox(height: 40),
+            SizedBox(
+              width: 24,
+              height: 24,
+              child: CircularProgressIndicator(
+                strokeWidth: 2.5,
+                color: Color(0xFFF97316),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _LogoBox extends StatelessWidget {
+  const _LogoBox();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: 52,
+      height: 52,
+      decoration: BoxDecoration(
+        color: Color(0x1AF97316),
+        borderRadius: BorderRadius.circular(16),
+        border: Border.fromBorderSide(
+          BorderSide(color: Color(0x33F97316)),
+        ),
+      ),
+      child: const Icon(
+        Icons.account_balance_wallet_rounded,
+        color: Color(0xFFF97316),
+        size: 26,
+      ),
+    );
+  }
+}
+
+// ── Error ─────────────────────────────────────────────────────────────────────
+
+class _ErrorScreen extends StatelessWidget {
+  const _ErrorScreen();
+
+  @override
+  Widget build(BuildContext context) {
+    return const Scaffold(
+      backgroundColor: Color(0xFFFAF8F5),
+      body: Center(
+        child: Column(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(Icons.error_outline_rounded, color: Color(0xFFDC2626), size: 48),
+            SizedBox(height: 16),
+            Text(
+              'Authentication Error',
+              style: TextStyle(
+                fontSize: 18,
+                fontWeight: FontWeight.w600,
+                color: Color(0xFF1C1917),
+              ),
+            ),
+            SizedBox(height: 8),
+            Text(
+              'Please check your connection and try again.',
+              style: TextStyle(fontSize: 14, color: Color(0xFF78716C)),
+            ),
+          ],
+        ),
+      ),
     );
   }
 }

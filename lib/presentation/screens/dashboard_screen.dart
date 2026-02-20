@@ -2,6 +2,7 @@ import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../state/app_settings_provider.dart';
 import '../state/bills_provider.dart';
 import '../widgets/category_logo.dart';
 import '../../data/models/bill_model.dart';
@@ -50,14 +51,23 @@ class _DashboardScreenState extends State<DashboardScreen> {
     super.dispose();
   }
 
-  void _openNotifications(BuildContext context) {
+  void _openNotifications(
+    BuildContext context, {
+    required List<BillModel> overdue,
+    required List<BillModel> dueToday,
+    required NumberFormat money,
+  }) {
     showModalBottomSheet(
       context: context,
       backgroundColor: _card,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
-      builder: (_) => const _NotificationsSheet(),
+      builder: (_) => _NotificationsSheet(
+        overdue: overdue,
+        dueToday: dueToday,
+        money: money,
+      ),
     );
   }
 
@@ -85,6 +95,17 @@ class _DashboardScreenState extends State<DashboardScreen> {
         ? 0.0
         : (paidThisMonth / totalThisMonth).clamp(0.0, 1.0);
 
+    final overdue = p.bills
+        .where((b) => !b.isPaid && b.dueDate.isBefore(today))
+        .toList()
+      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+
+    final dueToday = p.bills
+        .where((b) => !b.isPaid && _isSameDay(b.dueDate, today))
+        .toList();
+
+    final hasAlerts = overdue.isNotEmpty || dueToday.isNotEmpty;
+
     final upcoming = p.bills
         .where((b) =>
             !b.isPaid &&
@@ -93,8 +114,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .toList()
       ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
 
-    final money =
-        NumberFormat.currency(locale: 'en_IN', symbol: '₹', decimalDigits: 0);
+    final money = context.watch<AppSettingsProvider>().money;
     final df = DateFormat('EEE, dd MMM');
     final dayLabel = DateFormat('EEEE').format(now);
     final dateLabel = DateFormat('d MMM').format(now);
@@ -152,10 +172,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
         actions: [
           Builder(
             builder: (ctx) => IconButton(
-              icon: const Icon(Icons.notifications_outlined,
-                  color: _textSecondary, size: 22),
+              icon: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  const Icon(Icons.notifications_outlined,
+                      color: _textSecondary, size: 22),
+                  if (hasAlerts)
+                    Positioned(
+                      top: -1,
+                      right: -1,
+                      child: Container(
+                        width: 8,
+                        height: 8,
+                        decoration: const BoxDecoration(
+                          color: _red,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                    ),
+                ],
+              ),
               tooltip: 'Notifications',
-              onPressed: () => _openNotifications(ctx),
+              onPressed: () => _openNotifications(
+                ctx,
+                overdue: overdue,
+                dueToday: dueToday,
+                money: money,
+              ),
             ),
           ),
           const SizedBox(width: 4),
@@ -206,6 +249,49 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
 
           const SizedBox(height: 28),
+
+          // ── Overdue section ───────────────────────────────────────────────
+          if (overdue.isNotEmpty) ...[
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Overdue',
+                  style: TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: _red),
+                ),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _red.withOpacity(0.08),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: Text(
+                    '${overdue.length} ${overdue.length == 1 ? 'bill' : 'bills'}',
+                    style:
+                        const TextStyle(fontSize: 11, color: _red),
+                  ),
+                ),
+              ],
+            ),
+            const SizedBox(height: 12),
+            ...overdue.map((b) => _BillCard(
+                  bill: b,
+                  dateText: df.format(b.dueDate),
+                  amountText:
+                      b.amount == null ? '' : money.format(b.amount),
+                  isToday: false,
+                  isOverdue: true,
+                  onTap: () => Navigator.pushNamed(context, '/add-bill',
+                      arguments: b),
+                  onMarkPaid: () =>
+                      context.read<BillsProvider>().setPaid(b.id, true),
+                )),
+            const SizedBox(height: 24),
+          ],
 
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
@@ -275,15 +361,30 @@ class _DashboardScreenState extends State<DashboardScreen> {
 // ── Notifications Sheet ───────────────────────────────────────────────────
 
 class _NotificationsSheet extends StatelessWidget {
-  const _NotificationsSheet();
+  final List<BillModel> overdue;
+  final List<BillModel> dueToday;
+  final NumberFormat money;
+
+  const _NotificationsSheet({
+    required this.overdue,
+    required this.dueToday,
+    required this.money,
+  });
 
   @override
   Widget build(BuildContext context) {
+    // Combine: overdue first, then due-today
+    final items = [
+      ...overdue.map((b) => (b, 'Overdue', _red)),
+      ...dueToday.map((b) => (b, 'Due Today', _primary)),
+    ];
+
     return Padding(
       padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         children: [
+          // Drag handle
           Container(
             width: 36,
             height: 4,
@@ -293,41 +394,177 @@ class _NotificationsSheet extends StatelessWidget {
             ),
           ),
           const SizedBox(height: 20),
-          const Row(
+          // Header
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
-              Text('Notifications',
+              const Text('Notifications',
                   style: TextStyle(
                       fontSize: 17,
                       fontWeight: FontWeight.w700,
                       color: _textPrimary)),
+              if (items.isNotEmpty)
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 8, vertical: 3),
+                  decoration: BoxDecoration(
+                    color: _red.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(10),
+                  ),
+                  child: Text(
+                    '${items.length}',
+                    style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w700,
+                        color: _red),
+                  ),
+                ),
             ],
           ),
-          const SizedBox(height: 24),
-          Container(
-            padding: const EdgeInsets.all(24),
-            decoration: BoxDecoration(
-              color: _surface2,
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: _border),
+          const SizedBox(height: 16),
+          // Content
+          if (items.isEmpty)
+            Container(
+              padding: const EdgeInsets.all(24),
+              decoration: BoxDecoration(
+                color: _surface2,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: _border),
+              ),
+              child: const Column(
+                children: [
+                  Icon(Icons.notifications_off_outlined,
+                      color: _textTertiary, size: 32),
+                  SizedBox(height: 12),
+                  Text('No new notifications',
+                      style: TextStyle(
+                          fontSize: 14,
+                          fontWeight: FontWeight.w500,
+                          color: _textSecondary)),
+                  SizedBox(height: 4),
+                  Text("You're all caught up",
+                      style: TextStyle(fontSize: 12, color: _textTertiary)),
+                ],
+              ),
+            )
+          else
+            ConstrainedBox(
+              constraints: const BoxConstraints(maxHeight: 340),
+              child: ListView.separated(
+                shrinkWrap: true,
+                itemCount: items.length,
+                separatorBuilder: (_, __) =>
+                    const Divider(color: _border, height: 1),
+                itemBuilder: (ctx, i) {
+                  final (bill, label, color) = items[i];
+                  return _NotifItem(
+                    bill: bill,
+                    label: label,
+                    color: color,
+                    amountText: bill.amount != null
+                        ? money.format(bill.amount)
+                        : '',
+                    onTap: () {
+                      Navigator.pop(ctx);
+                      Navigator.pushNamed(ctx, '/add-bill', arguments: bill);
+                    },
+                  );
+                },
+              ),
             ),
-            child: const Column(
-              children: [
-                Icon(Icons.notifications_off_outlined,
-                    color: _textTertiary, size: 32),
-                SizedBox(height: 12),
-                Text('No new notifications',
-                    style: TextStyle(
-                        fontSize: 14,
-                        fontWeight: FontWeight.w500,
-                        color: _textSecondary)),
-                SizedBox(height: 4),
-                Text("You're all caught up",
-                    style: TextStyle(fontSize: 12, color: _textTertiary)),
-              ],
-            ),
-          ),
           const SizedBox(height: 8),
         ],
+      ),
+    );
+  }
+}
+
+// ── Notification Item ─────────────────────────────────────────────────────────
+
+class _NotifItem extends StatelessWidget {
+  final BillModel bill;
+  final String label;
+  final Color color;
+  final String amountText;
+  final VoidCallback onTap;
+
+  const _NotifItem({
+    required this.bill,
+    required this.label,
+    required this.color,
+    required this.amountText,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return InkWell(
+      onTap: onTap,
+      borderRadius: BorderRadius.circular(10),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(9),
+              decoration: BoxDecoration(
+                color: color.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(Icons.receipt_long_rounded, color: color, size: 18),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    bill.name,
+                    style: const TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w600,
+                        color: _textPrimary),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    DateFormat('d MMM yyyy').format(bill.dueDate),
+                    style: const TextStyle(
+                        fontSize: 12, color: _textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                if (amountText.isNotEmpty)
+                  Text(
+                    amountText,
+                    style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: _textPrimary),
+                  ),
+                const SizedBox(height: 3),
+                Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 6, vertical: 2),
+                  decoration: BoxDecoration(
+                    color: color.withOpacity(0.10),
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                  child: Text(
+                    label,
+                    style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: color),
+                  ),
+                ),
+              ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -499,6 +736,7 @@ class _BillCard extends StatelessWidget {
   final String dateText;
   final String amountText;
   final bool isToday;
+  final bool isOverdue;
   final VoidCallback onMarkPaid;
   final VoidCallback onTap;
 
@@ -507,6 +745,7 @@ class _BillCard extends StatelessWidget {
     required this.dateText,
     required this.amountText,
     required this.isToday,
+    this.isOverdue = false,
     required this.onMarkPaid,
     required this.onTap,
   });
@@ -522,7 +761,7 @@ class _BillCard extends StatelessWidget {
         color: _card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: isToday ? _red.withOpacity(0.3) : _border),
+            color: (isToday || isOverdue) ? _red.withOpacity(0.3) : _border),
         boxShadow: [
           BoxShadow(
               color: Colors.black.withOpacity(0.04),
@@ -546,7 +785,7 @@ class _BillCard extends StatelessWidget {
                 const SizedBox(height: 3),
                 Row(
                   children: [
-                    if (isToday)
+                    if (isOverdue || isToday)
                       Container(
                         margin: const EdgeInsets.only(right: 6),
                         padding: const EdgeInsets.symmetric(
@@ -555,8 +794,8 @@ class _BillCard extends StatelessWidget {
                           color: _red.withOpacity(0.10),
                           borderRadius: BorderRadius.circular(4),
                         ),
-                        child: const Text('Due Today',
-                            style: TextStyle(
+                        child: Text(isOverdue ? 'Overdue' : 'Due Today',
+                            style: const TextStyle(
                                 fontSize: 10,
                                 color: _red,
                                 fontWeight: FontWeight.w600)),
