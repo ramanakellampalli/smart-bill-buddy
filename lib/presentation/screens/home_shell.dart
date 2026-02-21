@@ -1,10 +1,9 @@
 import 'package:flutter/material.dart';
 import 'dashboard_screen.dart';
 import 'bills_screen.dart';
+import 'dues_screen.dart';
 import 'budgets_screen.dart';
-import 'insights_screen.dart';
-import 'settings_screen.dart';
-import '../widgets/auth_guard.dart';
+import 'profile_screen.dart';
 
 const _navBg = Colors.white;
 const _navBorder = Color(0xFFEDE6DC);
@@ -24,8 +23,9 @@ class _HomeShellState extends State<HomeShell> {
   final _screens = const [
     DashboardScreen(),
     BillsScreen(),
+    DuesScreen(),
     BudgetsScreen(),
-    InsightsScreen(),
+    ProfileScreen(),
   ];
 
   @override
@@ -56,13 +56,17 @@ class _BottomNav extends StatelessWidget {
         activeIcon: Icons.receipt_long_rounded,
         label: 'Bills'),
     _NavItem(
+        icon: Icons.people_alt_outlined,
+        activeIcon: Icons.people_alt_rounded,
+        label: 'Dues'),
+    _NavItem(
         icon: Icons.account_balance_wallet_outlined,
         activeIcon: Icons.account_balance_wallet_rounded,
         label: 'Budgets'),
     _NavItem(
-        icon: Icons.bar_chart_outlined,
-        activeIcon: Icons.bar_chart_rounded,
-        label: 'Insights'),
+        icon: Icons.person_outline_rounded,
+        activeIcon: Icons.person_rounded,
+        label: 'Profile'),
   ];
 
   @override
@@ -74,7 +78,7 @@ class _BottomNav extends StatelessWidget {
         boxShadow: [
           BoxShadow(
             color: Color(0x0A000000),
-            blurRadius: 12,
+            blurRadius: 8,
             offset: Offset(0, -2),
           ),
         ],
@@ -92,24 +96,25 @@ class _BottomNav extends StatelessWidget {
                   behavior: HitTestBehavior.opaque,
                   onTap: () => onTap(i),
                   child: Column(
-                    mainAxisAlignment: MainAxisAlignment.center,
+                    crossAxisAlignment: CrossAxisAlignment.center,
                     children: [
+                      // Orange top indicator
                       AnimatedContainer(
                         duration: const Duration(milliseconds: 200),
-                        padding: const EdgeInsets.symmetric(
-                            horizontal: 14, vertical: 4),
+                        height: 2.5,
+                        width: selected ? 24 : 0,
                         decoration: BoxDecoration(
-                          color: selected
-                              ? _navSelected.withOpacity(0.10)
-                              : Colors.transparent,
-                          borderRadius: BorderRadius.circular(20),
+                          color: _navSelected,
+                          borderRadius: const BorderRadius.vertical(
+                            bottom: Radius.circular(2),
+                          ),
                         ),
-                        child: Icon(
-                          selected ? item.activeIcon : item.icon,
-                          size: 22,
-                          color:
-                              selected ? _navSelected : _navUnselected,
-                        ),
+                      ),
+                      const Spacer(),
+                      Icon(
+                        selected ? item.activeIcon : item.icon,
+                        size: 22,
+                        color: selected ? _navSelected : _navUnselected,
                       ),
                       const SizedBox(height: 3),
                       Text(
@@ -119,10 +124,10 @@ class _BottomNav extends StatelessWidget {
                           fontWeight: selected
                               ? FontWeight.w600
                               : FontWeight.w400,
-                          color:
-                              selected ? _navSelected : _navUnselected,
+                          color: selected ? _navSelected : _navUnselected,
                         ),
                       ),
+                      const Spacer(),
                     ],
                   ),
                 ),

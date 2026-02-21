@@ -373,7 +373,7 @@ class _BillCard extends StatelessWidget {
         onTap: onTap,
         child: Container(
         margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
         decoration: BoxDecoration(
           color: bill.isPaid ? const Color(0xFFFAFAFA) : _card,
           borderRadius: BorderRadius.circular(16),
@@ -395,18 +395,19 @@ class _BillCard extends StatelessWidget {
         child: Row(
           children: [
             // Category logo
-            CategoryLogo(category: bill.category, size: 48, dimmed: bill.isPaid),
-            const SizedBox(width: 14),
+            CategoryLogo(category: bill.category, size: 38, dimmed: bill.isPaid),
+            const SizedBox(width: 10),
 
             // Name + meta
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
+                mainAxisAlignment: MainAxisAlignment.center,
                 children: [
                   Text(
                     bill.name,
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: FontWeight.w600,
                       color: bill.isPaid ? _textTertiary : _textPrimary,
                       decoration: bill.isPaid
@@ -415,7 +416,7 @@ class _BillCard extends StatelessWidget {
                       decorationColor: _textTertiary,
                     ),
                   ),
-                  const SizedBox(height: 3),
+                  const SizedBox(height: 2),
                   Row(
                     children: [
                       if (isOverdue) ...[
@@ -447,28 +448,29 @@ class _BillCard extends StatelessWidget {
                 ],
               ),
             ),
-            const SizedBox(width: 12),
+            const SizedBox(width: 8),
 
             // Amount + toggle
             Column(
               crossAxisAlignment: CrossAxisAlignment.end,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 if (amountText.isNotEmpty)
                   Text(
                     amountText,
                     style: TextStyle(
-                      fontSize: 15,
+                      fontSize: 14,
                       fontWeight: FontWeight.w700,
                       color: bill.isPaid ? _textTertiary : _textPrimary,
                     ),
                   ),
-                const SizedBox(height: 6),
+                const SizedBox(height: 4),
                 GestureDetector(
                   onTap: onMarkPaid,
                   child: AnimatedContainer(
                     duration: const Duration(milliseconds: 200),
                     padding: const EdgeInsets.symmetric(
-                        horizontal: 10, vertical: 5),
+                        horizontal: 8, vertical: 4),
                     decoration: BoxDecoration(
                       color: bill.isPaid
                           ? _green.withOpacity(0.08)

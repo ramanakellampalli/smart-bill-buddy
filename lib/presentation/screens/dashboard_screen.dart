@@ -756,7 +756,7 @@ class _BillCard extends StatelessWidget {
       onTap: onTap,
       child: Container(
       margin: const EdgeInsets.only(bottom: 10),
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: _card,
         borderRadius: BorderRadius.circular(16),
@@ -771,18 +771,19 @@ class _BillCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CategoryLogo(category: bill.category, size: 48),
-          const SizedBox(width: 14),
+          CategoryLogo(category: bill.category, size: 38),
+          const SizedBox(width: 10),
           Expanded(
             child: Column(
               crossAxisAlignment: CrossAxisAlignment.start,
+              mainAxisAlignment: MainAxisAlignment.center,
               children: [
                 Text(bill.name,
                     style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w600,
                         color: _textPrimary)),
-                const SizedBox(height: 3),
+                const SizedBox(height: 2),
                 Row(
                   children: [
                     if (isOverdue || isToday)
@@ -808,22 +809,23 @@ class _BillCard extends StatelessWidget {
               ],
             ),
           ),
-          const SizedBox(width: 12),
+          const SizedBox(width: 8),
           Column(
             crossAxisAlignment: CrossAxisAlignment.end,
+            mainAxisAlignment: MainAxisAlignment.center,
             children: [
               if (amountText.isNotEmpty)
                 Text(amountText,
                     style: const TextStyle(
-                        fontSize: 15,
+                        fontSize: 14,
                         fontWeight: FontWeight.w700,
                         color: _textPrimary)),
-              const SizedBox(height: 6),
+              const SizedBox(height: 4),
               GestureDetector(
                 onTap: onMarkPaid,
                 child: Container(
                   padding:
-                      const EdgeInsets.symmetric(horizontal: 12, vertical: 5),
+                      const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
                     color: _green.withOpacity(0.08),
                     borderRadius: BorderRadius.circular(20),
