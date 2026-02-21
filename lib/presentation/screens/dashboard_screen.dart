@@ -36,10 +36,13 @@ class DashboardScreen extends StatefulWidget {
 class _DashboardScreenState extends State<DashboardScreen> {
   bool _showWelcome = true;
   Timer? _timer;
+  late final PageController _summaryPageCtrl;
+  int _summaryPage = 0;
 
   @override
   void initState() {
     super.initState();
+    _summaryPageCtrl = PageController();
     _timer = Timer(const Duration(seconds: 10), () {
       if (mounted) setState(() => _showWelcome = false);
     });
@@ -48,6 +51,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   void dispose() {
     _timer?.cancel();
+    _summaryPageCtrl.dispose();
     super.dispose();
   }
 
@@ -218,11 +222,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
           const SizedBox(height: 12),
 
-          _SummaryCard(
-            total: money.format(totalThisMonth),
-            paid: money.format(paidThisMonth),
-            remaining: money.format(remainingThisMonth),
-            progress: progress,
+          SizedBox(
+            height: 240,
+            child: PageView(
+              controller: _summaryPageCtrl,
+              onPageChanged: (i) => setState(() => _summaryPage = i),
+              children: [
+                Padding(
+                  padding: const EdgeInsets.only(right: 12),
+                  child: _SummaryCard(
+                    total: money.format(totalThisMonth),
+                    paid: money.format(paidThisMonth),
+                    remaining: money.format(remainingThisMonth),
+                    progress: progress,
+                  ),
+                ),
+                const _CalendarComingSoonCard(),
+              ],
+            ),
+          ),
+          const SizedBox(height: 10),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.center,
+            children: [
+              _PageDot(active: _summaryPage == 0),
+              const SizedBox(width: 6),
+              _PageDot(active: _summaryPage == 1),
+            ],
           ),
 
           const SizedBox(height: 14),
@@ -723,6 +749,125 @@ class _EmptyState extends StatelessWidget {
           Text('No bills due in the next 7 days 🎉',
               style: TextStyle(fontSize: 13, color: _textSecondary),
               textAlign: TextAlign.center),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Page Dot ──────────────────────────────────────────────────────────────────
+
+class _PageDot extends StatelessWidget {
+  final bool active;
+  const _PageDot({required this.active});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      width: active ? 18 : 6,
+      height: 6,
+      decoration: BoxDecoration(
+        color: active ? _primary : _border,
+        borderRadius: BorderRadius.circular(3),
+      ),
+    );
+  }
+}
+
+// ── Calendar Coming Soon Card ─────────────────────────────────────────────────
+
+class _CalendarComingSoonCard extends StatelessWidget {
+  const _CalendarComingSoonCard();
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(22),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF292524), Color(0xFF57534E)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF1C1917).withOpacity(0.22),
+            blurRadius: 20,
+            offset: const Offset(0, 8),
+          ),
+        ],
+      ),
+      child: Stack(
+        children: [
+          // Faded calendar icon in background
+          Positioned(
+            right: -10,
+            bottom: -10,
+            child: Icon(
+              Icons.calendar_month_rounded,
+              size: 110,
+              color: Colors.white.withOpacity(0.06),
+            ),
+          ),
+          // Positioned.fill gives Column bounded height so Spacer works
+          Positioned.fill(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
+                  decoration: BoxDecoration(
+                    color: _primary.withOpacity(0.25),
+                    borderRadius: BorderRadius.circular(20),
+                  ),
+                  child: const Text(
+                    'Coming Soon',
+                    style: TextStyle(
+                      fontSize: 10,
+                      fontWeight: FontWeight.w700,
+                      color: _primary,
+                      letterSpacing: 0.4,
+                    ),
+                  ),
+                ),
+                const SizedBox(height: 14),
+                const Text(
+                  'Bill Calendar',
+                  style: TextStyle(
+                    fontSize: 24,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white,
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 6),
+                const Text(
+                  'See all your upcoming bills laid out\nday-by-day across the month.',
+                  style: TextStyle(
+                    fontSize: 13,
+                    color: Colors.white60,
+                    height: 1.45,
+                  ),
+                ),
+                const Spacer(),
+                Row(
+                  children: [
+                    Icon(Icons.calendar_today_rounded, size: 13, color: _primary.withOpacity(0.8)),
+                    const SizedBox(width: 6),
+                    const Expanded(
+                      child: Text(
+                        'Monthly bill overview · Due-date highlights',
+                        style: TextStyle(fontSize: 11, color: Colors.white38),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
         ],
       ),
     );

@@ -95,7 +95,7 @@ class _InsightsScreenState extends State<InsightsScreen> {
         backgroundColor: _bg,
         elevation: 0,
         centerTitle: true,
-        automaticallyImplyLeading: false,
+        automaticallyImplyLeading: true,
         title: const Text(
           'Insights',
           style: TextStyle(
