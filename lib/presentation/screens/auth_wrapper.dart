@@ -49,8 +49,8 @@ class _SplashScreen extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return const Scaffold(
-      backgroundColor: Color(0xFFFAF8F5),
+    return Scaffold(
+      backgroundColor: const Color(0xFFFAF8F5),
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
@@ -58,7 +58,7 @@ class _SplashScreen extends StatelessWidget {
             Row(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
-              children: [
+              children: const [
                 _LogoBox(),
                 SizedBox(width: 14),
                 Text(
@@ -93,21 +93,10 @@ class _LogoBox extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
+    return Image.asset(
+      'assets/icons/icon-512.png',
       width: 52,
       height: 52,
-      decoration: BoxDecoration(
-        color: Color(0x1AF97316),
-        borderRadius: BorderRadius.circular(16),
-        border: Border.fromBorderSide(
-          BorderSide(color: Color(0x33F97316)),
-        ),
-      ),
-      child: const Icon(
-        Icons.account_balance_wallet_rounded,
-        color: Color(0xFFF97316),
-        size: 26,
-      ),
     );
   }
 }

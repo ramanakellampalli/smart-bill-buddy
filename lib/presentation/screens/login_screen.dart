@@ -132,19 +132,10 @@ class _LoginScreenState extends State<LoginScreen>
                     Row(
                       crossAxisAlignment: CrossAxisAlignment.center,
                       children: [
-                        Container(
+                        Image.asset(
+                          'assets/icons/icon-512.png',
                           width: 48,
                           height: 48,
-                          decoration: BoxDecoration(
-                            color: _primary.withOpacity(0.10),
-                            borderRadius: BorderRadius.circular(14),
-                            border: Border.all(color: _primary.withOpacity(0.20)),
-                          ),
-                          child: const Icon(
-                            Icons.account_balance_wallet_rounded,
-                            color: _primary,
-                            size: 26,
-                          ),
                         ),
                         const SizedBox(width: 14),
                         const Text(

@@ -170,18 +170,10 @@ class _RegisterScreenState extends State<RegisterScreen>
                     crossAxisAlignment: CrossAxisAlignment.start,
                     children: [
                     // Logo
-                    Container(
+                    Image.asset(
+                      'assets/icons/icon-512.png',
                       width: 58,
                       height: 58,
-                      decoration: BoxDecoration(
-                        color: _primary.withOpacity(0.10),
-                        borderRadius: BorderRadius.circular(18),
-                        border: Border.all(color: _primary.withOpacity(0.20)),
-                      ),
-                      child: const Icon(
-                          Icons.account_balance_wallet_rounded,
-                          color: _primary,
-                          size: 30),
                     ),
                     const SizedBox(height: 30),
 
