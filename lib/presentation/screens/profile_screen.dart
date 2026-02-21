@@ -1092,6 +1092,9 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
       _error = null;
     });
 
+    // Read profile before any async gap to avoid BuildContext async warning
+    final photoUrl = context.read<UserProvider>().profile?.photoUrl;
+
     try {
       // Re-authenticate so Firebase allows deletion
       final cred =
@@ -1100,17 +1103,24 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
 
       final db = FirebaseFirestore.instance;
       final uid = user.uid;
+      final userRef = db.collection('users').doc(uid);
 
-      // Delete all bills in the subcollection
-      final billsSnap = await db
-          .collection('users')
-          .doc(uid)
-          .collection('bills')
-          .get();
-      await Future.wait(billsSnap.docs.map((d) => d.reference.delete()));
+      // Delete all subcollections (bills, budgets, dues)
+      for (final sub in ['bills', 'budgets', 'dues']) {
+        final snap = await userRef.collection(sub).get();
+        await Future.wait(snap.docs.map((d) => d.reference.delete()));
+      }
+
+      // Delete profile photo from Firebase Storage if present
+      final profile = (photoUrl != null && photoUrl.isNotEmpty) ? photoUrl : null;
+      if (profile != null) {
+        try {
+          await FirebaseStorage.instance.refFromURL(profile).delete();
+        } catch (_) {}
+      }
 
       // Delete the user document itself
-      await db.collection('users').doc(uid).delete();
+      await userRef.delete();
 
       // Delete Firebase Auth account — must be last
       await user.delete();
