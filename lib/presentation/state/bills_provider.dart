@@ -2,20 +2,11 @@ import 'dart:async';
 
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
-import 'package:uuid/uuid.dart';
 import '../../data/models/bill_model.dart';
 import '../../data/repositories/bills_repository.dart';
 import '../../services/notification_service.dart';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
-
-DateTime _nextDueDate(DateTime from, String frequency) {
-  return switch (frequency) {
-    'quarterly' => DateTime(from.year, from.month + 3, from.day),
-    'yearly'    => DateTime(from.year + 1, from.month, from.day),
-    _           => DateTime(from.year, from.month + 1, from.day), // monthly
-  };
-}
 
 bool _isSameDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
@@ -32,6 +23,7 @@ class BillsProvider extends ChangeNotifier {
   String? error;
 
   String? _currentUid;
+  bool _rolledOver = false;
 
   BillsProvider(this._repo) {
     // Only re-subscribe when the uid actually changes.
@@ -39,6 +31,7 @@ class BillsProvider extends ChangeNotifier {
       if (user == null) {
         if (_currentUid == null) return; // already signed out, no-op
         _currentUid = null;
+        _rolledOver = false;
         _billsSub?.cancel();
         _billsSub = null;
         bills = [];
@@ -46,12 +39,19 @@ class BillsProvider extends ChangeNotifier {
         notifyListeners();
       } else if (user.uid != _currentUid) {
         _currentUid = user.uid;
+        _rolledOver = false;
         _billsSub?.cancel();
         _billsSub = null;
         isLoading = true;
         notifyListeners();
         _billsSub = _repo.watchBills(user.uid).listen(
           (items) {
+            // Run rollover once per login session. Fire-and-forget — the
+            // Firestore stream will push updated bills automatically.
+            if (!_rolledOver) {
+              _rolledOver = true;
+              _repo.rolloverBills().catchError((_) {});
+            }
             bills = items;
             isLoading = false;
             error = null;
@@ -110,29 +110,8 @@ class BillsProvider extends ChangeNotifier {
       await _repo.markPaid(billId: billId, isPaid: isPaid);
 
       if (isPaid) {
+        // Cancel reminders for this cycle — rollover will reschedule next cycle.
         await NotificationService.cancelBill(billId);
-
-        // Auto-advance: create the next occurrence if one doesn't already exist.
-        final nextDate = _nextDueDate(bill.dueDate, bill.frequency);
-        final alreadyExists = bills.any(
-          (b) => b.name == bill.name && _isSameDay(b.dueDate, nextDate),
-        );
-        if (!alreadyExists) {
-          final next = BillModel(
-            id: const Uuid().v4(),
-            name: bill.name,
-            amount: bill.amount,
-            dueDate: nextDate,
-            frequency: bill.frequency,
-            category: bill.category,
-            isPaid: false,
-            remind5Days: bill.remind5Days,
-            remind2Days: bill.remind2Days,
-            remindDueDay: bill.remindDueDay,
-          );
-          await _repo.addBill(next);
-          await NotificationService.scheduleBill(next);
-        }
       } else {
         await NotificationService.scheduleBill(bill.copyWith(isPaid: false));
       }
