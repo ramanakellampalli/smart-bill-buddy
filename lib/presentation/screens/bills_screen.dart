@@ -395,7 +395,7 @@ class _BillCard extends StatelessWidget {
         child: Row(
           children: [
             // Category logo
-            CategoryLogo(category: bill.category, size: 38, dimmed: bill.isPaid),
+            CategoryLogo(category: bill.category, size: 38, dimmed: bill.isPaid, billName: bill.name),
             const SizedBox(width: 10),
 
             // Name + meta

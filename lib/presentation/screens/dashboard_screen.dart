@@ -24,6 +24,22 @@ const _red = Color(0xFFDC2626);
 bool _isSameDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
 
+/// Advance [from] by one billing cycle, clamping to the last valid day of the
+/// target month (mirrors the same helper in bills_repository.dart).
+DateTime _nextDueDateCalendar(DateTime from, String frequency) {
+  int y = from.year, m = from.month, d = from.day;
+  switch (frequency) {
+    case 'quarterly':
+      m += 3;
+    case 'yearly':
+      y += 1;
+    default:
+      m += 1;
+  }
+  final lastDay = DateTime(y, m + 1, 0).day;
+  return DateTime(y, m, d.clamp(1, lastDay));
+}
+
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 class DashboardScreen extends StatefulWidget {
@@ -223,7 +239,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
           const SizedBox(height: 12),
 
           SizedBox(
-            height: 240,
+            height: 200,
             child: PageView(
               controller: _summaryPageCtrl,
               onPageChanged: (i) => setState(() => _summaryPage = i),
@@ -237,7 +253,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     progress: progress,
                   ),
                 ),
-                const _CalendarComingSoonCard(),
+                _BillCalendarCard(bills: p.bills),
               ],
             ),
           ),
@@ -614,7 +630,7 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         gradient: const LinearGradient(
@@ -633,46 +649,44 @@ class _SummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text('Monthly Total',
-              style: TextStyle(
-                  fontSize: 12,
-                  color: Colors.white70,
-                  fontWeight: FontWeight.w500,
-                  letterSpacing: 0.3)),
-          const SizedBox(height: 6),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              const Text('Monthly Total',
+                  style: TextStyle(
+                      fontSize: 11,
+                      color: Colors.white70,
+                      fontWeight: FontWeight.w500,
+                      letterSpacing: 0.3)),
+              Text('${(progress * 100).toStringAsFixed(0)}% paid',
+                  style: const TextStyle(
+                      fontSize: 11,
+                      color: Colors.white54,
+                      fontWeight: FontWeight.w500)),
+            ],
+          ),
+          const SizedBox(height: 4),
           Text(total,
               style: const TextStyle(
-                  fontSize: 34,
+                  fontSize: 28,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
-                  letterSpacing: -1)),
-          const SizedBox(height: 20),
+                  letterSpacing: -0.5)),
+          const SizedBox(height: 12),
           Row(
             children: [
               Expanded(child: _StatChip(label: 'Paid', value: paid)),
-              const SizedBox(width: 10),
+              const SizedBox(width: 8),
               Expanded(child: _StatChip(label: 'Remaining', value: remaining)),
             ],
           ),
-          const SizedBox(height: 18),
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text('Paid so far',
-                  style: TextStyle(fontSize: 11, color: Colors.white60)),
-              Text('${(progress * 100).toStringAsFixed(0)}%',
-                  style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.white,
-                      fontWeight: FontWeight.w700)),
-            ],
-          ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 12),
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: progress,
-              minHeight: 7,
+              minHeight: 5,
               backgroundColor: Colors.white24,
               valueColor:
                   const AlwaysStoppedAnimation<Color>(Color(0xFFF97316)),
@@ -693,21 +707,21 @@ class _StatChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
         color: Colors.white.withOpacity(0.18),
-        borderRadius: BorderRadius.circular(12),
+        borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.white24),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style: const TextStyle(fontSize: 11, color: Colors.white70)),
-          const SizedBox(height: 5),
+              style: const TextStyle(fontSize: 10, color: Colors.white70)),
+          const SizedBox(height: 3),
           Text(value,
               style: const TextStyle(
-                  fontSize: 15,
+                  fontSize: 13,
                   fontWeight: FontWeight.w700,
                   color: Colors.white)),
         ],
@@ -775,15 +789,97 @@ class _PageDot extends StatelessWidget {
   }
 }
 
-// ── Calendar Coming Soon Card ─────────────────────────────────────────────────
+// ── Bill Calendar Card ────────────────────────────────────────────────────────
 
-class _CalendarComingSoonCard extends StatelessWidget {
-  const _CalendarComingSoonCard();
+class _BillCalendarCard extends StatefulWidget {
+  final List<BillModel> bills;
+  const _BillCalendarCard({required this.bills});
+
+  @override
+  State<_BillCalendarCard> createState() => _BillCalendarCardState();
+}
+
+class _BillCalendarCardState extends State<_BillCalendarCard> {
+  late DateTime _month;
+  late final DateTime _minMonth;
+  late final DateTime _maxMonth;
+
+  @override
+  void initState() {
+    super.initState();
+    final n = DateTime.now();
+    _minMonth = DateTime(n.year, n.month);
+    _maxMonth = DateTime(n.year, n.month + 5);
+    _month = _minMonth;
+  }
+
+  /// Returns a map of day → [(bill, isPaidForThisCycle)].
+  /// For the current stored cycle the actual isPaid is used; for projected
+  /// future cycles the entry is always marked unpaid (new cycle hasn't started).
+  Map<int, List<(BillModel, bool)>> get _byDay {
+    final map = <int, List<(BillModel, bool)>>{};
+    final monthStart = DateTime(_month.year, _month.month, 1);
+    final monthEnd   = DateTime(_month.year, _month.month + 1, 1);
+
+    for (final b in widget.bills) {
+      DateTime d = b.dueDate;
+
+      // If the stored due date is already past this month, skip.
+      if (!d.isBefore(monthEnd)) continue;
+
+      // Advance through cycles until we reach the target month.
+      while (d.isBefore(monthStart)) {
+        d = _nextDueDateCalendar(d, b.frequency);
+      }
+
+      // Include only if the projected date lands in the target month.
+      if (d.year == _month.year && d.month == _month.month) {
+        final isActualCycle = d.year  == b.dueDate.year  &&
+                              d.month == b.dueDate.month &&
+                              d.day   == b.dueDate.day;
+        (map[d.day] ??= []).add((b, isActualCycle && b.isPaid));
+      }
+    }
+    return map;
+  }
+
+  void _showDaySheet(BuildContext context, DateTime date,
+      List<(BillModel, bool)> entries) {
+    final money = context.read<AppSettingsProvider>().money;
+    showModalBottomSheet(
+      context: context,
+      backgroundColor: _card,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
+      ),
+      builder: (_) => _DayBillsSheet(date: date, entries: entries, money: money),
+    );
+  }
 
   @override
   Widget build(BuildContext context) {
+    final now = DateTime.now();
+    final today = DateTime(now.year, now.month, now.day);
+    final daysInMonth = DateTime(_month.year, _month.month + 1, 0).day;
+    // weekday: Mon=1..Sun=7 → offset to Sun=0
+    final startOffset = (_month.weekday % 7);
+    final byDay = _byDay;
+
+    // Build flat cell list: nulls for leading empty cells, then 1..daysInMonth
+    final cells = <int?>[
+      ...List.filled(startOffset, null),
+      ...List.generate(daysInMonth, (i) => i + 1),
+    ];
+    while (cells.length % 7 != 0) cells.add(null);
+
+    // Split into rows of 7
+    final rows = <List<int?>>[];
+    for (var i = 0; i < cells.length; i += 7) {
+      rows.add(cells.sublist(i, i + 7));
+    }
+
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         gradient: const LinearGradient(
@@ -799,75 +895,219 @@ class _CalendarComingSoonCard extends StatelessWidget {
           ),
         ],
       ),
-      child: Stack(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Faded calendar icon in background
-          Positioned(
-            right: -10,
-            bottom: -10,
-            child: Icon(
-              Icons.calendar_month_rounded,
-              size: 110,
-              color: Colors.white.withOpacity(0.06),
-            ),
+          // ── Header ────────────────────────────────────────────────────────
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              Text(
+                DateFormat('MMMM yyyy').format(_month),
+                style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: 0.2,
+                ),
+              ),
+              Row(
+                children: [
+                  _navBtn(Icons.chevron_left_rounded,
+                    _month.isAfter(_minMonth)
+                        ? () => setState(() => _month = DateTime(_month.year, _month.month - 1))
+                        : null),
+                  const SizedBox(width: 2),
+                  _navBtn(Icons.chevron_right_rounded,
+                    _month.isBefore(_maxMonth)
+                        ? () => setState(() => _month = DateTime(_month.year, _month.month + 1))
+                        : null),
+                ],
+              ),
+            ],
           ),
-          // Positioned.fill gives Column bounded height so Spacer works
-          Positioned.fill(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                  decoration: BoxDecoration(
-                    color: _primary.withOpacity(0.25),
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Text(
-                    'Coming Soon',
-                    style: TextStyle(
-                      fontSize: 10,
-                      fontWeight: FontWeight.w700,
-                      color: _primary,
-                      letterSpacing: 0.4,
+          const SizedBox(height: 5),
+          // ── Day-of-week headers ───────────────────────────────────────────
+          Row(
+            children: ['S','M','T','W','T','F','S'].map((d) => Expanded(
+              child: Center(
+                child: Text(d, style: const TextStyle(
+                  fontSize: 9,
+                  fontWeight: FontWeight.w600,
+                  color: Colors.white38,
+                )),
+              ),
+            )).toList(),
+          ),
+          const SizedBox(height: 3),
+          // ── Calendar rows ─────────────────────────────────────────────────
+          ...rows.map((row) => Expanded(
+            child: Row(
+              children: row.map((day) {
+                if (day == null) return const Expanded(child: SizedBox());
+                final date = DateTime(_month.year, _month.month, day);
+                final isToday = date == today;
+                final isPast = date.isBefore(today);
+                final dayEntries = byDay[day] ?? [];
+                final hasUnpaid = dayEntries.any((e) => !e.$2);
+                final hasPaid   = dayEntries.any((e) =>  e.$2);
+
+                return Expanded(
+                  child: GestureDetector(
+                    onTap: dayEntries.isEmpty ? null
+                        : () => _showDaySheet(context, date, dayEntries),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        Container(
+                          width: 18,
+                          height: 18,
+                          decoration: isToday
+                              ? const BoxDecoration(
+                                  color: _primary, shape: BoxShape.circle)
+                              : null,
+                          alignment: Alignment.center,
+                          child: Text(
+                            '$day',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: isToday
+                                  ? FontWeight.w700
+                                  : FontWeight.w400,
+                              color: isToday
+                                  ? Colors.white
+                                  : isPast
+                                      ? Colors.white30
+                                      : Colors.white70,
+                            ),
+                          ),
+                        ),
+                        if (hasUnpaid || hasPaid)
+                          Padding(
+                            padding: const EdgeInsets.only(top: 1),
+                            child: Row(
+                              mainAxisAlignment: MainAxisAlignment.center,
+                              mainAxisSize: MainAxisSize.min,
+                              children: [
+                                if (hasUnpaid) _dot(_primary),
+                                if (hasUnpaid && hasPaid)
+                                  const SizedBox(width: 2),
+                                if (hasPaid) _dot(_green),
+                              ],
+                            ),
+                          ),
+                      ],
                     ),
                   ),
-                ),
-                const SizedBox(height: 14),
-                const Text(
-                  'Bill Calendar',
-                  style: TextStyle(
-                    fontSize: 24,
-                    fontWeight: FontWeight.w800,
-                    color: Colors.white,
-                    letterSpacing: -0.5,
+                );
+              }).toList(),
+            ),
+          )),
+        ],
+      ),
+    );
+  }
+
+  Widget _navBtn(IconData icon, VoidCallback? onTap) => GestureDetector(
+    onTap: onTap,
+    child: Padding(
+      padding: const EdgeInsets.all(3),
+      child: Icon(icon, size: 16,
+          color: onTap != null ? Colors.white54 : Colors.white24),
+    ),
+  );
+
+  Widget _dot(Color color) => Container(
+    width: 4,
+    height: 4,
+    decoration: BoxDecoration(color: color, shape: BoxShape.circle),
+  );
+}
+
+// ── Day Bills Sheet ───────────────────────────────────────────────────────────
+
+class _DayBillsSheet extends StatelessWidget {
+  final DateTime date;
+  final List<(BillModel, bool)> entries;
+  final NumberFormat money;
+
+  const _DayBillsSheet({
+    required this.date,
+    required this.entries,
+    required this.money,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      child: Column(
+        mainAxisSize: MainAxisSize.min,
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Center(
+            child: Container(
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: _border, borderRadius: BorderRadius.circular(2)),
+            ),
+          ),
+          const SizedBox(height: 16),
+          Text(
+            DateFormat('EEEE, d MMMM').format(date),
+            style: const TextStyle(
+              fontSize: 16,
+              fontWeight: FontWeight.w700,
+              color: _textPrimary,
+            ),
+          ),
+          const SizedBox(height: 12),
+          ...entries.map((entry) {
+            final (b, isPaid) = entry;
+            return Padding(
+              padding: const EdgeInsets.only(bottom: 10),
+              child: Row(
+                children: [
+                  CategoryLogo(category: b.category, size: 36, billName: b.name),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(b.name,
+                            style: const TextStyle(
+                                fontSize: 14,
+                                fontWeight: FontWeight.w600,
+                                color: _textPrimary)),
+                        if (b.amount != null)
+                          Text(money.format(b.amount),
+                              style: const TextStyle(
+                                  fontSize: 12, color: _textSecondary)),
+                      ],
+                    ),
                   ),
-                ),
-                const SizedBox(height: 6),
-                const Text(
-                  'See all your upcoming bills laid out\nday-by-day across the month.',
-                  style: TextStyle(
-                    fontSize: 13,
-                    color: Colors.white60,
-                    height: 1.45,
-                  ),
-                ),
-                const Spacer(),
-                Row(
-                  children: [
-                    Icon(Icons.calendar_today_rounded, size: 13, color: _primary.withOpacity(0.8)),
-                    const SizedBox(width: 6),
-                    const Expanded(
-                      child: Text(
-                        'Monthly bill overview · Due-date highlights',
-                        style: TextStyle(fontSize: 11, color: Colors.white38),
-                        overflow: TextOverflow.ellipsis,
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 8, vertical: 3),
+                    decoration: BoxDecoration(
+                      color: isPaid
+                          ? _green.withOpacity(0.1)
+                          : _primary.withOpacity(0.1),
+                      borderRadius: BorderRadius.circular(8),
+                    ),
+                    child: Text(
+                      isPaid ? 'Paid' : 'Unpaid',
+                      style: TextStyle(
+                        fontSize: 11,
+                        fontWeight: FontWeight.w600,
+                        color: isPaid ? _green : _primary,
                       ),
                     ),
-                  ],
-                ),
-              ],
-            ),
-          ),
+                  ),
+                ],
+              ),
+            );
+          }),
         ],
       ),
     );
@@ -900,7 +1140,7 @@ class _BillCard extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       child: Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 2),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
         color: _card,
@@ -916,7 +1156,7 @@ class _BillCard extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CategoryLogo(category: bill.category, size: 38),
+          CategoryLogo(category: bill.category, size: 38, billName: bill.name),
           const SizedBox(width: 10),
           Expanded(
             child: Column(
@@ -946,9 +1186,12 @@ class _BillCard extends StatelessWidget {
                                 color: _red,
                                 fontWeight: FontWeight.w600)),
                       ),
-                    Text('${_capitalize(bill.category)} · $dateText',
-                        style: const TextStyle(
-                            fontSize: 12, color: _textSecondary)),
+                    Expanded(
+                      child: Text('${_capitalize(bill.category)} · $dateText',
+                          overflow: TextOverflow.ellipsis,
+                          style: const TextStyle(
+                              fontSize: 12, color: _textSecondary)),
+                    ),
                   ],
                 ),
               ],

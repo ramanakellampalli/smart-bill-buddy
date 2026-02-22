@@ -511,7 +511,7 @@ class _BillRow extends StatelessWidget {
       ),
       child: Row(
         children: [
-          CategoryLogo(category: bill.category, size: 38, dimmed: bill.isPaid),
+          CategoryLogo(category: bill.category, size: 38, dimmed: bill.isPaid, billName: bill.name),
           const SizedBox(width: 12),
           Expanded(
             child: Column(

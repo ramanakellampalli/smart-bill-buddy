@@ -1,4 +1,4 @@
-package com.example.smart_bill_reminder
+package com.ohyeah.smartbillreminder
 
 import io.flutter.embedding.android.FlutterActivity
 
