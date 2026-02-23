@@ -66,6 +66,20 @@ class DuesScreen extends StatefulWidget {
 class _DuesScreenState extends State<DuesScreen> {
   _Filter _filter = _Filter.all;
   bool _showSettled = false;
+  late final PageController _analyticsPageCtrl;
+  int _analyticsPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _analyticsPageCtrl = PageController();
+  }
+
+  @override
+  void dispose() {
+    _analyticsPageCtrl.dispose();
+    super.dispose();
+  }
 
   void _openAddSheet(BuildContext context, {String? personName}) {
     showModalBottomSheet(
@@ -147,117 +161,188 @@ class _DuesScreenState extends State<DuesScreen> {
           ? const Center(
               child: CircularProgressIndicator(
                   strokeWidth: 2.5, color: _primary))
-          : SelectionArea(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-                children: [
-                  // ── Summary card ─────────────────────────────────────────────
-                  _SummaryCard(
-                    net: net,
-                    toReceive: toReceive,
-                    iOwe: iOwe,
-                    toReceiveCount:
-                        active.where((d) => d.type == 'lent').length,
-                    iOweCount:
-                        active.where((d) => d.type == 'borrowed').length,
-                    money: money,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ── Filter pills ─────────────────────────────────────────────
-                  Row(
+          : Column(
+              children: [
+                // ── Carousel (outside SelectionArea to avoid layout assertion) ──
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 0, 0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      _FilterPill(
-                        label: 'All',
-                        count: allCount,
-                        selected: _filter == _Filter.all,
-                        onTap: () => setState(() => _filter = _Filter.all),
-                      ),
-                      const SizedBox(width: 8),
-                      _FilterPill(
-                        label: 'Owe Me',
-                        count: oweMeCount,
-                        selected: _filter == _Filter.oweMe,
-                        color: _green,
-                        onTap: () => setState(() => _filter = _Filter.oweMe),
-                      ),
-                      const SizedBox(width: 8),
-                      _FilterPill(
-                        label: 'I Owe',
-                        count: iOweCount,
-                        selected: _filter == _Filter.iOwe,
-                        color: _red,
-                        onTap: () => setState(() => _filter = _Filter.iOwe),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ── Active person cards ───────────────────────────────────────
-                  if (people.isEmpty)
-                    _EmptyState(filter: _filter)
-                  else
-                    ...people.map((name) {
-                      final txns = grouped[name]!;
-                      final netForPerson = txns.fold(0.0, (s, d) {
-                        return d.type == 'lent' ? s + d.amount : s - d.amount;
-                      });
-                      return _PersonCard(
-                        name: name,
-                        transactions: txns,
-                        net: netForPerson,
-                        money: money,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => PersonDuesScreen(
-                              personName: name,
-                              onAddTap: () =>
-                                  _openAddSheet(context, personName: name),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-
-                  // ── Settled history ───────────────────────────────────────────
-                  if (settled.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    _SettledHeader(
-                      count: settled.length,
-                      isOpen: _showSettled,
-                      onToggle: () =>
-                          setState(() => _showSettled = !_showSettled),
-                    ),
-                    if (_showSettled) ...[
-                      const SizedBox(height: 10),
-                      ...settledPeople.map((name) {
-                        final txns = settledGrouped[name]!;
-                        final netForPerson = txns.fold(0.0, (s, d) {
-                          return d.type == 'lent' ? s + d.amount : s - d.amount;
-                        });
-                        return _PersonCard(
-                          name: name,
-                          transactions: txns,
-                          net: netForPerson,
-                          money: money,
-                          isSettled: true,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => PersonDuesScreen(
-                                personName: name,
-                                onAddTap: () =>
-                                    _openAddSheet(context, personName: name),
+                      SizedBox(
+                        height: 220,
+                        child: PageView(
+                          controller: _analyticsPageCtrl,
+                          onPageChanged: (i) =>
+                              setState(() => _analyticsPage = i),
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: _SummaryCard(
+                                net: net,
+                                toReceive: toReceive,
+                                iOwe: iOwe,
+                                toReceiveCount: active
+                                    .where((d) => d.type == 'lent')
+                                    .length,
+                                iOweCount: active
+                                    .where((d) => d.type == 'borrowed')
+                                    .length,
+                                money: money,
                               ),
                             ),
-                          ),
-                        );
-                      }),
+                            Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: _DuesAnalyticsCard(
+                                totalDues: active.length,
+                                totalAmount: toReceive + iOwe,
+                                overdueCount: active
+                                    .where((d) =>
+                                        d.dueDate != null &&
+                                        d.dueDate!.isBefore(DateTime.now()))
+                                    .length,
+                                money: money,
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: _PeopleAnalyticsCard(
+                                peopleCount: grouped.keys.length,
+                                avgPerPerson: grouped.keys.isNotEmpty
+                                    ? (toReceive + iOwe) / grouped.keys.length
+                                    : 0.0,
+                                highestDebtor: _getHighestDebtor(grouped),
+                                highestCreditor: _getHighestCreditor(grouped),
+                                money: money,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _PageDot(active: _analyticsPage == 0),
+                          const SizedBox(width: 6),
+                          _PageDot(active: _analyticsPage == 1),
+                          const SizedBox(width: 6),
+                          _PageDot(active: _analyticsPage == 2),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
                     ],
-                  ],
-                ],
-              ),
+                  ),
+                ),
+
+                // ── Scrollable list ───────────────────────────────────────────
+                Expanded(
+                  child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                      children: [
+                        // ── Filter pills ───────────────────────────────────────
+                        Row(
+                          children: [
+                            _FilterPill(
+                              label: 'All',
+                              count: allCount,
+                              selected: _filter == _Filter.all,
+                              onTap: () =>
+                                  setState(() => _filter = _Filter.all),
+                            ),
+                            const SizedBox(width: 8),
+                            _FilterPill(
+                              label: 'Owe Me',
+                              count: oweMeCount,
+                              selected: _filter == _Filter.oweMe,
+                              color: _green,
+                              onTap: () =>
+                                  setState(() => _filter = _Filter.oweMe),
+                            ),
+                            const SizedBox(width: 8),
+                            _FilterPill(
+                              label: 'I Owe',
+                              count: iOweCount,
+                              selected: _filter == _Filter.iOwe,
+                              color: _red,
+                              onTap: () =>
+                                  setState(() => _filter = _Filter.iOwe),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // ── Active person cards ───────────────────────────────
+                        if (people.isEmpty)
+                          _EmptyState(filter: _filter)
+                        else
+                          ...people.map((name) {
+                            final txns = grouped[name]!;
+                            final netForPerson = txns.fold(0.0, (s, d) {
+                              return d.type == 'lent'
+                                  ? s + d.amount
+                                  : s - d.amount;
+                            });
+                            return _PersonCard(
+                              name: name,
+                              transactions: txns,
+                              net: netForPerson,
+                              money: money,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => PersonDuesScreen(
+                                    personName: name,
+                                    onAddTap: () => _openAddSheet(context,
+                                        personName: name),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+
+                        // ── Settled history ───────────────────────────────────
+                        if (settled.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          _SettledHeader(
+                            count: settled.length,
+                            isOpen: _showSettled,
+                            onToggle: () =>
+                                setState(() => _showSettled = !_showSettled),
+                          ),
+                          if (_showSettled) ...[
+                            const SizedBox(height: 10),
+                            ...settledPeople.map((name) {
+                              final txns = settledGrouped[name]!;
+                              final netForPerson = txns.fold(0.0, (s, d) {
+                                return d.type == 'lent'
+                                    ? s + d.amount
+                                    : s - d.amount;
+                              });
+                              return _PersonCard(
+                                name: name,
+                                transactions: txns,
+                                net: netForPerson,
+                                money: money,
+                                isSettled: true,
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => PersonDuesScreen(
+                                      personName: name,
+                                      onAddTap: () => _openAddSheet(context,
+                                          personName: name),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
+                        ],
+                      ],
+                    ),
+                  ),
+              ],
             ),
     );
   }
@@ -285,108 +370,153 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPositive = net >= 0;
-    final netLabel = isPositive ? "You're owed" : "You owe";
-    final netAmount = money.format(net.abs());
+    final accent = isPositive ? const Color(0xFF4ADE80) : const Color(0xFFFCA5A5);
+    final accentBg = isPositive ? _green : _red;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF292524), Color(0xFF57534E)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1C1917), Color(0xFF3C3330)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1C1917).withOpacity(0.35),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1C1917).withOpacity(0.22),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'DUES TRACKER',
-            style: TextStyle(
-                fontSize: 11,
-                color: Colors.white54,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.2),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      netLabel,
-                      style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w400),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      netAmount,
-                      style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: -0.5),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        child: Stack(
+          children: [
+            // Decorative background circles
+            Positioned(
+              top: -28,
+              right: -28,
+              child: Container(
+                width: 110,
+                height: 110,
                 decoration: BoxDecoration(
-                  color: (isPositive ? _green : _red).withOpacity(0.25),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: (isPositive ? _green : _red).withOpacity(0.5)),
-                ),
-                child: Text(
-                  isPositive ? 'Net +' : 'Net –',
-                  style: TextStyle(
-                      fontSize: 11,
-                      color: isPositive
-                          ? const Color(0xFF4ADE80)
-                          : const Color(0xFFFCA5A5),
-                      fontWeight: FontWeight.w600),
+                  shape: BoxShape.circle,
+                  color: accentBg.withOpacity(0.10),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _StatChip(
-                  label: 'To Receive',
-                  value: money.format(toReceive),
-                  sub: '$toReceiveCount ${toReceiveCount == 1 ? 'txn' : 'txns'}',
-                  accent: const Color(0xFF4ADE80),
+            ),
+            Positioned(
+              bottom: -20,
+              right: 40,
+              child: Container(
+                width: 70,
+                height: 70,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: _primary.withOpacity(0.07),
                 ),
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _StatChip(
-                  label: 'I Owe',
-                  value: money.format(iOwe),
-                  sub: '$iOweCount ${iOweCount == 1 ? 'txn' : 'txns'}',
-                  accent: const Color(0xFFFCA5A5),
-                ),
+            ),
+            // Content
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // Header row
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: _primary.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.account_balance_wallet_outlined,
+                          color: _primary,
+                          size: 16,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'DUES TRACKER',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.white54,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 4),
+                        decoration: BoxDecoration(
+                          color: accentBg.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: accentBg.withOpacity(0.4), width: 1),
+                        ),
+                        child: Text(
+                          isPositive ? 'Net +' : 'Net –',
+                          style: TextStyle(
+                            fontSize: 11,
+                            color: accent,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  Text(
+                    isPositive ? "You're owed" : "You owe",
+                    style: const TextStyle(
+                        fontSize: 12,
+                        color: Colors.white54,
+                        fontWeight: FontWeight.w400),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    money.format(net.abs()),
+                    style: const TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -1.0,
+                    ),
+                  ),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatChip(
+                          label: 'To Receive',
+                          value: money.format(toReceive),
+                          sub:
+                              '$toReceiveCount ${toReceiveCount == 1 ? 'txn' : 'txns'}',
+                          accent: const Color(0xFF4ADE80),
+                        ),
+                      ),
+                      const SizedBox(width: 10),
+                      Expanded(
+                        child: _StatChip(
+                          label: 'I Owe',
+                          value: money.format(iOwe),
+                          sub:
+                              '$iOweCount ${iOweCount == 1 ? 'txn' : 'txns'}',
+                          accent: const Color(0xFFFCA5A5),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
-        ],
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -395,14 +525,14 @@ class _SummaryCard extends StatelessWidget {
 class _StatChip extends StatelessWidget {
   final String label;
   final String value;
-  final String sub;
-  final Color accent;
+  final String? sub;
+  final Color? accent;
 
   const _StatChip({
     required this.label,
     required this.value,
-    required this.sub,
-    required this.accent,
+    this.sub,
+    this.accent,
   });
 
   @override
@@ -426,7 +556,7 @@ class _StatChip extends StatelessWidget {
                   fontWeight: FontWeight.w700,
                   color: accent)),
           const SizedBox(height: 1),
-          Text(sub,
+          Text(sub ?? '',
               style: const TextStyle(fontSize: 10, color: Colors.white38)),
         ],
       ),
@@ -1219,6 +1349,422 @@ class _DateTile extends StatelessWidget {
                 child: const Icon(Icons.close_rounded,
                     size: 14, color: _textTertiary),
               ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Helper Methods ─────────────────────────────────────────────────────────────
+
+String? _getHighestDebtor(Map<String, List<DueModel>> grouped) {
+  String? highestDebtor;
+  double highestAmount = 0.0;
+  
+  for (final entry in grouped.entries) {
+    final netAmount = entry.value.fold(0.0, (s, d) {
+      return d.type == 'borrowed' ? s + d.amount : s - d.amount;
+    });
+    
+    if (netAmount > highestAmount) {
+      highestAmount = netAmount;
+      highestDebtor = entry.key;
+    }
+  }
+  
+  return highestDebtor;
+}
+
+String? _getHighestCreditor(Map<String, List<DueModel>> grouped) {
+  String? highestCreditor;
+  double highestAmount = 0.0;
+  
+  for (final entry in grouped.entries) {
+    final netAmount = entry.value.fold(0.0, (s, d) {
+      return d.type == 'lent' ? s + d.amount : s - d.amount;
+    });
+    
+    if (netAmount > highestAmount) {
+      highestAmount = netAmount;
+      highestCreditor = entry.key;
+    }
+  }
+  
+  return highestCreditor;
+}
+
+// ── Page Dot ──────────────────────────────────────────────────────────────────
+
+class _PageDot extends StatelessWidget {
+  final bool active;
+  const _PageDot({required this.active});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      width: active ? 18 : 6,
+      height: 6,
+      decoration: BoxDecoration(
+        color: active ? _primary : _border,
+        borderRadius: BorderRadius.circular(3),
+      ),
+    );
+  }
+}
+
+class _PeopleAnalyticsCard extends StatelessWidget {
+  final int peopleCount;
+  final double avgPerPerson;
+  final String? highestDebtor;
+  final String? highestCreditor;
+  final NumberFormat money;
+
+  const _PeopleAnalyticsCard({
+    required this.peopleCount,
+    required this.avgPerPerson,
+    this.highestDebtor,
+    this.highestCreditor,
+    required this.money,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.all(20),
+      decoration: BoxDecoration(
+        borderRadius: BorderRadius.circular(20),
+        gradient: const LinearGradient(
+          colors: [Color(0xFF3B0764), Color(0xFF6D28D9)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: const Color(0xFF3B0764).withOpacity(0.4),
+            blurRadius: 18,
+            offset: const Offset(0, 6),
+          ),
+        ],
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          // Header with icon
+          Row(
+            children: [
+              Container(
+                padding: const EdgeInsets.all(8),
+                decoration: BoxDecoration(
+                  color: Colors.white.withOpacity(0.15),
+                  borderRadius: BorderRadius.circular(8),
+                ),
+                child: const Icon(
+                  Icons.people_alt_outlined,
+                  color: Colors.white,
+                  size: 20,
+                ),
+              ),
+              const SizedBox(width: 12),
+              const Text(
+                'People Overview',
+                style: TextStyle(
+                    fontSize: 11,
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w500,
+                    letterSpacing: 0.3),
+              ),
+            ],
+          ),
+          const SizedBox(height: 16),
+          // Visual people grid
+          Container(
+            height: 120,
+            child: Column(
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
+                  children: [
+                    _PersonAvatar(
+                      name: highestDebtor ?? 'No one',
+                      isHighlighted: true,
+                      isDebtor: true,
+                    ),
+                    const SizedBox(width: 8),
+                    _PersonAvatar(
+                      name: highestCreditor ?? 'No one',
+                      isHighlighted: true,
+                      isDebtor: false,
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 12),
+                // Stats row
+                Row(
+                  children: [
+                    Expanded(
+                      child: _MiniStatCard(
+                        icon: Icons.groups_outlined,
+                        label: 'People',
+                        value: '$peopleCount',
+                        color: Colors.white,
+                      ),
+                    ),
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: _MiniStatCard(
+                        icon: Icons.trending_up_outlined,
+                        label: 'Avg/Person',
+                        value: money.format(avgPerPerson),
+                        color: Colors.white,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _PersonAvatar({
+    required String name,
+    required bool isHighlighted,
+    required bool isDebtor,
+  }) {
+    return Container(
+      width: 50,
+      height: 50,
+      decoration: BoxDecoration(
+        gradient: LinearGradient(
+          colors: isDebtor 
+              ? [const Color(0xFF16A34A), const Color(0xFF047857)]
+              : [const Color(0xFFDC2626), const Color(0xFFB91C1C)],
+          begin: Alignment.topLeft,
+          end: Alignment.bottomRight,
+        ),
+        borderRadius: BorderRadius.circular(25),
+        border: Border.all(
+          color: isHighlighted ? Colors.white.withOpacity(0.5) : Colors.white.withOpacity(0.2),
+          width: 2,
+        ),
+        boxShadow: isHighlighted ? [
+          BoxShadow(
+            color: isDebtor ? const Color(0xFF16A34A).withOpacity(0.3) : const Color(0xFFDC2626).withOpacity(0.3),
+            blurRadius: 8,
+            offset: const Offset(0, 4),
+          ),
+        ] : null,
+      ),
+      child: Column(
+        mainAxisAlignment: MainAxisAlignment.center,
+        children: [
+          Text(
+            name.substring(0, min(2, name.length)).toUpperCase(),
+            style: const TextStyle(
+              fontSize: 14,
+              fontWeight: FontWeight.w700,
+              color: Colors.white,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Icon(
+            isDebtor ? Icons.trending_up : Icons.trending_down,
+            color: Colors.white,
+            size: 16,
+          ),
+        ],
+      ),
+    );
+  }
+
+  Widget _MiniStatCard({
+    required IconData icon,
+    required String label,
+    required String value,
+    required Color color,
+  }) {
+    return Container(
+      padding: const EdgeInsets.all(10),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.1),
+        borderRadius: BorderRadius.circular(10),
+        border: Border.all(color: Colors.white.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, color: color, size: 16),
+          const SizedBox(width: 8),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  label,
+                  style: const TextStyle(
+                    fontSize: 10,
+                    color: Colors.white70,
+                    fontWeight: FontWeight.w500,
+                  ),
+                ),
+                Text(
+                  value,
+                  style: TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: color,
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+class _DuesAnalyticsCard extends StatelessWidget {
+  final int totalDues;
+  final double totalAmount;
+  final int overdueCount;
+  final NumberFormat money;
+
+  const _DuesAnalyticsCard({
+    required this.totalDues,
+    required this.totalAmount,
+    required this.overdueCount,
+    required this.money,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final onTime = totalDues - overdueCount;
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF1E1B4B), Color(0xFF3730A3)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF1E1B4B).withOpacity(0.4),
+              blurRadius: 18,
+              offset: const Offset(0, 6),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            Positioned(
+              top: -30,
+              right: -30,
+              child: Container(
+                width: 100,
+                height: 100,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.06),
+                ),
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.all(20),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.15),
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(Icons.analytics_outlined,
+                            color: Colors.white, size: 16),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'DUES OVERVIEW',
+                        style: TextStyle(
+                          fontSize: 11,
+                          color: Colors.white54,
+                          fontWeight: FontWeight.w600,
+                          letterSpacing: 1.1,
+                        ),
+                      ),
+                      const Spacer(),
+                      if (overdueCount > 0)
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 4),
+                          decoration: BoxDecoration(
+                            color: _red.withOpacity(0.2),
+                            borderRadius: BorderRadius.circular(20),
+                            border: Border.all(
+                                color: _red.withOpacity(0.5), width: 1),
+                          ),
+                          child: Text(
+                            '$overdueCount overdue',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Color(0xFFFCA5A5),
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                    ],
+                  ),
+                  const SizedBox(height: 14),
+                  const Text(
+                    'Total outstanding',
+                    style: TextStyle(
+                        fontSize: 12,
+                        color: Colors.white54,
+                        fontWeight: FontWeight.w400),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    money.format(totalAmount),
+                    style: const TextStyle(
+                      fontSize: 30,
+                      fontWeight: FontWeight.w800,
+                      color: Colors.white,
+                      letterSpacing: -1.0,
+                    ),
+                  ),
+                  const Spacer(),
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _StatChip(
+                          label: 'Active dues',
+                          value: totalDues.toString(),
+                          sub: 'total',
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _StatChip(
+                          label: 'On time',
+                          value: onTime.toString(),
+                          sub: 'of $totalDues',
+                          accent: const Color(0xFF818CF8),
+                        ),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
           ],
         ),
       ),

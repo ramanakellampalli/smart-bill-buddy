@@ -126,6 +126,7 @@ class UserProvider extends ChangeNotifier {
     bool? notificationsEnabled,
     bool? emailNotificationsEnabled,
     bool? pushNotificationsEnabled,
+    bool? dueRemindersEnabled,
   }) async {
     if (_profile == null) return;
 
@@ -136,6 +137,7 @@ class UserProvider extends ChangeNotifier {
         notificationsEnabled: notificationsEnabled,
         emailNotificationsEnabled: emailNotificationsEnabled,
         pushNotificationsEnabled: pushNotificationsEnabled,
+        dueRemindersEnabled: dueRemindersEnabled,
         lastActiveAt: DateTime.now(),
       );
       await _saveUserProfile();

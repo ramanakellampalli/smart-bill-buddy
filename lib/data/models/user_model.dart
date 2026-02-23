@@ -12,6 +12,7 @@ class UserProfile {
   final bool notificationsEnabled;
   final bool emailNotificationsEnabled;
   final bool pushNotificationsEnabled;
+  final bool dueRemindersEnabled;
   final int totalBillsCreated;
   final int totalBillsPaid;
   final double totalAmountSpent;
@@ -28,6 +29,7 @@ class UserProfile {
     this.notificationsEnabled = true,
     this.emailNotificationsEnabled = true,
     this.pushNotificationsEnabled = true,
+    this.dueRemindersEnabled = true,
     this.totalBillsCreated = 0,
     this.totalBillsPaid = 0,
     this.totalAmountSpent = 0.0,
@@ -41,6 +43,7 @@ class UserProfile {
     bool? notificationsEnabled,
     bool? emailNotificationsEnabled,
     bool? pushNotificationsEnabled,
+    bool? dueRemindersEnabled,
     int? totalBillsCreated,
     int? totalBillsPaid,
     double? totalAmountSpent,
@@ -58,6 +61,7 @@ class UserProfile {
       notificationsEnabled: notificationsEnabled ?? this.notificationsEnabled,
       emailNotificationsEnabled: emailNotificationsEnabled ?? this.emailNotificationsEnabled,
       pushNotificationsEnabled: pushNotificationsEnabled ?? this.pushNotificationsEnabled,
+      dueRemindersEnabled: dueRemindersEnabled ?? this.dueRemindersEnabled,
       totalBillsCreated: totalBillsCreated ?? this.totalBillsCreated,
       totalBillsPaid: totalBillsPaid ?? this.totalBillsPaid,
       totalAmountSpent: totalAmountSpent ?? this.totalAmountSpent,
@@ -77,6 +81,7 @@ class UserProfile {
       'notificationsEnabled': notificationsEnabled,
       'emailNotificationsEnabled': emailNotificationsEnabled,
       'pushNotificationsEnabled': pushNotificationsEnabled,
+      'dueRemindersEnabled': dueRemindersEnabled,
       'totalBillsCreated': totalBillsCreated,
       'totalBillsPaid': totalBillsPaid,
       'totalAmountSpent': totalAmountSpent,
@@ -101,6 +106,7 @@ class UserProfile {
       notificationsEnabled: map['notificationsEnabled'] as bool? ?? true,
       emailNotificationsEnabled: map['emailNotificationsEnabled'] as bool? ?? true,
       pushNotificationsEnabled: map['pushNotificationsEnabled'] as bool? ?? true,
+      dueRemindersEnabled: map['dueRemindersEnabled'] as bool? ?? true,
       totalBillsCreated: map['totalBillsCreated'] as int? ?? 0,
       totalBillsPaid: map['totalBillsPaid'] as int? ?? 0,
       totalAmountSpent: (map['totalAmountSpent'] as num?)?.toDouble() ?? 0.0,
