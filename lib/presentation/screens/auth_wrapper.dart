@@ -3,6 +3,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../state/bills_provider.dart';
 import '../state/user_provider.dart';
+import '../../services/biometric_service.dart';
 import 'login_screen.dart';
 import 'home_shell.dart';
 
@@ -33,11 +34,172 @@ class AuthWrapper extends StatelessWidget {
             return const _SplashScreen();
           }
 
-          return const HomeShell();
+          return const _BiometricGate();
         }
 
         return const LoginScreen();
       },
+    );
+  }
+}
+
+// ── Biometric Gate ─────────────────────────────────────────────────────────────
+// Shown when Firebase session is alive. If biometric is enabled, prompt the
+// user before revealing HomeShell. Otherwise pass straight through to HomeShell.
+
+class _BiometricGate extends StatefulWidget {
+  const _BiometricGate();
+
+  @override
+  State<_BiometricGate> createState() => _BiometricGateState();
+}
+
+class _BiometricGateState extends State<_BiometricGate> {
+  // null = still checking, true = unlocked, false = locked (prompt shown)
+  bool? _unlocked;
+  bool _authenticating = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _checkAndPrompt();
+  }
+
+  Future<void> _checkAndPrompt() async {
+    final enabled = await BiometricService.isEnabled();
+    if (!enabled) {
+      if (mounted) setState(() => _unlocked = true);
+      return;
+    }
+    // Biometric is required — show lock screen then prompt
+    if (mounted) setState(() => _unlocked = false);
+    await _authenticate();
+  }
+
+  Future<void> _authenticate() async {
+    if (_authenticating) return;
+    if (mounted) setState(() => _authenticating = true);
+    final ok = await BiometricService.authenticate();
+    if (!mounted) return;
+    setState(() {
+      _authenticating = false;
+      if (ok) _unlocked = true;
+    });
+  }
+
+  Future<void> _usePasswordInstead() async {
+    await FirebaseAuth.instance.signOut();
+    // Stream rebuilds → LoginScreen shown
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    if (_unlocked == null) return const _SplashScreen();
+    if (_unlocked == true) return const HomeShell();
+    return _LockScreen(
+      authenticating: _authenticating,
+      onRetry: _authenticate,
+      onUsePassword: _usePasswordInstead,
+    );
+  }
+}
+
+// ── Lock Screen ────────────────────────────────────────────────────────────────
+
+class _LockScreen extends StatelessWidget {
+  final bool authenticating;
+  final VoidCallback onRetry;
+  final VoidCallback onUsePassword;
+
+  const _LockScreen({
+    required this.authenticating,
+    required this.onRetry,
+    required this.onUsePassword,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Scaffold(
+      backgroundColor: const Color(0xFFFAF8F5),
+      body: SafeArea(
+        child: Center(
+          child: Padding(
+            padding: const EdgeInsets.symmetric(horizontal: 40),
+            child: Column(
+              mainAxisSize: MainAxisSize.min,
+              children: [
+                Image.asset('assets/icons/icon-512.png', width: 72, height: 72),
+                const SizedBox(height: 20),
+                const Text(
+                  'Bill Buddy',
+                  style: TextStyle(
+                    fontSize: 26,
+                    fontWeight: FontWeight.w800,
+                    color: Color(0xFF1C1917),
+                    letterSpacing: -0.5,
+                  ),
+                ),
+                const SizedBox(height: 8),
+                const Text(
+                  'Verify your identity to continue',
+                  style: TextStyle(fontSize: 14, color: Color(0xFF78716C)),
+                  textAlign: TextAlign.center,
+                ),
+                const SizedBox(height: 48),
+                GestureDetector(
+                  onTap: authenticating ? null : onRetry,
+                  child: Container(
+                    width: 80,
+                    height: 80,
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFF97316).withOpacity(0.10),
+                      shape: BoxShape.circle,
+                      border: Border.all(
+                        color: const Color(0xFFF97316).withOpacity(0.30),
+                        width: 2,
+                      ),
+                    ),
+                    child: authenticating
+                        ? const Padding(
+                            padding: EdgeInsets.all(24),
+                            child: CircularProgressIndicator(
+                              strokeWidth: 2.5,
+                              color: Color(0xFFF97316),
+                            ),
+                          )
+                        : const Icon(
+                            Icons.fingerprint_rounded,
+                            size: 40,
+                            color: Color(0xFFF97316),
+                          ),
+                  ),
+                ),
+                const SizedBox(height: 20),
+                Text(
+                  authenticating ? 'Authenticating…' : 'Tap to authenticate',
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: Color(0xFF1C1917),
+                  ),
+                ),
+                const SizedBox(height: 40),
+                TextButton(
+                  onPressed: onUsePassword,
+                  child: const Text(
+                    'Use password instead',
+                    style: TextStyle(
+                      fontSize: 14,
+                      color: Color(0xFF78716C),
+                      decoration: TextDecoration.underline,
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+      ),
     );
   }
 }
@@ -54,11 +216,11 @@ class _SplashScreen extends StatelessWidget {
       body: Center(
         child: Column(
           mainAxisSize: MainAxisSize.min,
-          children: [
+          children: const [
             Row(
               mainAxisSize: MainAxisSize.min,
               crossAxisAlignment: CrossAxisAlignment.center,
-              children: const [
+              children: [
                 _LogoBox(),
                 SizedBox(width: 14),
                 Text(

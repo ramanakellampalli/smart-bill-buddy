@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../state/user_provider.dart';
+import '../../services/biometric_service.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 
@@ -128,7 +129,10 @@ class _LoginScreenState extends State<LoginScreen>
       );
       if (mounted) {
         await context.read<UserProvider>().loadUserProfile(auth.currentUser!.uid);
-        Navigator.pushReplacementNamed(context, widget.redirectRoute ?? '/home');
+        await _offerBiometric();
+        if (mounted) {
+          Navigator.pushNamedAndRemoveUntil(context, '/home', (route) => false);
+        }
       }
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
@@ -136,6 +140,98 @@ class _LoginScreenState extends State<LoginScreen>
     } catch (_) {
       if (!mounted) return;
       setState(() { _loginLoading = false; _loginError = 'An unexpected error occurred.'; });
+    }
+  }
+
+  // ── Offer Biometric ────────────────────────────────────────────────────────
+  // Called once after a successful email/password login. If the device supports
+  // biometrics and the user hasn't set a preference yet, show a one-time prompt.
+
+  Future<void> _offerBiometric() async {
+    final alreadyEnabled = await BiometricService.isEnabled();
+    if (alreadyEnabled) return;
+
+    final available = await BiometricService.isAvailable();
+    if (!available) return;
+
+    if (!mounted) return;
+
+    final enable = await showModalBottomSheet<bool>(
+      context: context,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => Padding(
+        padding: const EdgeInsets.fromLTRB(24, 16, 24, 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              width: 36, height: 4,
+              decoration: BoxDecoration(
+                color: const Color(0xFFEDE6DC),
+                borderRadius: BorderRadius.circular(2),
+              ),
+            ),
+            const SizedBox(height: 24),
+            Container(
+              width: 60, height: 60,
+              decoration: BoxDecoration(
+                color: const Color(0xFFF97316).withOpacity(0.10),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(Icons.fingerprint_rounded,
+                  size: 32, color: Color(0xFFF97316)),
+            ),
+            const SizedBox(height: 16),
+            const Text(
+              'Enable Biometric Login?',
+              style: TextStyle(
+                fontSize: 18, fontWeight: FontWeight.w700,
+                color: Color(0xFF1C1917),
+              ),
+            ),
+            const SizedBox(height: 8),
+            const Text(
+              'Use your fingerprint or face ID to unlock the app next time instead of typing your password.',
+              style: TextStyle(fontSize: 14, color: Color(0xFF78716C), height: 1.5),
+              textAlign: TextAlign.center,
+            ),
+            const SizedBox(height: 28),
+            SizedBox(
+              width: double.infinity,
+              child: ElevatedButton(
+                onPressed: () => Navigator.pop(context, true),
+                style: ElevatedButton.styleFrom(
+                  backgroundColor: const Color(0xFFF97316),
+                  foregroundColor: Colors.white,
+                  padding: const EdgeInsets.symmetric(vertical: 15),
+                  elevation: 0,
+                  shape: RoundedRectangleBorder(
+                      borderRadius: BorderRadius.circular(14)),
+                ),
+                child: const Text('Enable',
+                    style: TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w700)),
+              ),
+            ),
+            const SizedBox(height: 10),
+            SizedBox(
+              width: double.infinity,
+              child: TextButton(
+                onPressed: () => Navigator.pop(context, false),
+                child: const Text('Not now',
+                    style: TextStyle(fontSize: 14, color: Color(0xFF78716C))),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+
+    if (enable == true) {
+      await BiometricService.setEnabled(true);
     }
   }
 

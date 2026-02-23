@@ -7,6 +7,7 @@ import '../state/app_settings_provider.dart';
 import '../state/user_provider.dart';
 import '../widgets/auth_guard.dart';
 import '../../services/notification_service.dart';
+import '../../services/biometric_service.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 
@@ -33,8 +34,48 @@ class SettingsScreen extends StatelessWidget {
   }
 }
 
-class _SettingsScreenContent extends StatelessWidget {
+class _SettingsScreenContent extends StatefulWidget {
   const _SettingsScreenContent({super.key});
+
+  @override
+  State<_SettingsScreenContent> createState() => _SettingsScreenContentState();
+}
+
+class _SettingsScreenContentState extends State<_SettingsScreenContent> {
+  bool _biometricAvailable = false;
+  bool _biometricEnabled = false;
+  bool _biometricLoading = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _loadBiometricState();
+  }
+
+  Future<void> _loadBiometricState() async {
+    final available = await BiometricService.isAvailable();
+    final enabled = await BiometricService.isEnabled();
+    if (mounted) {
+      setState(() {
+        _biometricAvailable = available;
+        _biometricEnabled = enabled;
+      });
+    }
+  }
+
+  Future<void> _toggleBiometric(bool value) async {
+    if (_biometricLoading) return;
+    if (value) {
+      // Verify with biometric before enabling
+      setState(() => _biometricLoading = true);
+      final ok = await BiometricService.authenticate(
+          reason: 'Confirm your identity to enable biometric login');
+      setState(() => _biometricLoading = false);
+      if (!ok) return;
+    }
+    await BiometricService.setEnabled(value);
+    if (mounted) setState(() => _biometricEnabled = value);
+  }
 
   @override
   Widget build(BuildContext context) {
@@ -76,6 +117,24 @@ class _SettingsScreenContent extends StatelessWidget {
             subtitle: 'Set bill payment reminders',
             onTap: () => _showRemindersSheet(context),
           ),
+          const SizedBox(height: 24),
+
+          // Security Section
+          _SectionHeader(title: 'Security'),
+          const SizedBox(height: 8),
+          if (_biometricAvailable)
+            _BiometricToggleTile(
+              enabled: _biometricEnabled,
+              loading: _biometricLoading,
+              onChanged: _toggleBiometric,
+            ),
+          if (!_biometricAvailable)
+            _SettingsTile(
+              icon: Icons.fingerprint_rounded,
+              title: 'Biometric Login',
+              subtitle: 'Not available on this device',
+              onTap: () {},
+            ),
           const SizedBox(height: 24),
 
           // Preferences Section
@@ -218,6 +277,85 @@ class _SettingsTile extends StatelessWidget {
               ),
             ],
           ),
+        ),
+      ),
+    );
+  }
+}
+
+class _BiometricToggleTile extends StatelessWidget {
+  final bool enabled;
+  final bool loading;
+  final ValueChanged<bool> onChanged;
+
+  const _BiometricToggleTile({
+    required this.enabled,
+    required this.loading,
+    required this.onChanged,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+      ),
+      child: Padding(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 4),
+        child: Row(
+          children: [
+            Container(
+              width: 40,
+              height: 40,
+              decoration: BoxDecoration(
+                color: _primary.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.fingerprint_rounded,
+                  color: _primary, size: 20),
+            ),
+            const SizedBox(width: 16),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Biometric Login',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w600,
+                      color: _textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    enabled
+                        ? 'Fingerprint / Face ID enabled'
+                        : 'Use fingerprint or face ID to unlock',
+                    style: const TextStyle(
+                      fontSize: 13,
+                      color: _textSecondary,
+                    ),
+                  ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            loading
+                ? const SizedBox(
+                    width: 20,
+                    height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2, color: _primary),
+                  )
+                : Switch(
+                    value: enabled,
+                    onChanged: onChanged,
+                    activeColor: _primary,
+                  ),
+          ],
         ),
       ),
     );
