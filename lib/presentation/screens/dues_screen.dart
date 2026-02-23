@@ -170,7 +170,7 @@ class _DuesScreenState extends State<DuesScreen> {
                     mainAxisSize: MainAxisSize.min,
                     children: [
                       SizedBox(
-                        height: 220,
+                        height: 172,
                         child: PageView(
                           controller: _analyticsPageCtrl,
                           onPageChanged: (i) =>
@@ -349,6 +349,7 @@ class _DuesScreenState extends State<DuesScreen> {
 }
 
 // ── Summary Card ───────────────────────────────────────────────────────────────
+// Visual: proportional split-bar showing lent vs borrowed ratio
 
 class _SummaryCard extends StatelessWidget {
   final double net;
@@ -370,8 +371,9 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPositive = net >= 0;
-    final accent = isPositive ? const Color(0xFF4ADE80) : const Color(0xFFFCA5A5);
-    final accentBg = isPositive ? _green : _red;
+    final netColor =
+        isPositive ? const Color(0xFF4ADE80) : const Color(0xFFFCA5A5);
+    final total = toReceive + iOwe;
 
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
@@ -379,141 +381,143 @@ class _SummaryCard extends StatelessWidget {
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           gradient: const LinearGradient(
-            colors: [Color(0xFF1C1917), Color(0xFF3C3330)],
+            colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1C1917).withOpacity(0.35),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
+              color: const Color(0xFF0F172A).withOpacity(0.55),
+              blurRadius: 22,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: Stack(
           children: [
-            // Decorative background circles
+            // Ambient glow circle behind the number
             Positioned(
-              top: -28,
-              right: -28,
+              top: -45,
+              right: -45,
               child: Container(
-                width: 110,
-                height: 110,
+                width: 160,
+                height: 160,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: accentBg.withOpacity(0.10),
+                  color: netColor.withOpacity(0.07),
                 ),
               ),
             ),
-            Positioned(
-              bottom: -20,
-              right: 40,
-              child: Container(
-                width: 70,
-                height: 70,
-                decoration: BoxDecoration(
-                  shape: BoxShape.circle,
-                  color: _primary.withOpacity(0.07),
-                ),
-              ),
-            ),
-            // Content
-            Padding(
-              padding: const EdgeInsets.all(20),
+            // Positioned.fill gives the Column tight constraints so Spacer works
+            Positioned.fill(
+              child: Padding(
+              padding: const EdgeInsets.all(14),
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
-                  // Header row
+                  // ── Header ──────────────────────────────────────────────
                   Row(
                     children: [
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: _primary.withOpacity(0.18),
-                          borderRadius: BorderRadius.circular(8),
+                          color: _primary.withOpacity(0.22),
+                          borderRadius: BorderRadius.circular(9),
                         ),
                         child: const Icon(
-                          Icons.account_balance_wallet_outlined,
+                          Icons.account_balance_wallet_rounded,
                           color: _primary,
-                          size: 16,
+                          size: 14,
                         ),
                       ),
                       const SizedBox(width: 8),
                       const Text(
-                        'DUES TRACKER',
+                        'NET BALANCE',
                         style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.white54,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.1,
+                          fontSize: 10,
+                          color: Colors.white38,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.5,
                         ),
                       ),
                       const Spacer(),
                       Container(
                         padding: const EdgeInsets.symmetric(
-                            horizontal: 8, vertical: 4),
+                            horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: accentBg.withOpacity(0.18),
+                          color: netColor.withOpacity(0.16),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                              color: accentBg.withOpacity(0.4), width: 1),
+                              color: netColor.withOpacity(0.35), width: 1),
                         ),
                         child: Text(
-                          isPositive ? 'Net +' : 'Net –',
+                          isPositive ? '▲ ahead' : '▼ behind',
                           style: TextStyle(
-                            fontSize: 11,
-                            color: accent,
-                            fontWeight: FontWeight.w600,
+                            fontSize: 10,
+                            color: netColor,
+                            fontWeight: FontWeight.w700,
                           ),
                         ),
                       ),
                     ],
                   ),
-                  const SizedBox(height: 14),
-                  Text(
-                    isPositive ? "You're owed" : "You owe",
-                    style: const TextStyle(
-                        fontSize: 12,
-                        color: Colors.white54,
-                        fontWeight: FontWeight.w400),
-                  ),
-                  const SizedBox(height: 2),
+
+                  const SizedBox(height: 8),
+
+                  // ── Hero amount ──────────────────────────────────────────
                   Text(
                     money.format(net.abs()),
-                    style: const TextStyle(
-                      fontSize: 30,
+                    style: TextStyle(
+                      fontSize: 28,
                       fontWeight: FontWeight.w800,
-                      color: Colors.white,
+                      color: netColor,
                       letterSpacing: -1.0,
                     ),
                   ),
+                  Text(
+                    isPositive ? 'overall in your favor' : 'you owe net',
+                    style: const TextStyle(fontSize: 11, color: Colors.white38),
+                  ),
+
                   const Spacer(),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _StatChip(
-                          label: 'To Receive',
-                          value: money.format(toReceive),
-                          sub:
-                              '$toReceiveCount ${toReceiveCount == 1 ? 'txn' : 'txns'}',
-                          accent: const Color(0xFF4ADE80),
+
+                  // ── Proportional split bar ───────────────────────────────
+                  if (total > 0) ...[
+                    LayoutBuilder(
+                      builder: (_, c) => SizedBox(
+                        height: 7,
+                        width: c.maxWidth,
+                        child: CustomPaint(
+                          painter: _SplitBarPainter(
+                              lent: toReceive, borrowed: iOwe),
                         ),
                       ),
-                      const SizedBox(width: 10),
-                      Expanded(
-                        child: _StatChip(
-                          label: 'I Owe',
-                          value: money.format(iOwe),
-                          sub:
-                              '$iOweCount ${iOweCount == 1 ? 'txn' : 'txns'}',
-                          accent: const Color(0xFFFCA5A5),
-                        ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+
+                  // ── Labels below bar ─────────────────────────────────────
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _BarLabel(
+                        color: const Color(0xFF4ADE80),
+                        amount: money.format(toReceive),
+                        count: toReceiveCount,
+                        label: 'To Receive',
+                      ),
+                      _BarLabel(
+                        color: const Color(0xFFFCA5A5),
+                        amount: money.format(iOwe),
+                        count: iOweCount,
+                        label: 'I Owe',
+                        alignRight: true,
                       ),
                     ],
                   ),
                 ],
               ),
+            ),
             ),
           ],
         ),
@@ -522,44 +526,50 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-class _StatChip extends StatelessWidget {
+class _BarLabel extends StatelessWidget {
+  final Color color;
+  final String amount;
+  final int count;
   final String label;
-  final String value;
-  final String? sub;
-  final Color? accent;
+  final bool alignRight;
 
-  const _StatChip({
+  const _BarLabel({
+    required this.color,
+    required this.amount,
+    required this.count,
     required this.label,
-    required this.value,
-    this.sub,
-    this.accent,
+    this.alignRight = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: const TextStyle(fontSize: 11, color: Colors.white60)),
-          const SizedBox(height: 4),
-          Text(value,
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: accent)),
-          const SizedBox(height: 1),
-          Text(sub ?? '',
-              style: const TextStyle(fontSize: 10, color: Colors.white38)),
-        ],
-      ),
+    final dot = Container(
+      width: 8,
+      height: 8,
+      decoration:
+          BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
+    );
+    final amtText = Text(
+      amount,
+      style: TextStyle(
+          fontSize: 13, fontWeight: FontWeight.w700, color: color),
+    );
+    return Column(
+      crossAxisAlignment:
+          alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: alignRight
+              ? [amtText, const SizedBox(width: 5), dot]
+              : [dot, const SizedBox(width: 5), amtText],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          '$count ${count == 1 ? 'txn' : 'txns'} · $label',
+          style: const TextStyle(fontSize: 10, color: Colors.white38),
+        ),
+      ],
     );
   }
 }
@@ -1414,6 +1424,10 @@ class _PageDot extends StatelessWidget {
   }
 }
 
+// ── People Analytics Card ───────────────────────────────────────────────────────
+// Visual: two highlighted person tiles (highest creditor / highest debtor)
+// Palette: warm amber/rust
+
 class _PeopleAnalyticsCard extends StatelessWidget {
   final int peopleCount;
   final double avgPerPerson;
@@ -1431,201 +1445,138 @@ class _PeopleAnalyticsCard extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.all(20),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF3B0764), Color(0xFF6D28D9)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF3B0764).withOpacity(0.4),
-            blurRadius: 18,
-            offset: const Offset(0, 6),
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF7C2D12), Color(0xFFC2410C)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
           ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Header with icon
-          Row(
-            children: [
-              Container(
-                padding: const EdgeInsets.all(8),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF7C2D12).withOpacity(0.55),
+              blurRadius: 22,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Decorative ambient circle
+            Positioned(
+              bottom: -35,
+              left: -35,
+              child: Container(
+                width: 130,
+                height: 130,
                 decoration: BoxDecoration(
-                  color: Colors.white.withOpacity(0.15),
-                  borderRadius: BorderRadius.circular(8),
-                ),
-                child: const Icon(
-                  Icons.people_alt_outlined,
-                  color: Colors.white,
-                  size: 20,
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.05),
                 ),
               ),
-              const SizedBox(width: 12),
-              const Text(
-                'People Overview',
-                style: TextStyle(
-                    fontSize: 11,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w500,
-                    letterSpacing: 0.3),
+            ),
+            Positioned.fill(
+              child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Header ────────────────────────────────────────────────
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: const Icon(Icons.people_rounded,
+                            color: Colors.white, size: 14),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'CONNECTIONS',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.white38,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '$peopleCount ${peopleCount == 1 ? 'person' : 'people'}',
+                          style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // ── Two person highlight tiles ────────────────────────────
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _PersonHighlight(
+                          name: highestCreditor ?? '',
+                          label: 'Owes you most',
+                          color: const Color(0xFF4ADE80),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _PersonHighlight(
+                          name: highestDebtor ?? '',
+                          label: 'You owe most',
+                          color: const Color(0xFFFCA5A5),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const Spacer(),
+
+                  // ── Avg row ───────────────────────────────────────────────
+                  Row(
+                    children: [
+                      const Icon(Icons.trending_flat_rounded,
+                          color: Colors.white38, size: 13),
+                      const SizedBox(width: 5),
+                      Text(
+                        'Avg per person: ${money.format(avgPerPerson)}',
+                        style: const TextStyle(
+                            fontSize: 10, color: Colors.white54),
+                      ),
+                    ],
+                  ),
+                ],
               ),
-            ],
-          ),
-          const SizedBox(height: 16),
-          // Visual people grid
-          Container(
-            height: 120,
-            child: Column(
-              children: [
-                Row(
-                  mainAxisAlignment: MainAxisAlignment.spaceEvenly,
-                  children: [
-                    _PersonAvatar(
-                      name: highestDebtor ?? 'No one',
-                      isHighlighted: true,
-                      isDebtor: true,
-                    ),
-                    const SizedBox(width: 8),
-                    _PersonAvatar(
-                      name: highestCreditor ?? 'No one',
-                      isHighlighted: true,
-                      isDebtor: false,
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 12),
-                // Stats row
-                Row(
-                  children: [
-                    Expanded(
-                      child: _MiniStatCard(
-                        icon: Icons.groups_outlined,
-                        label: 'People',
-                        value: '$peopleCount',
-                        color: Colors.white,
-                      ),
-                    ),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: _MiniStatCard(
-                        icon: Icons.trending_up_outlined,
-                        label: 'Avg/Person',
-                        value: money.format(avgPerPerson),
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-              ],
             ),
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _PersonAvatar({
-    required String name,
-    required bool isHighlighted,
-    required bool isDebtor,
-  }) {
-    return Container(
-      width: 50,
-      height: 50,
-      decoration: BoxDecoration(
-        gradient: LinearGradient(
-          colors: isDebtor 
-              ? [const Color(0xFF16A34A), const Color(0xFF047857)]
-              : [const Color(0xFFDC2626), const Color(0xFFB91C1C)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+            ),
+          ],
         ),
-        borderRadius: BorderRadius.circular(25),
-        border: Border.all(
-          color: isHighlighted ? Colors.white.withOpacity(0.5) : Colors.white.withOpacity(0.2),
-          width: 2,
-        ),
-        boxShadow: isHighlighted ? [
-          BoxShadow(
-            color: isDebtor ? const Color(0xFF16A34A).withOpacity(0.3) : const Color(0xFFDC2626).withOpacity(0.3),
-            blurRadius: 8,
-            offset: const Offset(0, 4),
-          ),
-        ] : null,
-      ),
-      child: Column(
-        mainAxisAlignment: MainAxisAlignment.center,
-        children: [
-          Text(
-            name.substring(0, min(2, name.length)).toUpperCase(),
-            style: const TextStyle(
-              fontSize: 14,
-              fontWeight: FontWeight.w700,
-              color: Colors.white,
-            ),
-          ),
-          const SizedBox(height: 2),
-          Icon(
-            isDebtor ? Icons.trending_up : Icons.trending_down,
-            color: Colors.white,
-            size: 16,
-          ),
-        ],
-      ),
-    );
-  }
-
-  Widget _MiniStatCard({
-    required IconData icon,
-    required String label,
-    required String value,
-    required Color color,
-  }) {
-    return Container(
-      padding: const EdgeInsets.all(10),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.1),
-        borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white.withOpacity(0.2)),
-      ),
-      child: Row(
-        children: [
-          Icon(icon, color: color, size: 16),
-          const SizedBox(width: 8),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: const TextStyle(
-                    fontSize: 10,
-                    color: Colors.white70,
-                    fontWeight: FontWeight.w500,
-                  ),
-                ),
-                Text(
-                  value,
-                  style: TextStyle(
-                    fontSize: 14,
-                    fontWeight: FontWeight.w700,
-                    color: color,
-                  ),
-                ),
-              ],
-            ),
-          ),
-        ],
       ),
     );
   }
 }
+
+// ── Dues Analytics Card ─────────────────────────────────────────────────────────
+// Visual: two bold hero counts (on-time vs overdue) + proportion bar + amount footer
+// Palette: deep indigo
 
 class _DuesAnalyticsCard extends StatelessWidget {
   final int totalDues;
@@ -1643,126 +1594,196 @@ class _DuesAnalyticsCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final onTime = totalDues - overdueCount;
+
     return ClipRRect(
       borderRadius: BorderRadius.circular(20),
       child: Container(
         decoration: BoxDecoration(
           borderRadius: BorderRadius.circular(20),
           gradient: const LinearGradient(
-            colors: [Color(0xFF1E1B4B), Color(0xFF3730A3)],
+            colors: [Color(0xFF312E81), Color(0xFF4338CA)],
             begin: Alignment.topLeft,
             end: Alignment.bottomRight,
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF1E1B4B).withOpacity(0.4),
-              blurRadius: 18,
-              offset: const Offset(0, 6),
+              color: const Color(0xFF312E81).withOpacity(0.55),
+              blurRadius: 22,
+              offset: const Offset(0, 8),
             ),
           ],
         ),
         child: Stack(
           children: [
+            // Decorative circle
             Positioned(
-              top: -30,
+              bottom: -30,
               right: -30,
               child: Container(
-                width: 100,
-                height: 100,
+                width: 110,
+                height: 110,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
                   color: Colors.white.withOpacity(0.06),
                 ),
               ),
             ),
-            Padding(
-              padding: const EdgeInsets.all(20),
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Row(
-                    children: [
-                      Container(
-                        padding: const EdgeInsets.all(6),
-                        decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.15),
-                          borderRadius: BorderRadius.circular(8),
+            Positioned.fill(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Header ──────────────────────────────────────────────
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.18),
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                          child: const Icon(Icons.bar_chart_rounded,
+                              color: Colors.white, size: 14),
                         ),
-                        child: const Icon(Icons.analytics_outlined,
-                            color: Colors.white, size: 16),
-                      ),
-                      const SizedBox(width: 8),
-                      const Text(
-                        'DUES OVERVIEW',
-                        style: TextStyle(
-                          fontSize: 11,
-                          color: Colors.white54,
-                          fontWeight: FontWeight.w600,
-                          letterSpacing: 1.1,
+                        const SizedBox(width: 8),
+                        const Text(
+                          'ACTIVITY',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.white38,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.5,
+                          ),
                         ),
-                      ),
-                      const Spacer(),
-                      if (overdueCount > 0)
+                        const Spacer(),
                         Container(
                           padding: const EdgeInsets.symmetric(
-                              horizontal: 8, vertical: 4),
+                              horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: _red.withOpacity(0.2),
+                            color: Colors.white.withOpacity(0.14),
                             borderRadius: BorderRadius.circular(20),
-                            border: Border.all(
-                                color: _red.withOpacity(0.5), width: 1),
                           ),
                           child: Text(
-                            '$overdueCount overdue',
+                            '$totalDues ${totalDues == 1 ? 'due' : 'dues'} active',
                             style: const TextStyle(
                               fontSize: 10,
-                              color: Color(0xFFFCA5A5),
+                              color: Colors.white70,
                               fontWeight: FontWeight.w600,
                             ),
                           ),
                         ),
-                    ],
-                  ),
-                  const SizedBox(height: 14),
-                  const Text(
-                    'Total outstanding',
-                    style: TextStyle(
-                        fontSize: 12,
-                        color: Colors.white54,
-                        fontWeight: FontWeight.w400),
-                  ),
-                  const SizedBox(height: 2),
-                  Text(
-                    money.format(totalAmount),
-                    style: const TextStyle(
-                      fontSize: 30,
-                      fontWeight: FontWeight.w800,
-                      color: Colors.white,
-                      letterSpacing: -1.0,
+                      ],
                     ),
-                  ),
-                  const Spacer(),
-                  Row(
-                    children: [
-                      Expanded(
-                        child: _StatChip(
-                          label: 'Active dues',
-                          value: totalDues.toString(),
-                          sub: 'total',
+
+                    const SizedBox(height: 10),
+
+                    // ── Two hero counts ──────────────────────────────────────
+                    Row(
+                      children: [
+                        // On-time count
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '$onTime',
+                                style: const TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF4ADE80),
+                                  letterSpacing: -1.5,
+                                  height: 1.0,
+                                ),
+                              ),
+                              const Text(
+                                'on time',
+                                style: TextStyle(
+                                    fontSize: 11, color: Colors.white54),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Divider
+                        Container(
+                          width: 1,
+                          height: 44,
+                          color: Colors.white12,
+                          margin:
+                              const EdgeInsets.symmetric(horizontal: 16),
+                        ),
+                        // Overdue count
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '$overdueCount',
+                                style: TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w800,
+                                  color: overdueCount > 0
+                                      ? const Color(0xFFFCA5A5)
+                                      : Colors.white24,
+                                  letterSpacing: -1.5,
+                                  height: 1.0,
+                                ),
+                              ),
+                              Text(
+                                'overdue',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: overdueCount > 0
+                                      ? const Color(0xFFFCA5A5)
+                                          .withOpacity(0.7)
+                                      : Colors.white38,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const Spacer(),
+
+                    // ── Proportion bar ───────────────────────────────────────
+                    LayoutBuilder(
+                      builder: (_, c) => SizedBox(
+                        height: 6,
+                        width: c.maxWidth,
+                        child: CustomPaint(
+                          painter: _SplitBarPainter(
+                            lent: onTime.toDouble(),
+                            borrowed: overdueCount.toDouble(),
+                          ),
                         ),
                       ),
-                      const SizedBox(width: 8),
-                      Expanded(
-                        child: _StatChip(
-                          label: 'On time',
-                          value: onTime.toString(),
-                          sub: 'of $totalDues',
-                          accent: const Color(0xFF818CF8),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // ── Total amount footer ──────────────────────────────────
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Total outstanding',
+                          style:
+                              TextStyle(fontSize: 10, color: Colors.white38),
                         ),
-                      ),
-                    ],
-                  ),
-                ],
+                        Text(
+                          money.format(totalAmount),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
@@ -1771,3 +1792,119 @@ class _DuesAnalyticsCard extends StatelessWidget {
     );
   }
 }
+
+// ── Supporting widgets ──────────────────────────────────────────────────────────
+
+/// Highlighted person tile used inside the People card.
+class _PersonHighlight extends StatelessWidget {
+  final String name;
+  final String label;
+  final Color color;
+
+  const _PersonHighlight({
+    required this.name,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isEmpty = name.isEmpty;
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          // Avatar circle
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              gradient: isEmpty
+                  ? null
+                  : LinearGradient(
+                      colors: [color.withOpacity(0.75), color],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+              color: isEmpty ? Colors.white12 : null,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Text(
+                isEmpty ? '?' : _initials(name),
+                style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white),
+              ),
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            isEmpty ? 'None' : name,
+            style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.white),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(fontSize: 9, color: color.withOpacity(0.85)),
+            maxLines: 1,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── CustomPainters ──────────────────────────────────────────────────────────────
+
+/// Draws a proportional two-segment bar: green (lent) | red (borrowed).
+class _SplitBarPainter extends CustomPainter {
+  final double lent;
+  final double borrowed;
+
+  const _SplitBarPainter({required this.lent, required this.borrowed});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final total = lent + borrowed;
+    if (total == 0) return;
+
+    const gap = 3.0;
+    const r = Radius.circular(5);
+    final lentW = (lent / total) * (size.width - gap);
+    final borrowedW = size.width - lentW - gap;
+
+    if (lentW > 0) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            Rect.fromLTWH(0, 0, lentW, size.height), r),
+        Paint()..color = const Color(0xFF4ADE80),
+      );
+    }
+    if (borrowedW > 0) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            Rect.fromLTWH(lentW + gap, 0, borrowedW, size.height), r),
+        Paint()..color = const Color(0xFFFCA5A5),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_SplitBarPainter old) =>
+      old.lent != lent || old.borrowed != borrowed;
+}
+
