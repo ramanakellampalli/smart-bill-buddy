@@ -5,15 +5,18 @@ import '../state/user_provider.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 
-const _bg            = Color(0xFFF5F5F5);
-const _card          = Colors.white;
-const _textPrimary   = Color(0xFF1C1917);
-const _textSecondary = Color(0xFF78716C);
-const _textTertiary  = Color(0xFFB0A9A2);
-const _red           = Color(0xFFDC2626);
-const _btnDark       = Color(0xFF1C1917);
-const _underline     = Color(0xFFE5E7EB);
-const _orange        = Color(0xFFF97316);
+const _bgStart      = Color(0xFF667EEA);
+const _bgEnd        = Color(0xFF764BA2);
+const _card         = Color(0x1AFFFFFF);
+const _glassBorder  = Color(0x33FFFFFF);
+const _textPrimary  = Colors.white;
+const _textSecondary = Color(0xCCFFFFFF);
+const _textTertiary  = Color(0x99FFFFFF);
+const _red          = Color(0xFFFF6B6B);
+const _btnGradient  = LinearGradient(colors: [Color(0xFF667EEA), Color(0xFF764BA2)]);
+const _underline    = Color(0x33FFFFFF);
+const _orange       = Color(0xFFFFB86C);
+const _socialBg     = Color(0x1AFFFFFF);
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -33,9 +36,11 @@ class _LoginScreenState extends State<LoginScreen>
   late final AnimationController _orbCtrl;
   late final AnimationController _cardCtrl;
   late final AnimationController _logoCtrl;
+  late final AnimationController _particleCtrl;
   late final Animation<double>   _cardFade;
   late final Animation<Offset>   _cardSlide;
   late final Animation<double>   _logoScale;
+  late final Animation<double>   _particleFade;
 
   // Login
   final _loginKey       = GlobalKey<FormState>();
@@ -58,6 +63,14 @@ class _LoginScreenState extends State<LoginScreen>
   void initState() {
     super.initState();
     _tabCtrl = TabController(length: 2, vsync: this);
+
+    // Particles float
+    _particleCtrl = AnimationController(
+      vsync: this,
+      duration: const Duration(seconds: 8),
+    )..repeat();
+    _particleFade = Tween<double>(begin: 0.3, end: 1.0)
+        .animate(CurvedAnimation(parent: _particleCtrl, curve: Curves.easeInOut));
 
     // Orbs drift
     _orbCtrl = AnimationController(
@@ -92,6 +105,7 @@ class _LoginScreenState extends State<LoginScreen>
     _orbCtrl.dispose();
     _cardCtrl.dispose();
     _logoCtrl.dispose();
+    _particleCtrl.dispose();
     _loginEmailCtrl.dispose();
     _loginPwCtrl.dispose();
     _signupNameCtrl.dispose();
@@ -117,8 +131,10 @@ class _LoginScreenState extends State<LoginScreen>
         Navigator.pushReplacementNamed(context, widget.redirectRoute ?? '/home');
       }
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
       setState(() { _loginLoading = false; _loginError = _authMsg(e.code); });
     } catch (_) {
+      if (!mounted) return;
       setState(() { _loginLoading = false; _loginError = 'An unexpected error occurred.'; });
     }
   }
@@ -143,8 +159,10 @@ class _LoginScreenState extends State<LoginScreen>
         Navigator.pushReplacementNamed(context, '/home');
       }
     } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
       setState(() { _signupLoading = false; _signupError = _authMsg(e.code); });
     } catch (_) {
+      if (!mounted) return;
       setState(() { _signupLoading = false; _signupError = 'An unexpected error occurred.'; });
     }
   }
@@ -170,16 +188,50 @@ class _LoginScreenState extends State<LoginScreen>
     final h = MediaQuery.of(context).size.height;
     final w = MediaQuery.of(context).size.width;
     return Scaffold(
-      backgroundColor: _bg,
-      resizeToAvoidBottomInset: true,
-      body: Column(
-        children: [
+      body: Container(
+        decoration: const BoxDecoration(
+          gradient: LinearGradient(
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+            colors: [_bgStart, _bgEnd],
+          ),
+        ),
+        child: Column(
+          children: [
           // ── Branding ──────────────────────────────────────────────────────
           SizedBox(
             height: h * 0.34,
             child: Stack(
               clipBehavior: Clip.none,
               children: [
+                // Floating particles
+                AnimatedBuilder(
+                  animation: _particleCtrl,
+                  builder: (_, __) => Stack(
+                    children: [
+                      Positioned(
+                        top: 20 + _particleCtrl.value * 30,
+                        right: 10 + _particleCtrl.value * 20,
+                        child: _Particle(size: 4, opacity: 0.6 + _particleFade.value * 0.4),
+                      ),
+                      Positioned(
+                        bottom: 30 + (1 - _particleCtrl.value) * 25,
+                        left: 15 + _particleCtrl.value * 15,
+                        child: _Particle(size: 3, opacity: 0.4 + _particleFade.value * 0.3),
+                      ),
+                      Positioned(
+                        top: h * 0.08 + _particleCtrl.value * 18,
+                        left: w * 0.25,
+                        child: _Particle(size: 5, opacity: 0.5 + _particleFade.value * 0.3),
+                      ),
+                      Positioned(
+                        top: h * 0.15 + (1 - _particleCtrl.value) * 22,
+                        right: w * 0.20,
+                        child: _Particle(size: 3.5, opacity: 0.7 + _particleFade.value * 0.2),
+                      ),
+                    ],
+                  ),
+                ),
                 // Floating orbs
                 AnimatedBuilder(
                   animation: _orbCtrl,
@@ -188,17 +240,17 @@ class _LoginScreenState extends State<LoginScreen>
                       Positioned(
                         top: 10 + _orbCtrl.value * 18,
                         right: -25,
-                        child: _Orb(size: 140, opacity: 0.07 + _orbCtrl.value * 0.03),
+                        child: _Orb(size: 140, opacity: 0.1 + _orbCtrl.value * 0.05),
                       ),
                       Positioned(
                         bottom: 5 + (1 - _orbCtrl.value) * 20,
                         left: -35,
-                        child: _Orb(size: 110, opacity: 0.05 + _orbCtrl.value * 0.02),
+                        child: _Orb(size: 110, opacity: 0.08 + _orbCtrl.value * 0.04),
                       ),
                       Positioned(
                         top: h * 0.06 + _orbCtrl.value * 12,
                         left: w * 0.35,
-                        child: _Orb(size: 55, opacity: 0.04 + _orbCtrl.value * 0.03),
+                        child: _Orb(size: 55, opacity: 0.06 + _orbCtrl.value * 0.04),
                       ),
                     ],
                   ),
@@ -222,20 +274,27 @@ class _LoginScreenState extends State<LoginScreen>
                         const Text(
                           'BILL BUDDY',
                           style: TextStyle(
-                            fontSize: 26,
+                            fontSize: 32,
                             fontWeight: FontWeight.w900,
                             color: _textPrimary,
-                            letterSpacing: 2.5,
+                            letterSpacing: 3.5,
+                            shadows: [
+                              Shadow(
+                                color: Colors.black26,
+                                offset: Offset(0, 2),
+                                blurRadius: 4,
+                              ),
+                            ],
                           ),
                         ),
-                        const SizedBox(height: 6),
+                        const SizedBox(height: 8),
                         const Text(
                           'STAY AHEAD OF YOUR BILLS',
                           style: TextStyle(
-                            fontSize: 10,
-                            fontWeight: FontWeight.w500,
+                            fontSize: 12,
+                            fontWeight: FontWeight.w600,
                             color: _textTertiary,
-                            letterSpacing: 2.4,
+                            letterSpacing: 3.0,
                           ),
                         ),
                       ],
@@ -254,9 +313,20 @@ class _LoginScreenState extends State<LoginScreen>
                 position: _cardSlide,
                 child: Container(
                   width: double.infinity,
-                  decoration: const BoxDecoration(
+                  decoration: BoxDecoration(
                     color: _card,
-                    borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
+                    borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
+                    border: Border.all(
+                      color: _glassBorder,
+                      width: 1,
+                    ),
+                    boxShadow: [
+                      BoxShadow(
+                        color: Colors.black.withOpacity(0.1),
+                        blurRadius: 20,
+                        spreadRadius: 5,
+                      ),
+                    ],
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -297,6 +367,7 @@ class _LoginScreenState extends State<LoginScreen>
             ),
           ),
         ],
+      ),
       ),
     );
   }
@@ -375,7 +446,7 @@ class _TabItem extends StatelessWidget {
             height: 3,
             width: selected ? 28 : 0,
             decoration: BoxDecoration(
-              color: _btnDark,
+              color: _textPrimary,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -459,15 +530,18 @@ class _LoginTab extends StatelessWidget {
               style: TextStyle(
                 fontSize: 13,
                 color: _textSecondary,
-                fontWeight: FontWeight.w500,
+                fontWeight: FontWeight.w600,
               ),
             ),
             if (error != null) ...[
               const SizedBox(height: 16),
               _ErrorBox(error!),
             ],
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
             _DarkButton(label: 'Login', loading: loading, onTap: onSubmit),
+            const SizedBox(height: 20),
+            const _SocialLoginRow(),
+            const SizedBox(height: 8),
             const _FeatureRow(),
           ],
         ),
@@ -561,16 +635,121 @@ class _SignupTab extends StatelessWidget {
               const SizedBox(height: 16),
               _ErrorBox(error!),
             ],
-            const SizedBox(height: 32),
+            const SizedBox(height: 24),
             _DarkButton(
               label: 'Create Account',
               loading: loading,
               onTap: onSubmit,
             ),
+            const SizedBox(height: 20),
+            const _SocialLoginRow(),
+            const SizedBox(height: 8),
             const _FeatureRow(),
           ],
         ),
       ),
+    );
+  }
+}
+
+class _ModernField extends StatefulWidget {
+  final String label;
+  final TextEditingController controller;
+  final String hint;
+  final IconData icon;
+  final bool obscure;
+  final Widget? suffix;
+  final TextInputType? keyboardType;
+  final String? Function(String?)? validator;
+
+  const _ModernField({
+    required this.label,
+    required this.controller,
+    required this.hint,
+    required this.icon,
+    this.obscure = false,
+    this.suffix,
+    this.keyboardType,
+    this.validator,
+  });
+
+  @override
+  State<_ModernField> createState() => _ModernFieldState();
+}
+
+class _ModernFieldState extends State<_ModernField> {
+  bool _isFocused = false;
+  bool _hasText = false;
+
+  @override
+  void initState() {
+    super.initState();
+    _hasText = widget.controller.text.isNotEmpty;
+    widget.controller.addListener(() {
+      final hasText = widget.controller.text.isNotEmpty;
+      if (hasText != _hasText) {
+        setState(() => _hasText = hasText);
+      }
+    });
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final labelSize = _isFocused || _hasText ? 11.0 : 14.0;
+    final labelColor = _isFocused ? _textPrimary : _textSecondary;
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        Container(
+          decoration: BoxDecoration(
+            color: Colors.white.withOpacity(0.1),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(
+              color: _isFocused ? _textPrimary.withOpacity(0.5) : _underline,
+              width: _isFocused ? 1.5 : 1.0,
+            ),
+          ),
+          child: TextFormField(
+            controller: widget.controller,
+            obscureText: widget.obscure,
+            keyboardType: widget.keyboardType,
+            style: const TextStyle(fontSize: 15, color: _textPrimary),
+            validator: widget.validator,
+            onTap: () => setState(() => _isFocused = true),
+            onTapOutside: (_) => setState(() => _isFocused = false),
+            decoration: InputDecoration(
+              hintText: widget.hint,
+              hintStyle: TextStyle(color: _textTertiary.withOpacity(0.7), fontSize: 14),
+              prefixIcon: Icon(widget.icon, color: _textTertiary, size: 20),
+              prefixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 0),
+              suffixIcon: widget.suffix != null
+                  ? Padding(padding: const EdgeInsets.only(right: 4), child: widget.suffix)
+                  : null,
+              suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
+              isDense: true,
+              contentPadding: const EdgeInsets.symmetric(vertical: 16, horizontal: 16),
+              border: InputBorder.none,
+              errorBorder: InputBorder.none,
+              focusedErrorBorder: InputBorder.none,
+              errorStyle: const TextStyle(color: _red, fontSize: 11),
+            ),
+          ),
+        ),
+        const SizedBox(height: 8),
+        AnimatedContainer(
+          duration: const Duration(milliseconds: 200),
+          curve: Curves.easeInOut,
+          child: Text(
+            widget.label,
+            style: TextStyle(
+              fontSize: labelSize,
+              fontWeight: FontWeight.w500,
+              color: labelColor,
+            ),
+          ),
+        ),
+      ],
     );
   }
 }
@@ -600,54 +779,15 @@ class _UnderlineField extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 12,
-            fontWeight: FontWeight.w500,
-            color: _textSecondary,
-          ),
-        ),
-        const SizedBox(height: 8),
-        TextFormField(
-          controller: controller,
-          obscureText: obscure,
-          keyboardType: keyboardType,
-          style: const TextStyle(fontSize: 15, color: _textPrimary),
-          validator: validator,
-          decoration: InputDecoration(
-            hintText: hint,
-            hintStyle: const TextStyle(color: _textTertiary, fontSize: 14),
-            prefixIcon: Icon(icon, color: _textTertiary, size: 20),
-            prefixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 0),
-            suffixIcon: suffix != null
-                ? Padding(padding: const EdgeInsets.only(right: 4), child: suffix)
-                : null,
-            suffixIconConstraints: const BoxConstraints(minWidth: 0, minHeight: 0),
-            isDense: true,
-            contentPadding: const EdgeInsets.symmetric(vertical: 10),
-            border: const UnderlineInputBorder(
-              borderSide: BorderSide(color: _underline),
-            ),
-            enabledBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: _underline),
-            ),
-            focusedBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: _textPrimary, width: 1.5),
-            ),
-            errorBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: _red),
-            ),
-            focusedErrorBorder: const UnderlineInputBorder(
-              borderSide: BorderSide(color: _red, width: 1.5),
-            ),
-            errorStyle: const TextStyle(color: _red, fontSize: 11),
-          ),
-        ),
-      ],
+    return _ModernField(
+      label: label,
+      controller: controller,
+      hint: hint,
+      icon: icon,
+      obscure: obscure,
+      suffix: suffix,
+      keyboardType: keyboardType,
+      validator: validator,
     );
   }
 }
@@ -662,29 +802,56 @@ class _DarkButton extends StatelessWidget {
   Widget build(BuildContext context) {
     return SizedBox(
       width: double.infinity,
-      child: ElevatedButton(
-        onPressed: loading ? null : onTap,
-        style: ElevatedButton.styleFrom(
-          backgroundColor: _btnDark,
-          disabledBackgroundColor: _btnDark.withOpacity(0.45),
-          padding: const EdgeInsets.symmetric(vertical: 17),
-          elevation: 0,
-          shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(14)),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(16),
+          boxShadow: [
+            BoxShadow(
+              color: _bgStart.withOpacity(0.3),
+              blurRadius: 12,
+              offset: const Offset(0, 4),
+            ),
+          ],
         ),
-        child: loading
-            ? const SizedBox(
-                width: 20,
-                height: 20,
-                child: CircularProgressIndicator(strokeWidth: 2.5, color: Colors.white),
-              )
-            : Text(
-                label,
-                style: const TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white,
-                ),
-              ),
+        child: ElevatedButton(
+          onPressed: loading ? null : onTap,
+          style: ElevatedButton.styleFrom(
+            backgroundColor: Colors.transparent,
+            shadowColor: Colors.transparent,
+            padding: EdgeInsets.zero,
+            shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(16)),
+          ),
+          child: Ink(
+            decoration: BoxDecoration(
+              gradient: loading 
+                  ? LinearGradient(colors: [_textTertiary.withOpacity(0.3), _textTertiary.withOpacity(0.2)])
+                  : _btnGradient,
+              borderRadius: BorderRadius.circular(16),
+            ),
+            child: Container(
+              padding: const EdgeInsets.symmetric(vertical: 18),
+              alignment: Alignment.center,
+              child: loading
+                  ? const SizedBox(
+                      width: 22,
+                      height: 22,
+                      child: CircularProgressIndicator(
+                        color: Colors.white,
+                        strokeWidth: 3,
+                      ),
+                    )
+                  : Text(
+                      label,
+                      style: const TextStyle(
+                        fontSize: 17,
+                        fontWeight: FontWeight.w800,
+                        color: Colors.white,
+                        letterSpacing: 0.5,
+                      ),
+                    ),
+            ),
+          ),
+        ),
       ),
     );
   }
@@ -717,6 +884,33 @@ class _ErrorBox extends StatelessWidget {
   }
 }
 
+// ── Floating Particle ───────────────────────────────────────────────────────────
+
+class _Particle extends StatelessWidget {
+  final double size;
+  final double opacity;
+  const _Particle({required this.size, required this.opacity});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      width: size,
+      height: size,
+      decoration: BoxDecoration(
+        shape: BoxShape.circle,
+        color: Colors.white.withOpacity(opacity),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.white.withOpacity(opacity * 0.5),
+            blurRadius: size * 2,
+            spreadRadius: size * 0.5,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
 // ── Floating Orb ──────────────────────────────────────────────────────────────
 
 class _Orb extends StatelessWidget {
@@ -731,7 +925,134 @@ class _Orb extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: _orange.withOpacity(opacity),
+        gradient: RadialGradient(
+          colors: [
+            _orange.withOpacity(opacity),
+            _orange.withOpacity(opacity * 0.3),
+          ],
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: _orange.withOpacity(opacity * 0.3),
+            blurRadius: size * 0.8,
+            spreadRadius: size * 0.2,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Social Login Row ───────────────────────────────────────────────────────────
+
+class _SocialLoginRow extends StatelessWidget {
+  const _SocialLoginRow();
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      children: [
+        Row(
+          children: [
+            Expanded(
+              child: Container(
+                height: 1,
+                color: _underline,
+              ),
+            ),
+            Padding(
+              padding: const EdgeInsets.symmetric(horizontal: 16),
+              child: Text(
+                'OR',
+                style: TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w600,
+                  color: _textTertiary,
+                  letterSpacing: 1.0,
+                ),
+              ),
+            ),
+            Expanded(
+              child: Container(
+                height: 1,
+                color: _underline,
+              ),
+            ),
+          ],
+        ),
+        const SizedBox(height: 16),
+        Row(
+          children: [
+            Expanded(
+              child: _SocialButton(
+                icon: Icons.fingerprint,
+                label: 'Biometric',
+                onTap: () {
+                  // TODO: Implement biometric login
+                },
+              ),
+            ),
+            const SizedBox(width: 12),
+            Expanded(
+              child: _SocialButton(
+                icon: Icons.message,
+                label: 'Google',
+                onTap: () {
+                  // TODO: Implement Google login
+                },
+              ),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+class _SocialButton extends StatelessWidget {
+  final IconData icon;
+  final String label;
+  final VoidCallback onTap;
+  
+  const _SocialButton({
+    required this.icon,
+    required this.label,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 12),
+        decoration: BoxDecoration(
+          color: _socialBg,
+          borderRadius: BorderRadius.circular(12),
+          border: Border.all(
+            color: _glassBorder,
+            width: 1,
+          ),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(
+              icon,
+              color: _textSecondary,
+              size: 18,
+            ),
+            const SizedBox(width: 8),
+            Text(
+              label,
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: _textSecondary,
+              ),
+            ),
+          ],
+        ),
       ),
     );
   }
@@ -817,22 +1138,34 @@ class _FeatureChip extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 7),
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: _orange.withOpacity(0.07),
+        color: _orange.withOpacity(0.15),
         borderRadius: BorderRadius.circular(20),
+        border: Border.all(
+          color: _orange.withOpacity(0.3),
+          width: 1,
+        ),
+        boxShadow: [
+          BoxShadow(
+            color: _orange.withOpacity(0.1),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 13, color: _orange),
-          const SizedBox(width: 5),
+          Icon(icon, size: 14, color: _orange),
+          const SizedBox(width: 6),
           Text(
             label,
             style: const TextStyle(
               fontSize: 11,
-              fontWeight: FontWeight.w600,
+              fontWeight: FontWeight.w700,
               color: _textSecondary,
+              letterSpacing: 0.3,
             ),
           ),
         ],

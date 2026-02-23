@@ -66,6 +66,20 @@ class DuesScreen extends StatefulWidget {
 class _DuesScreenState extends State<DuesScreen> {
   _Filter _filter = _Filter.all;
   bool _showSettled = false;
+  late final PageController _analyticsPageCtrl;
+  int _analyticsPage = 0;
+
+  @override
+  void initState() {
+    super.initState();
+    _analyticsPageCtrl = PageController();
+  }
+
+  @override
+  void dispose() {
+    _analyticsPageCtrl.dispose();
+    super.dispose();
+  }
 
   void _openAddSheet(BuildContext context, {String? personName}) {
     showModalBottomSheet(
@@ -147,123 +161,195 @@ class _DuesScreenState extends State<DuesScreen> {
           ? const Center(
               child: CircularProgressIndicator(
                   strokeWidth: 2.5, color: _primary))
-          : SelectionArea(
-              child: ListView(
-                padding: const EdgeInsets.fromLTRB(16, 4, 16, 32),
-                children: [
-                  // ── Summary card ─────────────────────────────────────────────
-                  _SummaryCard(
-                    net: net,
-                    toReceive: toReceive,
-                    iOwe: iOwe,
-                    toReceiveCount:
-                        active.where((d) => d.type == 'lent').length,
-                    iOweCount:
-                        active.where((d) => d.type == 'borrowed').length,
-                    money: money,
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ── Filter pills ─────────────────────────────────────────────
-                  Row(
+          : Column(
+              children: [
+                // ── Carousel (outside SelectionArea to avoid layout assertion) ──
+                Padding(
+                  padding: const EdgeInsets.fromLTRB(16, 4, 0, 0),
+                  child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      _FilterPill(
-                        label: 'All',
-                        count: allCount,
-                        selected: _filter == _Filter.all,
-                        onTap: () => setState(() => _filter = _Filter.all),
-                      ),
-                      const SizedBox(width: 8),
-                      _FilterPill(
-                        label: 'Owe Me',
-                        count: oweMeCount,
-                        selected: _filter == _Filter.oweMe,
-                        color: _green,
-                        onTap: () => setState(() => _filter = _Filter.oweMe),
-                      ),
-                      const SizedBox(width: 8),
-                      _FilterPill(
-                        label: 'I Owe',
-                        count: iOweCount,
-                        selected: _filter == _Filter.iOwe,
-                        color: _red,
-                        onTap: () => setState(() => _filter = _Filter.iOwe),
-                      ),
-                    ],
-                  ),
-                  const SizedBox(height: 16),
-
-                  // ── Active person cards ───────────────────────────────────────
-                  if (people.isEmpty)
-                    _EmptyState(filter: _filter)
-                  else
-                    ...people.map((name) {
-                      final txns = grouped[name]!;
-                      final netForPerson = txns.fold(0.0, (s, d) {
-                        return d.type == 'lent' ? s + d.amount : s - d.amount;
-                      });
-                      return _PersonCard(
-                        name: name,
-                        transactions: txns,
-                        net: netForPerson,
-                        money: money,
-                        onTap: () => Navigator.push(
-                          context,
-                          MaterialPageRoute(
-                            builder: (_) => PersonDuesScreen(
-                              personName: name,
-                              onAddTap: () =>
-                                  _openAddSheet(context, personName: name),
-                            ),
-                          ),
-                        ),
-                      );
-                    }),
-
-                  // ── Settled history ───────────────────────────────────────────
-                  if (settled.isNotEmpty) ...[
-                    const SizedBox(height: 8),
-                    _SettledHeader(
-                      count: settled.length,
-                      isOpen: _showSettled,
-                      onToggle: () =>
-                          setState(() => _showSettled = !_showSettled),
-                    ),
-                    if (_showSettled) ...[
-                      const SizedBox(height: 10),
-                      ...settledPeople.map((name) {
-                        final txns = settledGrouped[name]!;
-                        final netForPerson = txns.fold(0.0, (s, d) {
-                          return d.type == 'lent' ? s + d.amount : s - d.amount;
-                        });
-                        return _PersonCard(
-                          name: name,
-                          transactions: txns,
-                          net: netForPerson,
-                          money: money,
-                          isSettled: true,
-                          onTap: () => Navigator.push(
-                            context,
-                            MaterialPageRoute(
-                              builder: (_) => PersonDuesScreen(
-                                personName: name,
-                                onAddTap: () =>
-                                    _openAddSheet(context, personName: name),
+                      SizedBox(
+                        height: 172,
+                        child: PageView(
+                          controller: _analyticsPageCtrl,
+                          onPageChanged: (i) =>
+                              setState(() => _analyticsPage = i),
+                          children: [
+                            Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: _SummaryCard(
+                                net: net,
+                                toReceive: toReceive,
+                                iOwe: iOwe,
+                                toReceiveCount: active
+                                    .where((d) => d.type == 'lent')
+                                    .length,
+                                iOweCount: active
+                                    .where((d) => d.type == 'borrowed')
+                                    .length,
+                                money: money,
                               ),
                             ),
-                          ),
-                        );
-                      }),
+                            Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: _DuesAnalyticsCard(
+                                totalDues: active.length,
+                                totalAmount: toReceive + iOwe,
+                                overdueCount: active
+                                    .where((d) =>
+                                        d.dueDate != null &&
+                                        d.dueDate!.isBefore(DateTime.now()))
+                                    .length,
+                                money: money,
+                              ),
+                            ),
+                            Padding(
+                              padding: const EdgeInsets.only(right: 12),
+                              child: _PeopleAnalyticsCard(
+                                peopleCount: grouped.keys.length,
+                                avgPerPerson: grouped.keys.isNotEmpty
+                                    ? (toReceive + iOwe) / grouped.keys.length
+                                    : 0.0,
+                                highestDebtor: _getHighestDebtor(grouped),
+                                highestCreditor: _getHighestCreditor(grouped),
+                                money: money,
+                              ),
+                            ),
+                          ],
+                        ),
+                      ),
+                      const SizedBox(height: 10),
+                      Row(
+                        mainAxisAlignment: MainAxisAlignment.center,
+                        children: [
+                          _PageDot(active: _analyticsPage == 0),
+                          const SizedBox(width: 6),
+                          _PageDot(active: _analyticsPage == 1),
+                          const SizedBox(width: 6),
+                          _PageDot(active: _analyticsPage == 2),
+                        ],
+                      ),
+                      const SizedBox(height: 16),
                     ],
-                  ],
-                ],
-              ),
+                  ),
+                ),
+
+                // ── Scrollable list ───────────────────────────────────────────
+                Expanded(
+                  child: ListView(
+                      padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
+                      children: [
+                        // ── Filter pills ───────────────────────────────────────
+                        Row(
+                          children: [
+                            _FilterPill(
+                              label: 'All',
+                              count: allCount,
+                              selected: _filter == _Filter.all,
+                              onTap: () =>
+                                  setState(() => _filter = _Filter.all),
+                            ),
+                            const SizedBox(width: 8),
+                            _FilterPill(
+                              label: 'Owe Me',
+                              count: oweMeCount,
+                              selected: _filter == _Filter.oweMe,
+                              color: _green,
+                              onTap: () =>
+                                  setState(() => _filter = _Filter.oweMe),
+                            ),
+                            const SizedBox(width: 8),
+                            _FilterPill(
+                              label: 'I Owe',
+                              count: iOweCount,
+                              selected: _filter == _Filter.iOwe,
+                              color: _red,
+                              onTap: () =>
+                                  setState(() => _filter = _Filter.iOwe),
+                            ),
+                          ],
+                        ),
+                        const SizedBox(height: 16),
+
+                        // ── Active person cards ───────────────────────────────
+                        if (people.isEmpty)
+                          _EmptyState(filter: _filter)
+                        else
+                          ...people.map((name) {
+                            final txns = grouped[name]!;
+                            final netForPerson = txns.fold(0.0, (s, d) {
+                              return d.type == 'lent'
+                                  ? s + d.amount
+                                  : s - d.amount;
+                            });
+                            return _PersonCard(
+                              name: name,
+                              transactions: txns,
+                              net: netForPerson,
+                              money: money,
+                              onTap: () => Navigator.push(
+                                context,
+                                MaterialPageRoute(
+                                  builder: (_) => PersonDuesScreen(
+                                    personName: name,
+                                    onAddTap: () => _openAddSheet(context,
+                                        personName: name),
+                                  ),
+                                ),
+                              ),
+                            );
+                          }),
+
+                        // ── Settled history ───────────────────────────────────
+                        if (settled.isNotEmpty) ...[
+                          const SizedBox(height: 8),
+                          _SettledHeader(
+                            count: settled.length,
+                            isOpen: _showSettled,
+                            onToggle: () =>
+                                setState(() => _showSettled = !_showSettled),
+                          ),
+                          if (_showSettled) ...[
+                            const SizedBox(height: 10),
+                            ...settledPeople.map((name) {
+                              final txns = settledGrouped[name]!;
+                              final netForPerson = txns.fold(0.0, (s, d) {
+                                return d.type == 'lent'
+                                    ? s + d.amount
+                                    : s - d.amount;
+                              });
+                              return _PersonCard(
+                                name: name,
+                                transactions: txns,
+                                net: netForPerson,
+                                money: money,
+                                isSettled: true,
+                                onTap: () => Navigator.push(
+                                  context,
+                                  MaterialPageRoute(
+                                    builder: (_) => PersonDuesScreen(
+                                      personName: name,
+                                      onAddTap: () => _openAddSheet(context,
+                                          personName: name),
+                                    ),
+                                  ),
+                                ),
+                              );
+                            }),
+                          ],
+                        ],
+                      ],
+                    ),
+                  ),
+              ],
             ),
     );
   }
 }
 
 // ── Summary Card ───────────────────────────────────────────────────────────────
+// Visual: proportional split-bar showing lent vs borrowed ratio
 
 class _SummaryCard extends StatelessWidget {
   final double net;
@@ -285,151 +371,205 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final isPositive = net >= 0;
-    final netLabel = isPositive ? "You're owed" : "You owe";
-    final netAmount = money.format(net.abs());
+    final netColor =
+        isPositive ? const Color(0xFF4ADE80) : const Color(0xFFFCA5A5);
+    final total = toReceive + iOwe;
 
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-      decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF292524), Color(0xFF57534E)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF0F172A), Color(0xFF1E293B)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF0F172A).withOpacity(0.55),
+              blurRadius: 22,
+              offset: const Offset(0, 8),
+            ),
+          ],
         ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1C1917).withOpacity(0.22),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          const Text(
-            'DUES TRACKER',
-            style: TextStyle(
-                fontSize: 11,
-                color: Colors.white54,
-                fontWeight: FontWeight.w600,
-                letterSpacing: 1.2),
-          ),
-          const SizedBox(height: 4),
-          Row(
-            crossAxisAlignment: CrossAxisAlignment.end,
-            children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    Text(
-                      netLabel,
-                      style: const TextStyle(
-                          fontSize: 13,
-                          color: Colors.white70,
-                          fontWeight: FontWeight.w400),
-                    ),
-                    const SizedBox(height: 2),
-                    Text(
-                      netAmount,
-                      style: const TextStyle(
-                          fontSize: 26,
-                          fontWeight: FontWeight.w800,
-                          color: Colors.white,
-                          letterSpacing: -0.5),
-                    ),
-                  ],
-                ),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 5),
+        child: Stack(
+          children: [
+            // Ambient glow circle behind the number
+            Positioned(
+              top: -45,
+              right: -45,
+              child: Container(
+                width: 160,
+                height: 160,
                 decoration: BoxDecoration(
-                  color: (isPositive ? _green : _red).withOpacity(0.25),
-                  borderRadius: BorderRadius.circular(20),
-                  border: Border.all(
-                      color: (isPositive ? _green : _red).withOpacity(0.5)),
-                ),
-                child: Text(
-                  isPositive ? 'Net +' : 'Net –',
-                  style: TextStyle(
-                      fontSize: 11,
-                      color: isPositive
-                          ? const Color(0xFF4ADE80)
-                          : const Color(0xFFFCA5A5),
-                      fontWeight: FontWeight.w600),
+                  shape: BoxShape.circle,
+                  color: netColor.withOpacity(0.07),
                 ),
               ),
-            ],
-          ),
-          const SizedBox(height: 12),
-          Row(
-            children: [
-              Expanded(
-                child: _StatChip(
-                  label: 'To Receive',
-                  value: money.format(toReceive),
-                  sub: '$toReceiveCount ${toReceiveCount == 1 ? 'txn' : 'txns'}',
-                  accent: const Color(0xFF4ADE80),
-                ),
+            ),
+            // Positioned.fill gives the Column tight constraints so Spacer works
+            Positioned.fill(
+              child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Header ──────────────────────────────────────────────
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: _primary.withOpacity(0.22),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: const Icon(
+                          Icons.account_balance_wallet_rounded,
+                          color: _primary,
+                          size: 14,
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'NET BALANCE',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.white38,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: netColor.withOpacity(0.16),
+                          borderRadius: BorderRadius.circular(20),
+                          border: Border.all(
+                              color: netColor.withOpacity(0.35), width: 1),
+                        ),
+                        child: Text(
+                          isPositive ? '▲ ahead' : '▼ behind',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: netColor,
+                            fontWeight: FontWeight.w700,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // ── Hero amount ──────────────────────────────────────────
+                  Text(
+                    money.format(net.abs()),
+                    style: TextStyle(
+                      fontSize: 28,
+                      fontWeight: FontWeight.w800,
+                      color: netColor,
+                      letterSpacing: -1.0,
+                    ),
+                  ),
+                  Text(
+                    isPositive ? 'overall in your favor' : 'you owe net',
+                    style: const TextStyle(fontSize: 11, color: Colors.white38),
+                  ),
+
+                  const Spacer(),
+
+                  // ── Proportional split bar ───────────────────────────────
+                  if (total > 0) ...[
+                    LayoutBuilder(
+                      builder: (_, c) => SizedBox(
+                        height: 7,
+                        width: c.maxWidth,
+                        child: CustomPaint(
+                          painter: _SplitBarPainter(
+                              lent: toReceive, borrowed: iOwe),
+                        ),
+                      ),
+                    ),
+                    const SizedBox(height: 8),
+                  ],
+
+                  // ── Labels below bar ─────────────────────────────────────
+                  Row(
+                    mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                    children: [
+                      _BarLabel(
+                        color: const Color(0xFF4ADE80),
+                        amount: money.format(toReceive),
+                        count: toReceiveCount,
+                        label: 'To Receive',
+                      ),
+                      _BarLabel(
+                        color: const Color(0xFFFCA5A5),
+                        amount: money.format(iOwe),
+                        count: iOweCount,
+                        label: 'I Owe',
+                        alignRight: true,
+                      ),
+                    ],
+                  ),
+                ],
               ),
-              const SizedBox(width: 10),
-              Expanded(
-                child: _StatChip(
-                  label: 'I Owe',
-                  value: money.format(iOwe),
-                  sub: '$iOweCount ${iOweCount == 1 ? 'txn' : 'txns'}',
-                  accent: const Color(0xFFFCA5A5),
-                ),
-              ),
-            ],
-          ),
-        ],
+            ),
+            ),
+          ],
+        ),
       ),
     );
   }
 }
 
-class _StatChip extends StatelessWidget {
+class _BarLabel extends StatelessWidget {
+  final Color color;
+  final String amount;
+  final int count;
   final String label;
-  final String value;
-  final String sub;
-  final Color accent;
+  final bool alignRight;
 
-  const _StatChip({
+  const _BarLabel({
+    required this.color,
+    required this.amount,
+    required this.count,
     required this.label,
-    required this.value,
-    required this.sub,
-    required this.accent,
+    this.alignRight = false,
   });
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.10),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white12),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: const TextStyle(fontSize: 11, color: Colors.white60)),
-          const SizedBox(height: 4),
-          Text(value,
-              style: TextStyle(
-                  fontSize: 13,
-                  fontWeight: FontWeight.w700,
-                  color: accent)),
-          const SizedBox(height: 1),
-          Text(sub,
-              style: const TextStyle(fontSize: 10, color: Colors.white38)),
-        ],
-      ),
+    final dot = Container(
+      width: 8,
+      height: 8,
+      decoration:
+          BoxDecoration(color: color, borderRadius: BorderRadius.circular(2)),
+    );
+    final amtText = Text(
+      amount,
+      style: TextStyle(
+          fontSize: 13, fontWeight: FontWeight.w700, color: color),
+    );
+    return Column(
+      crossAxisAlignment:
+          alignRight ? CrossAxisAlignment.end : CrossAxisAlignment.start,
+      children: [
+        Row(
+          mainAxisSize: MainAxisSize.min,
+          children: alignRight
+              ? [amtText, const SizedBox(width: 5), dot]
+              : [dot, const SizedBox(width: 5), amtText],
+        ),
+        const SizedBox(height: 2),
+        Text(
+          '$count ${count == 1 ? 'txn' : 'txns'} · $label',
+          style: const TextStyle(fontSize: 10, color: Colors.white38),
+        ),
+      ],
     );
   }
 }
@@ -1225,3 +1365,546 @@ class _DateTile extends StatelessWidget {
     );
   }
 }
+
+// ── Helper Methods ─────────────────────────────────────────────────────────────
+
+String? _getHighestDebtor(Map<String, List<DueModel>> grouped) {
+  String? highestDebtor;
+  double highestAmount = 0.0;
+  
+  for (final entry in grouped.entries) {
+    final netAmount = entry.value.fold(0.0, (s, d) {
+      return d.type == 'borrowed' ? s + d.amount : s - d.amount;
+    });
+    
+    if (netAmount > highestAmount) {
+      highestAmount = netAmount;
+      highestDebtor = entry.key;
+    }
+  }
+  
+  return highestDebtor;
+}
+
+String? _getHighestCreditor(Map<String, List<DueModel>> grouped) {
+  String? highestCreditor;
+  double highestAmount = 0.0;
+  
+  for (final entry in grouped.entries) {
+    final netAmount = entry.value.fold(0.0, (s, d) {
+      return d.type == 'lent' ? s + d.amount : s - d.amount;
+    });
+    
+    if (netAmount > highestAmount) {
+      highestAmount = netAmount;
+      highestCreditor = entry.key;
+    }
+  }
+  
+  return highestCreditor;
+}
+
+// ── Page Dot ──────────────────────────────────────────────────────────────────
+
+class _PageDot extends StatelessWidget {
+  final bool active;
+  const _PageDot({required this.active});
+
+  @override
+  Widget build(BuildContext context) {
+    return AnimatedContainer(
+      duration: const Duration(milliseconds: 250),
+      width: active ? 18 : 6,
+      height: 6,
+      decoration: BoxDecoration(
+        color: active ? _primary : _border,
+        borderRadius: BorderRadius.circular(3),
+      ),
+    );
+  }
+}
+
+// ── People Analytics Card ───────────────────────────────────────────────────────
+// Visual: two highlighted person tiles (highest creditor / highest debtor)
+// Palette: warm amber/rust
+
+class _PeopleAnalyticsCard extends StatelessWidget {
+  final int peopleCount;
+  final double avgPerPerson;
+  final String? highestDebtor;
+  final String? highestCreditor;
+  final NumberFormat money;
+
+  const _PeopleAnalyticsCard({
+    required this.peopleCount,
+    required this.avgPerPerson,
+    this.highestDebtor,
+    this.highestCreditor,
+    required this.money,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF7C2D12), Color(0xFFC2410C)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF7C2D12).withOpacity(0.55),
+              blurRadius: 22,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Decorative ambient circle
+            Positioned(
+              bottom: -35,
+              left: -35,
+              child: Container(
+                width: 130,
+                height: 130,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.05),
+                ),
+              ),
+            ),
+            Positioned.fill(
+              child: Padding(
+              padding: const EdgeInsets.all(14),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Header ────────────────────────────────────────────────
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(6),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(9),
+                        ),
+                        child: const Icon(Icons.people_rounded,
+                            color: Colors.white, size: 14),
+                      ),
+                      const SizedBox(width: 8),
+                      const Text(
+                        'CONNECTIONS',
+                        style: TextStyle(
+                          fontSize: 10,
+                          color: Colors.white38,
+                          fontWeight: FontWeight.w700,
+                          letterSpacing: 1.5,
+                        ),
+                      ),
+                      const Spacer(),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 8, vertical: 3),
+                        decoration: BoxDecoration(
+                          color: Colors.white.withOpacity(0.18),
+                          borderRadius: BorderRadius.circular(20),
+                        ),
+                        child: Text(
+                          '$peopleCount ${peopleCount == 1 ? 'person' : 'people'}',
+                          style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.white,
+                              fontWeight: FontWeight.w700),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const SizedBox(height: 8),
+
+                  // ── Two person highlight tiles ────────────────────────────
+                  Row(
+                    children: [
+                      Expanded(
+                        child: _PersonHighlight(
+                          name: highestCreditor ?? '',
+                          label: 'Owes you most',
+                          color: const Color(0xFF4ADE80),
+                        ),
+                      ),
+                      const SizedBox(width: 8),
+                      Expanded(
+                        child: _PersonHighlight(
+                          name: highestDebtor ?? '',
+                          label: 'You owe most',
+                          color: const Color(0xFFFCA5A5),
+                        ),
+                      ),
+                    ],
+                  ),
+
+                  const Spacer(),
+
+                  // ── Avg row ───────────────────────────────────────────────
+                  Row(
+                    children: [
+                      const Icon(Icons.trending_flat_rounded,
+                          color: Colors.white38, size: 13),
+                      const SizedBox(width: 5),
+                      Text(
+                        'Avg per person: ${money.format(avgPerPerson)}',
+                        style: const TextStyle(
+                            fontSize: 10, color: Colors.white54),
+                      ),
+                    ],
+                  ),
+                ],
+              ),
+            ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Dues Analytics Card ─────────────────────────────────────────────────────────
+// Visual: two bold hero counts (on-time vs overdue) + proportion bar + amount footer
+// Palette: deep indigo
+
+class _DuesAnalyticsCard extends StatelessWidget {
+  final int totalDues;
+  final double totalAmount;
+  final int overdueCount;
+  final NumberFormat money;
+
+  const _DuesAnalyticsCard({
+    required this.totalDues,
+    required this.totalAmount,
+    required this.overdueCount,
+    required this.money,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final onTime = totalDues - overdueCount;
+
+    return ClipRRect(
+      borderRadius: BorderRadius.circular(20),
+      child: Container(
+        decoration: BoxDecoration(
+          borderRadius: BorderRadius.circular(20),
+          gradient: const LinearGradient(
+            colors: [Color(0xFF312E81), Color(0xFF4338CA)],
+            begin: Alignment.topLeft,
+            end: Alignment.bottomRight,
+          ),
+          boxShadow: [
+            BoxShadow(
+              color: const Color(0xFF312E81).withOpacity(0.55),
+              blurRadius: 22,
+              offset: const Offset(0, 8),
+            ),
+          ],
+        ),
+        child: Stack(
+          children: [
+            // Decorative circle
+            Positioned(
+              bottom: -30,
+              right: -30,
+              child: Container(
+                width: 110,
+                height: 110,
+                decoration: BoxDecoration(
+                  shape: BoxShape.circle,
+                  color: Colors.white.withOpacity(0.06),
+                ),
+              ),
+            ),
+            Positioned.fill(
+              child: Padding(
+                padding: const EdgeInsets.all(14),
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    // ── Header ──────────────────────────────────────────────
+                    Row(
+                      children: [
+                        Container(
+                          padding: const EdgeInsets.all(6),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.18),
+                            borderRadius: BorderRadius.circular(9),
+                          ),
+                          child: const Icon(Icons.bar_chart_rounded,
+                              color: Colors.white, size: 14),
+                        ),
+                        const SizedBox(width: 8),
+                        const Text(
+                          'ACTIVITY',
+                          style: TextStyle(
+                            fontSize: 10,
+                            color: Colors.white38,
+                            fontWeight: FontWeight.w700,
+                            letterSpacing: 1.5,
+                          ),
+                        ),
+                        const Spacer(),
+                        Container(
+                          padding: const EdgeInsets.symmetric(
+                              horizontal: 8, vertical: 3),
+                          decoration: BoxDecoration(
+                            color: Colors.white.withOpacity(0.14),
+                            borderRadius: BorderRadius.circular(20),
+                          ),
+                          child: Text(
+                            '$totalDues ${totalDues == 1 ? 'due' : 'dues'} active',
+                            style: const TextStyle(
+                              fontSize: 10,
+                              color: Colors.white70,
+                              fontWeight: FontWeight.w600,
+                            ),
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const SizedBox(height: 10),
+
+                    // ── Two hero counts ──────────────────────────────────────
+                    Row(
+                      children: [
+                        // On-time count
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '$onTime',
+                                style: const TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w800,
+                                  color: Color(0xFF4ADE80),
+                                  letterSpacing: -1.5,
+                                  height: 1.0,
+                                ),
+                              ),
+                              const Text(
+                                'on time',
+                                style: TextStyle(
+                                    fontSize: 11, color: Colors.white54),
+                              ),
+                            ],
+                          ),
+                        ),
+                        // Divider
+                        Container(
+                          width: 1,
+                          height: 44,
+                          color: Colors.white12,
+                          margin:
+                              const EdgeInsets.symmetric(horizontal: 16),
+                        ),
+                        // Overdue count
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Text(
+                                '$overdueCount',
+                                style: TextStyle(
+                                  fontSize: 36,
+                                  fontWeight: FontWeight.w800,
+                                  color: overdueCount > 0
+                                      ? const Color(0xFFFCA5A5)
+                                      : Colors.white24,
+                                  letterSpacing: -1.5,
+                                  height: 1.0,
+                                ),
+                              ),
+                              Text(
+                                'overdue',
+                                style: TextStyle(
+                                  fontSize: 11,
+                                  color: overdueCount > 0
+                                      ? const Color(0xFFFCA5A5)
+                                          .withOpacity(0.7)
+                                      : Colors.white38,
+                                ),
+                              ),
+                            ],
+                          ),
+                        ),
+                      ],
+                    ),
+
+                    const Spacer(),
+
+                    // ── Proportion bar ───────────────────────────────────────
+                    LayoutBuilder(
+                      builder: (_, c) => SizedBox(
+                        height: 6,
+                        width: c.maxWidth,
+                        child: CustomPaint(
+                          painter: _SplitBarPainter(
+                            lent: onTime.toDouble(),
+                            borrowed: overdueCount.toDouble(),
+                          ),
+                        ),
+                      ),
+                    ),
+
+                    const SizedBox(height: 8),
+
+                    // ── Total amount footer ──────────────────────────────────
+                    Row(
+                      mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                      children: [
+                        const Text(
+                          'Total outstanding',
+                          style:
+                              TextStyle(fontSize: 10, color: Colors.white38),
+                        ),
+                        Text(
+                          money.format(totalAmount),
+                          style: const TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w700,
+                            color: Colors.white,
+                          ),
+                        ),
+                      ],
+                    ),
+                  ],
+                ),
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Supporting widgets ──────────────────────────────────────────────────────────
+
+/// Highlighted person tile used inside the People card.
+class _PersonHighlight extends StatelessWidget {
+  final String name;
+  final String label;
+  final Color color;
+
+  const _PersonHighlight({
+    required this.name,
+    required this.label,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final isEmpty = name.isEmpty;
+    return Container(
+      padding: const EdgeInsets.all(8),
+      decoration: BoxDecoration(
+        color: Colors.white.withOpacity(0.10),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: Colors.white.withOpacity(0.15)),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        mainAxisAlignment: MainAxisAlignment.start,
+        children: [
+          // Avatar circle
+          Container(
+            width: 28,
+            height: 28,
+            decoration: BoxDecoration(
+              gradient: isEmpty
+                  ? null
+                  : LinearGradient(
+                      colors: [color.withOpacity(0.75), color],
+                      begin: Alignment.topLeft,
+                      end: Alignment.bottomRight,
+                    ),
+              color: isEmpty ? Colors.white12 : null,
+              borderRadius: BorderRadius.circular(8),
+            ),
+            child: Center(
+              child: Text(
+                isEmpty ? '?' : _initials(name),
+                style: const TextStyle(
+                    fontSize: 11,
+                    fontWeight: FontWeight.w800,
+                    color: Colors.white),
+              ),
+            ),
+          ),
+          const SizedBox(height: 5),
+          Text(
+            isEmpty ? 'None' : name,
+            style: const TextStyle(
+                fontSize: 12,
+                fontWeight: FontWeight.w700,
+                color: Colors.white),
+            maxLines: 1,
+            overflow: TextOverflow.ellipsis,
+          ),
+          const SizedBox(height: 2),
+          Text(
+            label,
+            style: TextStyle(fontSize: 9, color: color.withOpacity(0.85)),
+            maxLines: 1,
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── CustomPainters ──────────────────────────────────────────────────────────────
+
+/// Draws a proportional two-segment bar: green (lent) | red (borrowed).
+class _SplitBarPainter extends CustomPainter {
+  final double lent;
+  final double borrowed;
+
+  const _SplitBarPainter({required this.lent, required this.borrowed});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    final total = lent + borrowed;
+    if (total == 0) return;
+
+    const gap = 3.0;
+    const r = Radius.circular(5);
+    final lentW = (lent / total) * (size.width - gap);
+    final borrowedW = size.width - lentW - gap;
+
+    if (lentW > 0) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            Rect.fromLTWH(0, 0, lentW, size.height), r),
+        Paint()..color = const Color(0xFF4ADE80),
+      );
+    }
+    if (borrowedW > 0) {
+      canvas.drawRRect(
+        RRect.fromRectAndRadius(
+            Rect.fromLTWH(lentW + gap, 0, borrowedW, size.height), r),
+        Paint()..color = const Color(0xFFFCA5A5),
+      );
+    }
+  }
+
+  @override
+  bool shouldRepaint(_SplitBarPainter old) =>
+      old.lent != lent || old.borrowed != borrowed;
+}
+

@@ -10,6 +10,7 @@ import '../../data/models/user_model.dart';
 import '../state/bills_provider.dart';
 import '../widgets/auth_guard.dart';
 import 'insights_screen.dart';
+import 'due_analytics_screen.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 
@@ -638,64 +639,97 @@ class _InsightsShortcut extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 12),
-        GestureDetector(
+        _AnalyticsTile(
+          icon: Icons.bar_chart_rounded,
+          title: 'Spending Insights',
+          subtitle: 'Monthly breakdown by category',
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const InsightsScreen()),
           ),
-          child: Container(
-            padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
-            decoration: BoxDecoration(
-              color: _card,
-              borderRadius: BorderRadius.circular(16),
-              border: Border.all(color: _border),
-              boxShadow: [
-                BoxShadow(
-                  color: Colors.black.withOpacity(0.04),
-                  blurRadius: 8,
-                  offset: const Offset(0, 2),
-                ),
-              ],
-            ),
-            child: Row(
-              children: [
-                Container(
-                  padding: const EdgeInsets.all(10),
-                  decoration: BoxDecoration(
-                    color: _primary.withOpacity(0.10),
-                    borderRadius: BorderRadius.circular(10),
-                  ),
-                  child: const Icon(Icons.bar_chart_rounded,
-                      color: _primary, size: 20),
-                ),
-                const SizedBox(width: 14),
-                const Expanded(
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.start,
-                    children: [
-                      Text(
-                        'Spending Insights',
-                        style: TextStyle(
-                          fontSize: 14,
-                          fontWeight: FontWeight.w600,
-                          color: _textPrimary,
-                        ),
-                      ),
-                      SizedBox(height: 2),
-                      Text(
-                        'Monthly breakdown by category',
-                        style: TextStyle(fontSize: 12, color: _textSecondary),
-                      ),
-                    ],
-                  ),
-                ),
-                const Icon(Icons.chevron_right_rounded,
-                    color: _textTertiary, size: 20),
-              ],
-            ),
+        ),
+        const SizedBox(height: 8),
+        _AnalyticsTile(
+          icon: Icons.people_alt_rounded,
+          title: 'Due Analytics',
+          subtitle: 'Track lending and borrowing patterns',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const DueAnalyticsScreen()),
           ),
         ),
       ],
+    );
+  }
+}
+
+class _AnalyticsTile extends StatelessWidget {
+  final IconData icon;
+  final String title;
+  final String subtitle;
+  final VoidCallback onTap;
+
+  const _AnalyticsTile({
+    required this.icon,
+    required this.title,
+    required this.subtitle,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: _card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: _primary.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(10),
+              ),
+              child: Icon(icon, color: _primary, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Text(
+                    title,
+                    style: const TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: _textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle ?? '',
+                    style: const TextStyle(fontSize: 12, color: _textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            const Icon(Icons.chevron_right_rounded,
+                color: _textTertiary, size: 20),
+          ],
+        ),
+      ),
     );
   }
 }
@@ -771,6 +805,18 @@ class _PreferencesSection extends StatelessWidget {
                       );
                 },
               ),
+              _Divider(),
+              _SwitchTile(
+                icon: Icons.notifications_outlined,
+                title: 'Due Reminders',
+                subtitle: 'Get notified about due dates',
+                value: profile.dueRemindersEnabled,
+                onChanged: (value) {
+                  context.read<UserProvider>().updateNotificationSettings(
+                        dueRemindersEnabled: value,
+                      );
+                },
+              ),
             ],
           ),
         ),
@@ -837,12 +883,14 @@ class _PreferenceTile extends StatelessWidget {
 class _SwitchTile extends StatelessWidget {
   final IconData icon;
   final String title;
+  final String? subtitle;
   final bool value;
   final ValueChanged<bool> onChanged;
 
   const _SwitchTile({
     required this.icon,
     required this.title,
+    this.subtitle,
     required this.value,
     required this.onChanged,
   });
@@ -856,13 +904,28 @@ class _SwitchTile extends StatelessWidget {
           Icon(icon, color: _textSecondary, size: 20),
           const SizedBox(width: 12),
           Expanded(
-            child: Text(
-              title,
-              style: const TextStyle(
-                fontSize: 14,
-                fontWeight: FontWeight.w500,
-                color: _textPrimary,
-              ),
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(
+                  title,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w500,
+                    color: _textPrimary,
+                  ),
+                ),
+                if (subtitle != null) ...[
+                  const SizedBox(height: 2),
+                  Text(
+                    subtitle!,
+                    style: const TextStyle(
+                      fontSize: 12,
+                      color: _textSecondary,
+                    ),
+                  ),
+                ],
+              ],
             ),
           ),
           Switch(

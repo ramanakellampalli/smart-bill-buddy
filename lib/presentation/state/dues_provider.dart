@@ -4,6 +4,7 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../data/models/due_model.dart';
 import '../../data/repositories/dues_repository.dart';
+import '../../services/notification_service.dart';
 
 class DuesProvider extends ChangeNotifier {
   final DuesRepository _repo;
@@ -39,6 +40,8 @@ class DuesProvider extends ChangeNotifier {
             dues = items;
             isLoading = false;
             error = null;
+            // Schedule notifications for all active dues
+            scheduleAllDueNotifications();
             notifyListeners();
           },
           onError: (e) {
@@ -64,6 +67,8 @@ class DuesProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _repo.addDue(due);
+      // Schedule notifications for the new due
+      await NotificationService.scheduleDue(due);
     } catch (e) {
       error = e.toString();
     } finally {
@@ -78,6 +83,8 @@ class DuesProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _repo.updateDue(due);
+      // Reschedule notifications for the updated due
+      await NotificationService.scheduleDue(due);
     } catch (e) {
       error = e.toString();
     } finally {
@@ -89,6 +96,8 @@ class DuesProvider extends ChangeNotifier {
   Future<void> settle(String dueId) async {
     try {
       await _repo.settleDue(dueId);
+      // Cancel notifications for settled due
+      await NotificationService.cancelDue(dueId);
     } catch (e) {
       error = e.toString();
       notifyListeners();
@@ -97,10 +106,26 @@ class DuesProvider extends ChangeNotifier {
 
   Future<void> delete(String dueId) async {
     try {
+      // Cancel notifications before deleting
+      await NotificationService.cancelDue(dueId);
       await _repo.deleteDue(dueId);
     } catch (e) {
       error = e.toString();
       notifyListeners();
+    }
+  }
+
+  // Schedule notifications for all active dues (called on app startup)
+  Future<void> scheduleAllDueNotifications() async {
+    for (final due in dues) {
+      if (!due.isSettled) {
+        try {
+          await NotificationService.scheduleDue(due);
+        } catch (e) {
+          // Continue scheduling other dues even if one fails
+          print('Error scheduling notification for due ${due.id}: $e');
+        }
+      }
     }
   }
 }
