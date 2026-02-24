@@ -40,7 +40,6 @@ class DuesProvider extends ChangeNotifier {
             dues = items;
             isLoading = false;
             error = null;
-            // Schedule notifications for all active dues
             scheduleAllDueNotifications();
             notifyListeners();
           },
@@ -67,7 +66,6 @@ class DuesProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _repo.addDue(due);
-      // Schedule notifications for the new due
       await NotificationService.scheduleDue(due);
     } catch (e) {
       error = e.toString();
@@ -83,7 +81,6 @@ class DuesProvider extends ChangeNotifier {
     notifyListeners();
     try {
       await _repo.updateDue(due);
-      // Reschedule notifications for the updated due
       await NotificationService.scheduleDue(due);
     } catch (e) {
       error = e.toString();
@@ -96,7 +93,6 @@ class DuesProvider extends ChangeNotifier {
   Future<void> settle(String dueId) async {
     try {
       await _repo.settleDue(dueId);
-      // Cancel notifications for settled due
       await NotificationService.cancelDue(dueId);
     } catch (e) {
       error = e.toString();
@@ -106,7 +102,6 @@ class DuesProvider extends ChangeNotifier {
 
   Future<void> delete(String dueId) async {
     try {
-      // Cancel notifications before deleting
       await NotificationService.cancelDue(dueId);
       await _repo.deleteDue(dueId);
     } catch (e) {
@@ -115,14 +110,38 @@ class DuesProvider extends ChangeNotifier {
     }
   }
 
-  // Schedule notifications for all active dues (called on app startup)
+  /// Adds a partial payment to a due.
+  /// Returns true if the payment fully covered the due (auto-settled).
+  Future<bool> addPayment(String dueId, PaymentEntry payment) async {
+    saving = true;
+    error = null;
+    notifyListeners();
+    bool autoSettled = false;
+    try {
+      final due = dues.firstWhere((d) => d.id == dueId);
+      final updatedPayments = [...due.payments, payment];
+      final totalPaid = updatedPayments.fold(0.0, (s, p) => s + p.amount);
+      autoSettled = totalPaid >= due.amount;
+      await _repo.addPayment(dueId, updatedPayments, autoSettle: autoSettled);
+      if (autoSettled) {
+        await NotificationService.cancelDue(dueId);
+      }
+    } catch (e) {
+      error = e.toString();
+      autoSettled = false;
+    } finally {
+      saving = false;
+      notifyListeners();
+    }
+    return autoSettled;
+  }
+
   Future<void> scheduleAllDueNotifications() async {
     for (final due in dues) {
       if (!due.isSettled) {
         try {
           await NotificationService.scheduleDue(due);
         } catch (e) {
-          // Continue scheduling other dues even if one fails
           print('Error scheduling notification for due ${due.id}: $e');
         }
       }

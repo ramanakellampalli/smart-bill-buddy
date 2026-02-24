@@ -5,6 +5,7 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 
 import '../../data/models/due_model.dart';
+import '../../services/pdf_export_service.dart';
 import '../state/app_settings_provider.dart';
 import '../state/dues_provider.dart';
 
@@ -20,7 +21,7 @@ const _textTertiary = Color(0xFFA8A29E);
 const _green = Color(0xFF16A34A);
 const _red = Color(0xFFDC2626);
 
-// ── Avatar helpers (mirrored from dues_screen) ────────────────────────────────
+// ── Avatar helpers ─────────────────────────────────────────────────────────────
 
 const _avatarPalette = [
   Color(0xFF6C8EBF),
@@ -44,6 +45,44 @@ String _initials(String name) {
   return name.substring(0, min(2, name.length)).toUpperCase();
 }
 
+// ── Payment method helpers ─────────────────────────────────────────────────────
+
+const _paymentMethods = ['cash', 'upi', 'bank_transfer', 'other'];
+
+String _methodLabel(String? m) {
+  switch (m) {
+    case 'cash':          return 'Cash';
+    case 'upi':           return 'UPI';
+    case 'bank_transfer': return 'Bank Transfer';
+    case 'other':         return 'Other';
+    default:              return '';
+  }
+}
+
+IconData _methodIcon(String? m) {
+  switch (m) {
+    case 'cash':          return Icons.payments_outlined;
+    case 'upi':           return Icons.phone_android_outlined;
+    case 'bank_transfer': return Icons.account_balance_outlined;
+    default:              return Icons.swap_horiz_rounded;
+  }
+}
+
+// ── Internal payment data ──────────────────────────────────────────────────────
+
+class _PaymentData {
+  final double amount;
+  final String? method;
+  final String? note;
+  final DateTime date;
+  _PaymentData({
+    required this.amount,
+    this.method,
+    this.note,
+    required this.date,
+  });
+}
+
 // ── Screen ─────────────────────────────────────────────────────────────────────
 
 class PersonDuesScreen extends StatelessWidget {
@@ -56,6 +95,125 @@ class PersonDuesScreen extends StatelessWidget {
     required this.onAddTap,
   });
 
+  // ── Export PDF ────────────────────────────────────────────────────────────────
+
+  Future<void> _exportPdf(
+    BuildContext context,
+    List<DueModel> personDues,
+    NumberFormat money,
+  ) async {
+    try {
+      await PdfExportService.exportPersonDues(
+        personName: personName,
+        dues: personDues,
+        money: money,
+      );
+    } catch (e) {
+      if (!context.mounted) return;
+      ScaffoldMessenger.of(context).showSnackBar(
+        SnackBar(
+          content: Text('Could not generate PDF: $e'),
+          behavior: SnackBarBehavior.floating,
+          backgroundColor: const Color(0xFFDC2626),
+        ),
+      );
+    }
+  }
+
+  // ── Record payment (cascades oldest-first, user doesn't see the split) ────────
+
+  Future<void> _showRecordPayment(
+    BuildContext context,
+    List<DueModel> activeDues,
+    NumberFormat money,
+  ) async {
+    final totalRemaining =
+        activeDues.fold(0.0, (s, d) => s + d.remaining);
+
+    final data = await showModalBottomSheet<_PaymentData>(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _PersonPaymentSheet(
+        totalRemaining: totalRemaining,
+        money: money,
+      ),
+    );
+    if (data == null || !context.mounted) return;
+
+    final provider = context.read<DuesProvider>();
+
+    // Apply payment to dues oldest-first (user just sees total update)
+    double leftToApply = data.amount;
+    final sorted = [...activeDues]..sort((a, b) => a.date.compareTo(b.date));
+
+    for (final due in sorted) {
+      if (leftToApply < 0.01) break;
+      final toApply = min(leftToApply, due.remaining);
+      final entry = PaymentEntry(
+        id: '${DateTime.now().millisecondsSinceEpoch}_${due.id.substring(0, min(4, due.id.length))}',
+        amount: toApply,
+        method: data.method,
+        note: data.note,
+        paidAt: data.date,
+      );
+      await provider.addPayment(due.id, entry);
+      leftToApply -= toApply;
+    }
+
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      SnackBar(
+        content: Text('Payment of ${money.format(data.amount)} recorded'),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: const Color(0xFF1C1917),
+      ),
+    );
+  }
+
+  // ── Settle all active dues ─────────────────────────────────────────────────
+
+  Future<void> _settleAll(
+    BuildContext context,
+    List<DueModel> activeDues,
+  ) async {
+    final confirmed = await showDialog<bool>(
+      context: context,
+      builder: (_) => AlertDialog(
+        title: const Text('Settle all?'),
+        content: Text(
+          'Mark all ${activeDues.length} active transaction${activeDues.length == 1 ? '' : 's'} with $personName as settled.',
+        ),
+        actions: [
+          TextButton(
+            onPressed: () => Navigator.pop(context, false),
+            child: const Text('Cancel'),
+          ),
+          TextButton(
+            onPressed: () => Navigator.pop(context, true),
+            child: const Text(
+              'Settle All',
+              style: TextStyle(color: _green),
+            ),
+          ),
+        ],
+      ),
+    );
+    if (confirmed != true || !context.mounted) return;
+    final provider = context.read<DuesProvider>();
+    for (final due in activeDues) {
+      await provider.settle(due.id);
+    }
+    if (!context.mounted) return;
+    ScaffoldMessenger.of(context).showSnackBar(
+      const SnackBar(
+        content: Text('All settled up ✓'),
+        behavior: SnackBarBehavior.floating,
+        backgroundColor: _green,
+      ),
+    );
+  }
+
   @override
   Widget build(BuildContext context) {
     final p = context.watch<DuesProvider>();
@@ -65,7 +223,6 @@ class PersonDuesScreen extends StatelessWidget {
         .where((d) => d.personName == personName)
         .toList()
       ..sort((a, b) {
-        // Unsettled first, then by date desc
         if (a.isSettled != b.isSettled) return a.isSettled ? 1 : -1;
         return b.date.compareTo(a.date);
       });
@@ -73,8 +230,9 @@ class PersonDuesScreen extends StatelessWidget {
     final active = personDues.where((d) => !d.isSettled).toList();
     final settled = personDues.where((d) => d.isSettled).toList();
 
+    // Net uses remaining (not original amount) for accuracy
     final netAmount = active.fold(0.0, (s, d) {
-      return d.type == 'lent' ? s + d.amount : s - d.amount;
+      return d.type == 'lent' ? s + d.remaining : s - d.remaining;
     });
 
     final avatarColor = _avatarColor(personName);
@@ -125,6 +283,13 @@ class PersonDuesScreen extends StatelessWidget {
           ],
         ),
         actions: [
+          if (personDues.isNotEmpty)
+            IconButton(
+              icon: const Icon(Icons.share_outlined,
+                  color: _textSecondary, size: 20),
+              tooltip: 'Export as PDF',
+              onPressed: () => _exportPdf(context, personDues, money),
+            ),
           IconButton(
             icon: const Icon(Icons.add_circle_outline_rounded,
                 color: _primary, size: 22),
@@ -136,15 +301,18 @@ class PersonDuesScreen extends StatelessWidget {
       ),
       body: Column(
         children: [
-          // ── Net header ──────────────────────────────────────────────────────
           _NetHeader(
             personName: personName,
             net: netAmount,
             money: money,
             activeCount: active.length,
+            onRecordPayment: active.isEmpty
+                ? null
+                : () => _showRecordPayment(context, active, money),
+            onSettleAll: active.isEmpty
+                ? null
+                : () => _settleAll(context, active),
           ),
-
-          // ── Transaction list ────────────────────────────────────────────────
           Expanded(
             child: personDues.isEmpty
                 ? const _EmptyState()
@@ -153,8 +321,6 @@ class PersonDuesScreen extends StatelessWidget {
                     itemCount: personDues.length,
                     itemBuilder: (context, i) {
                       final due = personDues[i];
-
-                      // Section divider between active and settled
                       final showDivider = i == active.length &&
                           active.isNotEmpty &&
                           settled.isNotEmpty;
@@ -163,8 +329,7 @@ class PersonDuesScreen extends StatelessWidget {
                         children: [
                           if (showDivider)
                             Padding(
-                              padding:
-                                  const EdgeInsets.symmetric(vertical: 8),
+                              padding: const EdgeInsets.symmetric(vertical: 8),
                               child: Row(
                                 children: [
                                   Expanded(
@@ -219,8 +384,7 @@ class PersonDuesScreen extends StatelessWidget {
                                       onPressed: () =>
                                           Navigator.pop(context, true),
                                       child: const Text('Delete',
-                                          style:
-                                              TextStyle(color: _red)),
+                                          style: TextStyle(color: _red)),
                                     ),
                                   ],
                                 ),
@@ -231,11 +395,6 @@ class PersonDuesScreen extends StatelessWidget {
                             child: _TransactionCard(
                               due: due,
                               money: money,
-                              onSettle: due.isSettled
-                                  ? null
-                                  : () => context
-                                      .read<DuesProvider>()
-                                      .settle(due.id),
                             ),
                           ),
                         ],
@@ -245,7 +404,6 @@ class PersonDuesScreen extends StatelessWidget {
           ),
         ],
       ),
-      // ── Add transaction FAB-style button ────────────────────────────────────
       bottomNavigationBar: Container(
         padding: EdgeInsets.fromLTRB(
             16, 12, 16, 16 + MediaQuery.of(context).padding.bottom),
@@ -286,12 +444,16 @@ class _NetHeader extends StatelessWidget {
   final double net;
   final NumberFormat money;
   final int activeCount;
+  final VoidCallback? onRecordPayment;
+  final VoidCallback? onSettleAll;
 
   const _NetHeader({
     required this.personName,
     required this.net,
     required this.money,
     required this.activeCount,
+    this.onRecordPayment,
+    this.onSettleAll,
   });
 
   @override
@@ -304,6 +466,7 @@ class _NetHeader extends StatelessWidget {
         : (isPositive
             ? '${personName.split(' ').first} owes you'
             : 'You owe ${personName.split(' ').first}');
+    final hasActions = onRecordPayment != null || onSettleAll != null;
 
     return Container(
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
@@ -313,68 +476,153 @@ class _NetHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(14),
         border: Border.all(color: color.withOpacity(0.2)),
       ),
-      child: Row(
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(
-            isZero
-                ? Icons.check_circle_outline_rounded
-                : (isPositive
-                    ? Icons.call_received_rounded
-                    : Icons.call_made_rounded),
-            color: color,
-            size: 20,
-          ),
-          const SizedBox(width: 10),
-          Expanded(
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Text(
-                  label,
-                  style: TextStyle(
-                      fontSize: 12,
-                      color: color,
-                      fontWeight: FontWeight.w500),
-                ),
-                if (!isZero) ...[
-                  const SizedBox(height: 1),
-                  Text(
-                    money.format(net.abs()),
-                    style: TextStyle(
-                      fontSize: 18,
-                      fontWeight: FontWeight.w800,
-                      color: color,
+          // ── Amount row ──────────────────────────────────────────────────────
+          Row(
+            children: [
+              Icon(
+                isZero
+                    ? Icons.check_circle_outline_rounded
+                    : (isPositive
+                        ? Icons.call_received_rounded
+                        : Icons.call_made_rounded),
+                color: color,
+                size: 20,
+              ),
+              const SizedBox(width: 10),
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      label,
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: color,
+                          fontWeight: FontWeight.w500),
                     ),
+                    if (!isZero) ...[
+                      const SizedBox(height: 1),
+                      Text(
+                        money.format(net.abs()),
+                        style: TextStyle(
+                          fontSize: 18,
+                          fontWeight: FontWeight.w800,
+                          color: color,
+                        ),
+                      ),
+                    ],
+                  ],
+                ),
+              ),
+              Text(
+                '$activeCount active',
+                style: const TextStyle(fontSize: 12, color: _textSecondary),
+              ),
+            ],
+          ),
+
+          // ── Action buttons (only when there are active dues) ────────────────
+          if (hasActions) ...[
+            const SizedBox(height: 12),
+            Row(
+              children: [
+                Expanded(
+                  child: _HeaderButton(
+                    label: 'Record Payment',
+                    icon: Icons.payments_outlined,
+                    color: _primary,
+                    onTap: onRecordPayment!,
                   ),
-                ],
+                ),
+                const SizedBox(width: 10),
+                Expanded(
+                  child: _HeaderButton(
+                    label: 'Settle All',
+                    icon: Icons.check_circle_outline_rounded,
+                    color: _green,
+                    onTap: onSettleAll!,
+                  ),
+                ),
               ],
             ),
-          ),
-          Text(
-            '$activeCount active',
-            style: const TextStyle(fontSize: 12, color: _textSecondary),
-          ),
+          ],
         ],
       ),
     );
   }
 }
 
-// ── Transaction Card ───────────────────────────────────────────────────────────
+// ── Header Action Button ───────────────────────────────────────────────────────
 
-class _TransactionCard extends StatelessWidget {
-  final DueModel due;
-  final NumberFormat money;
-  final VoidCallback? onSettle;
+class _HeaderButton extends StatelessWidget {
+  final String label;
+  final IconData icon;
+  final Color color;
+  final VoidCallback onTap;
 
-  const _TransactionCard({
-    required this.due,
-    required this.money,
-    this.onSettle,
+  const _HeaderButton({
+    required this.label,
+    required this.icon,
+    required this.color,
+    required this.onTap,
   });
 
   @override
   Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(vertical: 9),
+        decoration: BoxDecoration(
+          color: color.withOpacity(0.10),
+          borderRadius: BorderRadius.circular(10),
+          border: Border.all(color: color.withOpacity(0.25)),
+        ),
+        child: Row(
+          mainAxisAlignment: MainAxisAlignment.center,
+          children: [
+            Icon(icon, size: 15, color: color),
+            const SizedBox(width: 6),
+            Text(
+              label,
+              style: TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: color,
+              ),
+            ),
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Transaction Card (read-only) ───────────────────────────────────────────────
+
+class _TransactionCard extends StatefulWidget {
+  final DueModel due;
+  final NumberFormat money;
+
+  const _TransactionCard({
+    required this.due,
+    required this.money,
+  });
+
+  @override
+  State<_TransactionCard> createState() => _TransactionCardState();
+}
+
+class _TransactionCardState extends State<_TransactionCard> {
+  bool _historyExpanded = false;
+
+  @override
+  Widget build(BuildContext context) {
+    final due = widget.due;
+    final money = widget.money;
     final isLent = due.type == 'lent';
     final color = due.isSettled ? _textTertiary : (isLent ? _green : _red);
     final df = DateFormat('d MMM yyyy');
@@ -384,6 +632,8 @@ class _TransactionCard extends StatelessWidget {
     final isOverdue = !due.isSettled &&
         due.dueDate != null &&
         due.dueDate!.isBefore(today);
+
+    final hasPayments = due.payments.isNotEmpty;
 
     return Container(
       margin: const EdgeInsets.only(bottom: 10),
@@ -408,9 +658,9 @@ class _TransactionCard extends StatelessWidget {
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
+            // ── Main row ───────────────────────────────────────────────────────
             Row(
               children: [
-                // Direction icon
                 Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
@@ -435,9 +685,7 @@ class _TransactionCard extends StatelessWidget {
                         style: TextStyle(
                           fontSize: 14,
                           fontWeight: FontWeight.w600,
-                          color: due.isSettled
-                              ? _textTertiary
-                              : _textPrimary,
+                          color: due.isSettled ? _textTertiary : _textPrimary,
                           decoration: due.isSettled
                               ? TextDecoration.lineThrough
                               : null,
@@ -453,7 +701,7 @@ class _TransactionCard extends StatelessWidget {
                     ],
                   ),
                 ),
-                // Amount
+                // Amount column
                 Column(
                   crossAxisAlignment: CrossAxisAlignment.end,
                   children: [
@@ -489,7 +737,7 @@ class _TransactionCard extends StatelessWidget {
               ],
             ),
 
-            // Due date / overdue row
+            // ── Due date / overdue ─────────────────────────────────────────────
             if (due.dueDate != null && !due.isSettled) ...[
               const SizedBox(height: 8),
               Row(
@@ -509,41 +757,586 @@ class _TransactionCard extends StatelessWidget {
                     style: TextStyle(
                       fontSize: 12,
                       color: isOverdue ? _red : _textSecondary,
-                      fontWeight: isOverdue
-                          ? FontWeight.w600
-                          : FontWeight.w400,
+                      fontWeight:
+                          isOverdue ? FontWeight.w600 : FontWeight.w400,
                     ),
                   ),
                 ],
               ),
             ],
 
-            // Mark settled button
-            if (onSettle != null) ...[
+            // ── Payment progress bar (shown when partially paid) ───────────────
+            if (hasPayments && !due.isSettled) ...[
               const SizedBox(height: 10),
-              const Divider(color: _border, height: 1),
-              const SizedBox(height: 10),
+              _PaymentProgressBar(
+                paid: due.paidAmount,
+                total: due.amount,
+                money: money,
+                color: color,
+              ),
+            ],
+
+            // ── Payment history toggle ─────────────────────────────────────────
+            if (hasPayments) ...[
+              const SizedBox(height: 8),
               GestureDetector(
-                onTap: onSettle,
+                onTap: () =>
+                    setState(() => _historyExpanded = !_historyExpanded),
                 child: Row(
-                  mainAxisAlignment: MainAxisAlignment.center,
                   children: [
-                    Icon(Icons.check_circle_outline_rounded,
-                        size: 15, color: _green.withOpacity(0.8)),
-                    const SizedBox(width: 6),
                     Text(
-                      'Mark as Settled',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w600,
-                        color: _green.withOpacity(0.8),
+                      due.isSettled
+                          ? 'Paid in ${due.payments.length} payment${due.payments.length == 1 ? '' : 's'}'
+                          : '${due.payments.length} payment${due.payments.length == 1 ? '' : 's'}',
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: _textSecondary,
                       ),
+                    ),
+                    const SizedBox(width: 2),
+                    Icon(
+                      _historyExpanded
+                          ? Icons.expand_less_rounded
+                          : Icons.expand_more_rounded,
+                      size: 16,
+                      color: _textSecondary,
                     ),
                   ],
                 ),
               ),
+
+              // ── Payment history timeline (expandable) ──────────────────────
+              if (_historyExpanded) ...[
+                const SizedBox(height: 10),
+                _PaymentTimeline(
+                  payments: due.payments,
+                  money: money,
+                ),
+              ],
             ],
           ],
+        ),
+      ),
+    );
+  }
+}
+
+// ── Payment Progress Bar ───────────────────────────────────────────────────────
+
+class _PaymentProgressBar extends StatelessWidget {
+  final double paid;
+  final double total;
+  final NumberFormat money;
+  final Color color;
+
+  const _PaymentProgressBar({
+    required this.paid,
+    required this.total,
+    required this.money,
+    required this.color,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fraction = total > 0 ? (paid / total).clamp(0.0, 1.0) : 0.0;
+    final remaining = (total - paid).clamp(0.0, double.infinity);
+
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        ClipRRect(
+          borderRadius: BorderRadius.circular(4),
+          child: LayoutBuilder(
+            builder: (_, c) => Stack(
+              children: [
+                Container(
+                  height: 5,
+                  width: c.maxWidth,
+                  color: color.withOpacity(0.12),
+                ),
+                Container(
+                  height: 5,
+                  width: c.maxWidth * fraction,
+                  decoration: BoxDecoration(
+                    color: color,
+                    borderRadius: BorderRadius.circular(4),
+                  ),
+                ),
+              ],
+            ),
+          ),
+        ),
+        const SizedBox(height: 5),
+        Row(
+          mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          children: [
+            Text(
+              '${money.format(paid)} paid',
+              style: TextStyle(
+                  fontSize: 11,
+                  color: color,
+                  fontWeight: FontWeight.w600),
+            ),
+            Text(
+              '${money.format(remaining)} left',
+              style: const TextStyle(fontSize: 11, color: _textTertiary),
+            ),
+          ],
+        ),
+      ],
+    );
+  }
+}
+
+// ── Payment History Timeline ───────────────────────────────────────────────────
+
+class _PaymentTimeline extends StatelessWidget {
+  final List<PaymentEntry> payments;
+  final NumberFormat money;
+
+  const _PaymentTimeline({
+    required this.payments,
+    required this.money,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final df = DateFormat('d MMM');
+    final sorted = [...payments]
+      ..sort((a, b) => a.paidAt.compareTo(b.paidAt));
+
+    return Container(
+      padding: const EdgeInsets.all(12),
+      decoration: BoxDecoration(
+        color: _bg,
+        borderRadius: BorderRadius.circular(10),
+      ),
+      child: Column(
+        children: sorted.asMap().entries.map((entry) {
+          final i = entry.key;
+          final p = entry.value;
+          final isLast = i == sorted.length - 1;
+
+          return IntrinsicHeight(
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                SizedBox(
+                  width: 20,
+                  child: Column(
+                    children: [
+                      Container(
+                        width: 8,
+                        height: 8,
+                        margin: const EdgeInsets.only(top: 4),
+                        decoration: const BoxDecoration(
+                          color: _primary,
+                          shape: BoxShape.circle,
+                        ),
+                      ),
+                      if (!isLast)
+                        Expanded(
+                          child: Container(
+                            width: 1.5,
+                            margin: const EdgeInsets.only(top: 2),
+                            color: _border,
+                          ),
+                        ),
+                    ],
+                  ),
+                ),
+                const SizedBox(width: 8),
+                Expanded(
+                  child: Padding(
+                    padding: EdgeInsets.only(bottom: isLast ? 0 : 10),
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Expanded(
+                          child: Column(
+                            crossAxisAlignment: CrossAxisAlignment.start,
+                            children: [
+                              Row(
+                                children: [
+                                  Text(
+                                    money.format(p.amount),
+                                    style: const TextStyle(
+                                      fontSize: 13,
+                                      fontWeight: FontWeight.w700,
+                                      color: _textPrimary,
+                                    ),
+                                  ),
+                                  if (p.method != null) ...[
+                                    const SizedBox(width: 6),
+                                    Container(
+                                      padding: const EdgeInsets.symmetric(
+                                          horizontal: 6, vertical: 2),
+                                      decoration: BoxDecoration(
+                                        color: _border,
+                                        borderRadius:
+                                            BorderRadius.circular(4),
+                                      ),
+                                      child: Row(
+                                        mainAxisSize: MainAxisSize.min,
+                                        children: [
+                                          Icon(_methodIcon(p.method),
+                                              size: 10,
+                                              color: _textSecondary),
+                                          const SizedBox(width: 3),
+                                          Text(
+                                            _methodLabel(p.method),
+                                            style: const TextStyle(
+                                              fontSize: 10,
+                                              color: _textSecondary,
+                                              fontWeight: FontWeight.w500,
+                                            ),
+                                          ),
+                                        ],
+                                      ),
+                                    ),
+                                  ],
+                                ],
+                              ),
+                              if (p.note != null) ...[
+                                const SizedBox(height: 2),
+                                Text(
+                                  p.note!,
+                                  style: const TextStyle(
+                                      fontSize: 11, color: _textSecondary),
+                                ),
+                              ],
+                            ],
+                          ),
+                        ),
+                        Text(
+                          df.format(p.paidAt),
+                          style: const TextStyle(
+                              fontSize: 11, color: _textTertiary),
+                        ),
+                      ],
+                    ),
+                  ),
+                ),
+              ],
+            ),
+          );
+        }).toList(),
+      ),
+    );
+  }
+}
+
+// ── Person Payment Sheet ───────────────────────────────────────────────────────
+
+class _PersonPaymentSheet extends StatefulWidget {
+  final double totalRemaining;
+  final NumberFormat money;
+
+  const _PersonPaymentSheet({
+    required this.totalRemaining,
+    required this.money,
+  });
+
+  @override
+  State<_PersonPaymentSheet> createState() => _PersonPaymentSheetState();
+}
+
+class _PersonPaymentSheetState extends State<_PersonPaymentSheet> {
+  final _amountCtrl = TextEditingController();
+  final _noteCtrl = TextEditingController();
+  String? _method;
+  DateTime _date = DateTime.now();
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    final rem = widget.totalRemaining;
+    _amountCtrl.text =
+        rem == rem.truncate() ? rem.toInt().toString() : rem.toStringAsFixed(2);
+  }
+
+  @override
+  void dispose() {
+    _amountCtrl.dispose();
+    _noteCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _pickDate() async {
+    final picked = await showDatePicker(
+      context: context,
+      initialDate: _date,
+      firstDate: DateTime(2000),
+      lastDate: DateTime.now(),
+    );
+    if (picked != null) setState(() => _date = picked);
+  }
+
+  void _save() {
+    final raw = _amountCtrl.text.trim().replaceAll(',', '');
+    final amount = double.tryParse(raw);
+    if (amount == null || amount <= 0) {
+      setState(() => _error = 'Enter a valid amount');
+      return;
+    }
+    if (amount > widget.totalRemaining + 0.01) {
+      setState(() => _error = 'Amount exceeds total outstanding');
+      return;
+    }
+    Navigator.pop(
+      context,
+      _PaymentData(
+        amount: amount,
+        method: _method,
+        note: _noteCtrl.text.trim().isEmpty ? null : _noteCtrl.text.trim(),
+        date: _date,
+      ),
+    );
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    final df = DateFormat('d MMM yyyy');
+
+    return Padding(
+      padding:
+          EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        child: SingleChildScrollView(
+          padding: const EdgeInsets.fromLTRB(24, 12, 24, 32),
+          child: Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            mainAxisSize: MainAxisSize.min,
+            children: [
+              // Drag handle
+              Center(
+                child: Container(
+                  width: 36,
+                  height: 4,
+                  decoration: BoxDecoration(
+                    color: _border,
+                    borderRadius: BorderRadius.circular(2),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              const Text(
+                'Record Payment',
+                style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _textPrimary,
+                ),
+              ),
+              const SizedBox(height: 4),
+              Text(
+                '${widget.money.format(widget.totalRemaining)} outstanding',
+                style: const TextStyle(
+                    fontSize: 13,
+                    color: _textSecondary,
+                    fontWeight: FontWeight.w500),
+              ),
+              const SizedBox(height: 20),
+
+              // Amount
+              const Text(
+                'Amount',
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _textPrimary),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: _bg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _border),
+                ),
+                child: TextField(
+                  controller: _amountCtrl,
+                  autofocus: true,
+                  keyboardType:
+                      const TextInputType.numberWithOptions(decimal: true),
+                  style: const TextStyle(
+                      fontSize: 16,
+                      fontWeight: FontWeight.w700,
+                      color: _textPrimary),
+                  decoration: const InputDecoration(
+                    contentPadding: EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 14),
+                    border: InputBorder.none,
+                    hintText: '0',
+                    hintStyle:
+                        TextStyle(color: _textTertiary, fontSize: 16),
+                    prefixText: '₹ ',
+                    prefixStyle: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: _textSecondary),
+                  ),
+                  onChanged: (_) => setState(() => _error = null),
+                ),
+              ),
+              if (_error != null) ...[
+                const SizedBox(height: 6),
+                Text(_error!,
+                    style: const TextStyle(fontSize: 12, color: _red)),
+              ],
+              const SizedBox(height: 20),
+
+              // Method
+              const Text(
+                'Payment Method',
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _textPrimary),
+              ),
+              const SizedBox(height: 8),
+              Row(
+                children: _paymentMethods.map((m) {
+                  final selected = _method == m;
+                  return Expanded(
+                    child: GestureDetector(
+                      onTap: () =>
+                          setState(() => _method = selected ? null : m),
+                      child: Container(
+                        margin: EdgeInsets.only(
+                            right: m == _paymentMethods.last ? 0 : 8),
+                        padding: const EdgeInsets.symmetric(vertical: 9),
+                        decoration: BoxDecoration(
+                          color: selected
+                              ? _primary.withOpacity(0.10)
+                              : _bg,
+                          borderRadius: BorderRadius.circular(10),
+                          border: Border.all(
+                            color: selected
+                                ? _primary.withOpacity(0.4)
+                                : _border,
+                          ),
+                        ),
+                        child: Column(
+                          children: [
+                            Icon(
+                              _methodIcon(m),
+                              size: 16,
+                              color: selected ? _primary : _textSecondary,
+                            ),
+                            const SizedBox(height: 3),
+                            Text(
+                              _methodLabel(m),
+                              style: TextStyle(
+                                fontSize: 10,
+                                fontWeight: FontWeight.w600,
+                                color: selected ? _primary : _textSecondary,
+                              ),
+                              textAlign: TextAlign.center,
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
+                  );
+                }).toList(),
+              ),
+              const SizedBox(height: 20),
+
+              // Note
+              const Text(
+                'Note (optional)',
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _textPrimary),
+              ),
+              const SizedBox(height: 8),
+              Container(
+                decoration: BoxDecoration(
+                  color: _bg,
+                  borderRadius: BorderRadius.circular(12),
+                  border: Border.all(color: _border),
+                ),
+                child: TextField(
+                  controller: _noteCtrl,
+                  maxLines: 2,
+                  style:
+                      const TextStyle(fontSize: 14, color: _textPrimary),
+                  decoration: const InputDecoration(
+                    contentPadding: EdgeInsets.symmetric(
+                        horizontal: 14, vertical: 12),
+                    border: InputBorder.none,
+                    hintText: 'e.g. First installment',
+                    hintStyle:
+                        TextStyle(color: _textTertiary, fontSize: 14),
+                  ),
+                ),
+              ),
+              const SizedBox(height: 20),
+
+              // Date
+              const Text(
+                'Date',
+                style: TextStyle(
+                    fontSize: 13,
+                    fontWeight: FontWeight.w600,
+                    color: _textPrimary),
+              ),
+              const SizedBox(height: 8),
+              GestureDetector(
+                onTap: _pickDate,
+                child: Container(
+                  padding: const EdgeInsets.symmetric(
+                      horizontal: 14, vertical: 14),
+                  decoration: BoxDecoration(
+                    color: _bg,
+                    borderRadius: BorderRadius.circular(12),
+                    border: Border.all(color: _border),
+                  ),
+                  child: Row(
+                    children: [
+                      const Icon(Icons.calendar_today_outlined,
+                          size: 16, color: _textSecondary),
+                      const SizedBox(width: 10),
+                      Text(
+                        df.format(_date),
+                        style: const TextStyle(
+                            fontSize: 14, color: _textPrimary),
+                      ),
+                    ],
+                  ),
+                ),
+              ),
+              const SizedBox(height: 28),
+
+              SizedBox(
+                width: double.infinity,
+                child: ElevatedButton(
+                  onPressed: _save,
+                  style: ElevatedButton.styleFrom(
+                    backgroundColor: _primary,
+                    foregroundColor: Colors.white,
+                    padding: const EdgeInsets.symmetric(vertical: 15),
+                    elevation: 0,
+                    shape: RoundedRectangleBorder(
+                        borderRadius: BorderRadius.circular(14)),
+                  ),
+                  child: const Text(
+                    'Save Payment',
+                    style: TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w700),
+                  ),
+                ),
+              ),
+            ],
+          ),
         ),
       ),
     );

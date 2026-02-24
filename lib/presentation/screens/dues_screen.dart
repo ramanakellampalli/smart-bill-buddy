@@ -103,10 +103,10 @@ class _DuesScreenState extends State<DuesScreen> {
     final settled = p.dues.where((d) => d.isSettled).toList();
 
     final toReceive =
-        active.where((d) => d.type == 'lent').fold(0.0, (s, d) => s + d.amount);
+        active.where((d) => d.type == 'lent').fold(0.0, (s, d) => s + d.remaining);
     final iOwe = active
         .where((d) => d.type == 'borrowed')
-        .fold(0.0, (s, d) => s + d.amount);
+        .fold(0.0, (s, d) => s + d.remaining);
     final net = toReceive - iOwe;
 
     // ── Filter active dues ─────────────────────────────────────────────────────
@@ -280,8 +280,8 @@ class _DuesScreenState extends State<DuesScreen> {
                             final txns = grouped[name]!;
                             final netForPerson = txns.fold(0.0, (s, d) {
                               return d.type == 'lent'
-                                  ? s + d.amount
-                                  : s - d.amount;
+                                  ? s + d.remaining
+                                  : s - d.remaining;
                             });
                             return _PersonCard(
                               name: name,

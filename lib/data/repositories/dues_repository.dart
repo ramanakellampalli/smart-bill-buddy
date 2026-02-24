@@ -52,4 +52,21 @@ class DuesRepository {
   Future<void> deleteDue(String dueId) async {
     await _duesCol.doc(dueId).delete();
   }
+
+  /// Adds a payment entry to a due. Pass autoSettle=true to also mark settled.
+  Future<void> addPayment(
+    String dueId,
+    List<PaymentEntry> updatedPayments, {
+    bool autoSettle = false,
+  }) async {
+    final data = <String, dynamic>{
+      'payments': updatedPayments.map((p) => p.toMap()).toList(),
+      'updatedAt': DateTime.now().toIso8601String(),
+    };
+    if (autoSettle) {
+      data['isSettled'] = true;
+      data['settledAt'] = DateTime.now().toIso8601String();
+    }
+    await _duesCol.doc(dueId).update(data);
+  }
 }
