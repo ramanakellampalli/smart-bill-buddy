@@ -1,0 +1,102 @@
+name: Create Release
+
+on:
+  push:
+    branches:
+      - main
+
+# Required to create tags and releases
+permissions:
+  contents: write
+
+jobs:
+  release:
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout with full history so we can diff tags ──────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+
+      # ── 2. Read version from pubspec.yaml ──────────────────────────────────
+      #    e.g. "1.0.2+6" → tag=v1.0.2, build=6
+      - name: Read pubspec version
+        id: pubspec
+        run: |
+          FULL=$(grep '^version:' pubspec.yaml | awk '{print $2}')
+          NAME=$(echo "$FULL" | cut -d'+' -f1)
+          BUILD=$(echo "$FULL" | cut -d'+' -f2)
+          echo "full=$FULL"   >> "$GITHUB_OUTPUT"
+          echo "name=$NAME"   >> "$GITHUB_OUTPUT"
+          echo "build=$BUILD" >> "$GITHUB_OUTPUT"
+          echo "tag=v$NAME"   >> "$GITHUB_OUTPUT"
+
+      # ── 3. Skip if this version tag already exists ─────────────────────────
+      - name: Check if tag already exists
+        id: tag_check
+        run: |
+          TAG="${{ steps.pubspec.outputs.tag }}"
+          if git ls-remote --tags origin "refs/tags/$TAG" | grep -q "$TAG"; then
+            echo "exists=true"  >> "$GITHUB_OUTPUT"
+            echo "⚠️  Tag $TAG already exists — skipping release."
+          else
+            echo "exists=false" >> "$GITHUB_OUTPUT"
+            echo "✅ Tag $TAG is new — will create release."
+          fi
+
+      # ── 4. Find the most recent previous tag ──────────────────────────────
+      - name: Get previous tag
+        if: steps.tag_check.outputs.exists == 'false'
+        id: prev_tag
+        run: |
+          PREV=$(git tag --sort=-version:refname \
+                 | grep -E '^v[0-9]+\.[0-9]+\.[0-9]+$' \
+                 | head -1)
+          echo "tag=$PREV" >> "$GITHUB_OUTPUT"
+          if [ -z "$PREV" ]; then
+            echo "No previous tag found — changelog will include all commits."
+          else
+            echo "Previous tag: $PREV"
+          fi
+
+      # ── 5. Build changelog from commits since last tag ─────────────────────
+      - name: Generate changelog
+        if: steps.tag_check.outputs.exists == 'false'
+        id: changelog
+        run: |
+          PREV="${{ steps.prev_tag.outputs.tag }}"
+          RANGE="${PREV:+$PREV..}HEAD"
+
+          # Collect non-merge commit subjects + short hash
+          NOTES=$(git log "$RANGE" \
+                    --pretty=format:"- %s (%h)" \
+                    --no-merges)
+
+          # Export as multiline output
+          {
+            echo 'notes<<EOF'
+            echo "$NOTES"
+            echo 'EOF'
+          } >> "$GITHUB_OUTPUT"
+
+      # ── 6. Create the GitHub Release ──────────────────────────────────────
+      - name: Create GitHub Release
+        if: steps.tag_check.outputs.exists == 'false'
+        uses: softprops/action-gh-release@v2
+        with:
+          tag_name: ${{ steps.pubspec.outputs.tag }}
+          name: "v${{ steps.pubspec.outputs.name }} (build ${{ steps.pubspec.outputs.build }})"
+          body: |
+            ## What's Changed
+
+            ${{ steps.changelog.outputs.notes }}
+
+            ---
+            **Build:** `${{ steps.pubspec.outputs.full }}`
+            **Full changelog:** ${{ github.server_url }}/${{ github.repository }}/compare/${{ steps.prev_tag.outputs.tag }}...${{ steps.pubspec.outputs.tag }}
+          draft: false
+          prerelease: false
+        env:
+          GITHUB_TOKEN: ${{ secrets.GITHUB_TOKEN }}
