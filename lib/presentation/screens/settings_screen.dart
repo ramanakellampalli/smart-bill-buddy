@@ -174,8 +174,9 @@ class _SettingsScreenContentState extends State<_SettingsScreenContent> {
             title: 'Privacy Policy',
             subtitle: 'Read our privacy policy',
             onTap: () => launchUrl(
-              Uri.parse('https://billbuddy.app/privacy'),
-              mode: LaunchMode.externalApplication,
+              Uri.parse(
+                  'https://ohyeahsaas.com/privacy/bill-buddy/policy'),
+              mode: LaunchMode.inAppBrowserView,
             ),
           ),
           const SizedBox(height: 24),

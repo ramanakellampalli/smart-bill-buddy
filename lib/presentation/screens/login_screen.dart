@@ -597,6 +597,7 @@ class _LoginTab extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(32, 28, 32, 36),
       child: Form(
         key: formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -696,6 +697,7 @@ class _SignupTab extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(32, 28, 32, 36),
       child: Form(
         key: formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
