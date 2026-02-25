@@ -235,6 +235,19 @@ class _LoginScreenState extends State<LoginScreen>
     }
   }
 
+  // ── Forgot Password ────────────────────────────────────────────────────────
+
+  void _showForgotPasswordSheet(BuildContext context) {
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.transparent,
+      builder: (_) => _ForgotPasswordSheet(
+        initialEmail: _loginEmailCtrl.text.trim(),
+      ),
+    );
+  }
+
   // ── Signup ─────────────────────────────────────────────────────────────────
 
   Future<void> _signup() async {
@@ -441,6 +454,7 @@ class _LoginScreenState extends State<LoginScreen>
                               loading: _loginLoading,
                               error: _loginError,
                               onSubmit: _login,
+                              onForgotPassword: () => _showForgotPasswordSheet(context),
                             ),
                             _SignupTab(
                               formKey: _signupKey,
@@ -563,6 +577,7 @@ class _LoginTab extends StatelessWidget {
   final bool loading;
   final String? error;
   final VoidCallback onSubmit;
+  final VoidCallback onForgotPassword;
 
   const _LoginTab({
     required this.formKey,
@@ -573,6 +588,7 @@ class _LoginTab extends StatelessWidget {
     required this.loading,
     required this.error,
     required this.onSubmit,
+    required this.onForgotPassword,
   });
 
   @override
@@ -581,6 +597,7 @@ class _LoginTab extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(32, 28, 32, 36),
       child: Form(
         key: formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -621,12 +638,15 @@ class _LoginTab extends StatelessWidget {
               },
             ),
             const SizedBox(height: 14),
-            const Text(
-              'Forgot password?',
-              style: TextStyle(
-                fontSize: 13,
-                color: _textSecondary,
-                fontWeight: FontWeight.w600,
+            GestureDetector(
+              onTap: onForgotPassword,
+              child: const Text(
+                'Forgot password?',
+                style: TextStyle(
+                  fontSize: 13,
+                  color: _textSecondary,
+                  fontWeight: FontWeight.w600,
+                ),
               ),
             ),
             if (error != null) ...[
@@ -677,6 +697,7 @@ class _SignupTab extends StatelessWidget {
       padding: const EdgeInsets.fromLTRB(32, 28, 32, 36),
       child: Form(
         key: formKey,
+        autovalidateMode: AutovalidateMode.onUserInteraction,
         child: Column(
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
@@ -1225,6 +1246,309 @@ class _FeatureRowState extends State<_FeatureRow> with TickerProviderStateMixin 
     );
   }
 }
+
+// ── Forgot Password Sheet ──────────────────────────────────────────────────────
+
+class _ForgotPasswordSheet extends StatefulWidget {
+  final String initialEmail;
+  const _ForgotPasswordSheet({required this.initialEmail});
+
+  @override
+  State<_ForgotPasswordSheet> createState() => _ForgotPasswordSheetState();
+}
+
+class _ForgotPasswordSheetState extends State<_ForgotPasswordSheet> {
+  late final TextEditingController _emailCtrl;
+  bool _loading = false;
+  bool _sent = false;
+  String? _error;
+
+  @override
+  void initState() {
+    super.initState();
+    _emailCtrl = TextEditingController(text: widget.initialEmail);
+  }
+
+  @override
+  void dispose() {
+    _emailCtrl.dispose();
+    super.dispose();
+  }
+
+  Future<void> _send() async {
+    final email = _emailCtrl.text.trim();
+    if (email.isEmpty ||
+        !RegExp(r'^[\w-\.]+@([\w-]+\.)+[\w-]{2,4}$').hasMatch(email)) {
+      setState(() => _error = 'Enter a valid email address');
+      return;
+    }
+    setState(() { _loading = true; _error = null; });
+    try {
+      await FirebaseAuth.instance.sendPasswordResetEmail(email: email);
+      if (mounted) setState(() { _loading = false; _sent = true; });
+    } on FirebaseAuthException catch (e) {
+      if (!mounted) return;
+      final msg = switch (e.code) {
+        'user-not-found'    => 'No account found with this email.',
+        'invalid-email'     => 'Invalid email address.',
+        'too-many-requests' => 'Too many attempts. Try again later.',
+        _                   => 'Something went wrong. Please try again.',
+      };
+      setState(() { _loading = false; _error = msg; });
+    }
+  }
+
+  @override
+  Widget build(BuildContext context) {
+    return Padding(
+      padding: EdgeInsets.only(bottom: MediaQuery.of(context).viewInsets.bottom),
+      child: Container(
+        decoration: const BoxDecoration(
+          color: Colors.white,
+          borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+        ),
+        padding: const EdgeInsets.fromLTRB(24, 12, 24, 36),
+        child: _sent ? _SuccessView(
+          email: _emailCtrl.text.trim(),
+          onDone: () => Navigator.pop(context),
+        ) : _FormView(
+          emailCtrl: _emailCtrl,
+          loading: _loading,
+          error: _error,
+          onSend: _send,
+          onCancel: () => Navigator.pop(context),
+        ),
+      ),
+    );
+  }
+}
+
+class _FormView extends StatelessWidget {
+  final TextEditingController emailCtrl;
+  final bool loading;
+  final String? error;
+  final VoidCallback onSend;
+  final VoidCallback onCancel;
+
+  const _FormView({
+    required this.emailCtrl,
+    required this.loading,
+    required this.error,
+    required this.onSend,
+    required this.onCancel,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      crossAxisAlignment: CrossAxisAlignment.start,
+      children: [
+        // Drag handle
+        Center(
+          child: Container(
+            width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEDE6DC),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+        const SizedBox(height: 24),
+
+        // Icon
+        Container(
+          width: 52, height: 52,
+          decoration: BoxDecoration(
+            color: const Color(0xFF667EEA).withOpacity(0.10),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.lock_reset_rounded,
+              size: 26, color: Color(0xFF667EEA)),
+        ),
+        const SizedBox(height: 16),
+
+        // Title + subtitle
+        const Text(
+          'Reset your password',
+          style: TextStyle(
+            fontSize: 18, fontWeight: FontWeight.w700,
+            color: Color(0xFF1C1917),
+          ),
+        ),
+        const SizedBox(height: 6),
+        const Text(
+          "Enter your email and we'll send you a link to reset your password.",
+          style: TextStyle(fontSize: 13, color: Color(0xFF78716C), height: 1.5),
+        ),
+        const SizedBox(height: 24),
+
+        // Email field
+        Container(
+          decoration: BoxDecoration(
+            color: const Color(0xFFFAF8F5),
+            borderRadius: BorderRadius.circular(12),
+            border: Border.all(color: const Color(0xFFEDE6DC)),
+          ),
+          child: TextField(
+            controller: emailCtrl,
+            keyboardType: TextInputType.emailAddress,
+            autofocus: true,
+            style: const TextStyle(fontSize: 15, color: Color(0xFF1C1917)),
+            decoration: const InputDecoration(
+              contentPadding:
+                  EdgeInsets.symmetric(horizontal: 14, vertical: 14),
+              border: InputBorder.none,
+              hintText: 'hello@example.com',
+              hintStyle: TextStyle(color: Color(0xFFA8A29E), fontSize: 15),
+              prefixIcon: Icon(Icons.mail_outline_rounded,
+                  color: Color(0xFFA8A29E), size: 20),
+            ),
+            onChanged: (_) {},
+          ),
+        ),
+
+        // Error
+        if (error != null) ...[
+          const SizedBox(height: 10),
+          Row(
+            children: [
+              const Icon(Icons.error_outline_rounded,
+                  size: 15, color: Color(0xFFDC2626)),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(error!,
+                    style: const TextStyle(
+                        fontSize: 12, color: Color(0xFFDC2626))),
+              ),
+            ],
+          ),
+        ],
+
+        const SizedBox(height: 24),
+
+        // Send button
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: loading ? null : onSend,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF667EEA),
+              disabledBackgroundColor:
+                  const Color(0xFF667EEA).withOpacity(0.45),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+            ),
+            child: loading
+                ? const SizedBox(
+                    width: 20, height: 20,
+                    child: CircularProgressIndicator(
+                        strokeWidth: 2.5, color: Colors.white),
+                  )
+                : const Text('Send Reset Link',
+                    style: TextStyle(
+                        fontSize: 15, fontWeight: FontWeight.w700)),
+          ),
+        ),
+        const SizedBox(height: 10),
+
+        // Cancel
+        SizedBox(
+          width: double.infinity,
+          child: TextButton(
+            onPressed: onCancel,
+            child: const Text('Cancel',
+                style: TextStyle(
+                    fontSize: 14, color: Color(0xFF78716C))),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _SuccessView extends StatelessWidget {
+  final String email;
+  final VoidCallback onDone;
+  const _SuccessView({required this.email, required this.onDone});
+
+  @override
+  Widget build(BuildContext context) {
+    return Column(
+      mainAxisSize: MainAxisSize.min,
+      children: [
+        // Drag handle
+        Center(
+          child: Container(
+            width: 36, height: 4,
+            decoration: BoxDecoration(
+              color: const Color(0xFFEDE6DC),
+              borderRadius: BorderRadius.circular(2),
+            ),
+          ),
+        ),
+        const SizedBox(height: 32),
+
+        // Success icon
+        Container(
+          width: 64, height: 64,
+          decoration: BoxDecoration(
+            color: const Color(0xFF16A34A).withOpacity(0.10),
+            shape: BoxShape.circle,
+          ),
+          child: const Icon(Icons.mark_email_read_outlined,
+              size: 32, color: Color(0xFF16A34A)),
+        ),
+        const SizedBox(height: 20),
+
+        const Text(
+          'Check your inbox',
+          style: TextStyle(
+            fontSize: 18, fontWeight: FontWeight.w700,
+            color: Color(0xFF1C1917),
+          ),
+        ),
+        const SizedBox(height: 8),
+        Text(
+          "We've sent a password reset link to\n$email",
+          textAlign: TextAlign.center,
+          style: const TextStyle(
+              fontSize: 13, color: Color(0xFF78716C), height: 1.5),
+        ),
+        const SizedBox(height: 8),
+        const Text(
+          "Didn't get it? Check your spam folder.",
+          textAlign: TextAlign.center,
+          style: TextStyle(fontSize: 12, color: Color(0xFFA8A29E)),
+        ),
+        const SizedBox(height: 32),
+
+        SizedBox(
+          width: double.infinity,
+          child: ElevatedButton(
+            onPressed: onDone,
+            style: ElevatedButton.styleFrom(
+              backgroundColor: const Color(0xFF16A34A),
+              foregroundColor: Colors.white,
+              padding: const EdgeInsets.symmetric(vertical: 15),
+              elevation: 0,
+              shape: RoundedRectangleBorder(
+                  borderRadius: BorderRadius.circular(14)),
+            ),
+            child: const Text('Done',
+                style:
+                    TextStyle(fontSize: 15, fontWeight: FontWeight.w700)),
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+// ── Feature Chip ──────────────────────────────────────────────────────────────
 
 class _FeatureChip extends StatelessWidget {
   final IconData icon;

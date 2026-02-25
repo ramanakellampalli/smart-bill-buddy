@@ -747,7 +747,7 @@ class _PreferencesSection extends StatelessWidget {
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
         const Text(
-          'Preferences',
+          'Your Preferences',
           style: TextStyle(
             fontSize: 16,
             fontWeight: FontWeight.w700,
@@ -845,7 +845,7 @@ class _PreferenceTile extends StatelessWidget {
       splashColor: _primary.withOpacity(0.06),
       highlightColor: _primary.withOpacity(0.04),
       child: Padding(
-        padding: const EdgeInsets.all(16),
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
           children: [
             Icon(icon, color: _textSecondary, size: 20),
@@ -898,7 +898,7 @@ class _SwitchTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
           Icon(icon, color: _textSecondary, size: 20),
@@ -928,11 +928,13 @@ class _SwitchTile extends StatelessWidget {
               ],
             ),
           ),
-          Switch(
+          Checkbox(
             value: value,
-            onChanged: onChanged,
+            onChanged: (v) => onChanged(v ?? value),
             activeColor: _primary,
-            activeTrackColor: _primary.withOpacity(0.2),
+            side: const BorderSide(color: _textTertiary, width: 1.5),
+            visualDensity: VisualDensity.compact,
+            materialTapTargetSize: MaterialTapTargetSize.shrinkWrap,
           ),
         ],
       ),
@@ -1028,7 +1030,7 @@ class _InfoTile extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Padding(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
       child: Row(
         children: [
           Icon(icon, color: _textSecondary, size: 20),

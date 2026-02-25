@@ -18,13 +18,10 @@ const _textTertiary = Color(0xFFA8A29E);
 const _green = Color(0xFF16A34A);
 const _red = Color(0xFFDC2626);
 
-
 String _capitalize(String s) =>
     s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
-
-enum _Filter { all, unpaid, paid }
 
 class BillsScreen extends StatefulWidget {
   const BillsScreen({super.key});
@@ -34,62 +31,55 @@ class BillsScreen extends StatefulWidget {
 }
 
 class _BillsScreenState extends State<BillsScreen> {
-  _Filter _filter = _Filter.all;
-  final _searchCtrl = TextEditingController();
-  String _query = '';
-
-  @override
-  void initState() {
-    super.initState();
-    _searchCtrl.addListener(() => setState(() => _query = _searchCtrl.text));
-  }
-
-  @override
-  void dispose() {
-    _searchCtrl.dispose();
-    super.dispose();
-  }
+  bool _unpaidExpanded = true;
+  bool _paidExpanded = false;
 
   void _handleDelete(BuildContext context, BillModel bill) {
     context.read<BillsProvider>().remove(bill.id);
-    ScaffoldMessenger.of(context)
-      ..hideCurrentSnackBar()
-      ..showSnackBar(
-        SnackBar(
-          content: Text('${bill.name} deleted'),
-          duration: const Duration(seconds: 4),
-          backgroundColor: _textPrimary,
-          behavior: SnackBarBehavior.floating,
-          shape:
-              RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
-          margin: const EdgeInsets.all(16),
-          action: SnackBarAction(
-            label: 'Undo',
-            textColor: _primary,
-            onPressed: () => context.read<BillsProvider>().add(bill),
-          ),
+    final messenger = ScaffoldMessenger.of(context);
+    messenger.clearSnackBars();
+    final entry = messenger.showSnackBar(
+      SnackBar(
+        content: Text('${bill.name} deleted'),
+        duration: const Duration(seconds: 4),
+        backgroundColor: _textPrimary,
+        behavior: SnackBarBehavior.floating,
+        shape: RoundedRectangleBorder(borderRadius: BorderRadius.circular(12)),
+        margin: const EdgeInsets.all(16),
+        action: SnackBarAction(
+          label: 'Undo',
+          textColor: _primary,
+          onPressed: () => context.read<BillsProvider>().add(bill),
         ),
-      );
+      ),
+    );
+    // Backup dismiss — guarantees the snackbar goes away even if Flutter's
+    // internal duration timer is disrupted by a widget tree rebuild.
+    Future.delayed(const Duration(seconds: 4), entry.close);
   }
 
   @override
   Widget build(BuildContext context) {
     final p = context.watch<BillsProvider>();
     final money = context.watch<AppSettingsProvider>().money;
-    final df = DateFormat('d MMM yyyy');
 
-    final q = _query.trim().toLowerCase();
-    final filtered = p.bills.where((b) {
-      if (_filter == _Filter.unpaid && b.isPaid) return false;
-      if (_filter == _Filter.paid && !b.isPaid) return false;
-      if (q.isNotEmpty && !b.name.toLowerCase().contains(q)) return false;
-      return true;
-    }).toList()
+    final now = DateTime.now();
+    final monthStart = DateTime(now.year, now.month, 1);
+    final monthEnd = DateTime(now.year, now.month + 1, 1);
+    final monthLabel = DateFormat('MMMM yyyy').format(now);
+
+    final monthBills = p.bills
+        .where((b) =>
+            !b.dueDate.isBefore(monthStart) && b.dueDate.isBefore(monthEnd))
+        .toList();
+
+    final unpaid = monthBills.where((b) => !b.isPaid).toList()
+      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+    final paid = monthBills.where((b) => b.isPaid).toList()
       ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
 
-    final allCount = p.bills.length;
-    final unpaidCount = p.bills.where((b) => !b.isPaid).length;
-    final paidCount = p.bills.where((b) => b.isPaid).length;
+    final totalUnpaid = unpaid.fold(0.0, (s, b) => s + (b.amount ?? 0.0));
+    final totalPaid = paid.fold(0.0, (s, b) => s + (b.amount ?? 0.0));
 
     return Scaffold(
       backgroundColor: _bg,
@@ -98,10 +88,23 @@ class _BillsScreenState extends State<BillsScreen> {
         elevation: 0,
         centerTitle: true,
         automaticallyImplyLeading: false,
-        title: const Text(
-          'Bills',
-          style: TextStyle(
-              fontSize: 18, fontWeight: FontWeight.w700, color: _textPrimary),
+        title: Column(
+          children: [
+            const Text(
+              'Bills',
+              style: TextStyle(
+                  fontSize: 18,
+                  fontWeight: FontWeight.w700,
+                  color: _textPrimary),
+            ),
+            Text(
+              monthLabel,
+              style: const TextStyle(
+                  fontSize: 12,
+                  fontWeight: FontWeight.w400,
+                  color: _textSecondary),
+            ),
+          ],
         ),
         actions: [
           IconButton(
@@ -113,484 +116,487 @@ class _BillsScreenState extends State<BillsScreen> {
           const SizedBox(width: 4),
         ],
       ),
-      body: SelectionArea(child: Column(
-        children: [
-          // ── Filter tabs ──────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-            child: Row(
-              children: [
-                _FilterPill(
-                    label: 'All',
-                    count: allCount,
-                    selected: _filter == _Filter.all,
-                    onTap: () => setState(() => _filter = _Filter.all)),
-                const SizedBox(width: 8),
-                _FilterPill(
-                    label: 'Unpaid',
-                    count: unpaidCount,
-                    selected: _filter == _Filter.unpaid,
-                    color: _red,
-                    onTap: () => setState(() => _filter = _Filter.unpaid)),
-                const SizedBox(width: 8),
-                _FilterPill(
-                    label: 'Paid',
-                    count: paidCount,
-                    selected: _filter == _Filter.paid,
-                    color: _green,
-                    onTap: () => setState(() => _filter = _Filter.paid)),
-              ],
-            ),
-          ),
-          const SizedBox(height: 10),
+      body: p.isLoading
+          ? const Center(
+              child: CircularProgressIndicator(
+                  strokeWidth: 2.5, color: _primary))
+          : SingleChildScrollView(
+              padding: const EdgeInsets.fromLTRB(16, 8, 16, 32),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  // ── Error banner ─────────────────────────────────────────
+                  if (p.error != null)
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 12),
+                      child: Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 14, vertical: 10),
+                        decoration: BoxDecoration(
+                          color: _red.withValues(alpha: 0.06),
+                          borderRadius: BorderRadius.circular(12),
+                          border:
+                              Border.all(color: _red.withValues(alpha: 0.2)),
+                        ),
+                        child: Row(
+                          children: [
+                            const Icon(Icons.warning_amber_rounded,
+                                color: _red, size: 16),
+                            const SizedBox(width: 8),
+                            Expanded(
+                              child: Text(p.error!,
+                                  style: const TextStyle(
+                                      color: _red, fontSize: 13)),
+                            ),
+                          ],
+                        ),
+                      ),
+                    ),
 
-          // ── Search bar ───────────────────────────────────────────────────
-          Padding(
-            padding: const EdgeInsets.fromLTRB(16, 0, 16, 0),
-            child: TextField(
-              controller: _searchCtrl,
-              style: const TextStyle(fontSize: 14, color: _textPrimary),
-              decoration: InputDecoration(
-                hintText: 'Search bills...',
-                hintStyle:
-                    const TextStyle(color: _textTertiary, fontSize: 14),
-                prefixIcon: const Icon(Icons.search_rounded,
-                    color: _textTertiary, size: 20),
-                suffixIcon: _query.isNotEmpty
-                    ? GestureDetector(
-                        onTap: () => _searchCtrl.clear(),
-                        child: const Icon(Icons.close_rounded,
-                            color: _textTertiary, size: 18),
-                      )
-                    : null,
-                filled: true,
-                fillColor: _card,
-                contentPadding: const EdgeInsets.symmetric(
-                    horizontal: 16, vertical: 12),
-                border: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: _border)),
-                enabledBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide: const BorderSide(color: _border)),
-                focusedBorder: OutlineInputBorder(
-                    borderRadius: BorderRadius.circular(12),
-                    borderSide:
-                        const BorderSide(color: _primary, width: 1.5)),
-              ),
-            ),
-          ),
-          const SizedBox(height: 10),
+                  // ── Empty state ──────────────────────────────────────────
+                  if (monthBills.isEmpty)
+                    const _EmptyState()
+                  else ...[
+                    // ── Month summary chip ────────────────────────────────
+                    Padding(
+                      padding: const EdgeInsets.only(bottom: 16),
+                      child: Text(
+                        '${monthBills.length} ${monthBills.length == 1 ? 'bill' : 'bills'} this month',
+                        style: const TextStyle(
+                            fontSize: 13, color: _textSecondary),
+                      ),
+                    ),
 
-          // ── Error banner ─────────────────────────────────────────────────
-          if (p.error != null)
-            Padding(
-              padding: const EdgeInsets.fromLTRB(16, 0, 16, 8),
-              child: Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 14, vertical: 10),
-                decoration: BoxDecoration(
-                  color: _red.withOpacity(0.06),
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(color: _red.withOpacity(0.2)),
-                ),
-                child: Row(
-                  children: [
-                    const Icon(Icons.warning_amber_rounded,
-                        color: _red, size: 16),
-                    const SizedBox(width: 8),
-                    Expanded(
-                      child: Text(p.error!,
-                          style:
-                              const TextStyle(color: _red, fontSize: 13)),
+                    // ── Unpaid section ────────────────────────────────────
+                    _Section(
+                      label: 'Unpaid',
+                      count: unpaid.length,
+                      total: totalUnpaid,
+                      money: money,
+                      color: _red,
+                      icon: Icons.radio_button_unchecked_rounded,
+                      expanded: _unpaidExpanded,
+                      onToggle: () =>
+                          setState(() => _unpaidExpanded = !_unpaidExpanded),
+                      emptyText: 'All bills paid this month!',
+                      bills: unpaid,
+                      onMarkPaid: (b) =>
+                          context.read<BillsProvider>().setPaid(b.id, !b.isPaid),
+                      onDelete: (b) => _handleDelete(context, b),
+                    ),
+
+                    const SizedBox(height: 12),
+
+                    // ── Paid section ──────────────────────────────────────
+                    _Section(
+                      label: 'Paid',
+                      count: paid.length,
+                      total: totalPaid,
+                      money: money,
+                      color: _green,
+                      icon: Icons.check_circle_rounded,
+                      expanded: _paidExpanded,
+                      onToggle: () =>
+                          setState(() => _paidExpanded = !_paidExpanded),
+                      emptyText: 'No bills paid yet this month',
+                      bills: paid,
+                      onMarkPaid: (b) =>
+                          context.read<BillsProvider>().setPaid(b.id, !b.isPaid),
+                      onDelete: (b) => _handleDelete(context, b),
                     ),
                   ],
-                ),
+                ],
               ),
             ),
-
-          // ── List ────────────────────────────────────────────────────────
-          Expanded(
-            child: p.isLoading
-                ? const Center(
-                    child: CircularProgressIndicator(
-                        strokeWidth: 2.5, color: _primary))
-                : filtered.isEmpty
-                ? _EmptyState(filter: _filter)
-                : ListView.builder(
-                    padding: const EdgeInsets.fromLTRB(16, 0, 16, 32),
-                    itemCount: filtered.length,
-                    itemBuilder: (ctx, i) {
-                      final b = filtered[i];
-                      return _BillCard(
-                        key: ValueKey(b.id),
-                        bill: b,
-                        dateText: df.format(b.dueDate),
-                        amountText: b.amount == null
-                            ? ''
-                            : money.format(b.amount),
-                        onTap: () => Navigator.pushNamed(
-                            context, '/add-bill',
-                            arguments: b),
-                        onMarkPaid: () => context
-                            .read<BillsProvider>()
-                            .setPaid(b.id, !b.isPaid),
-                        onDelete: () => _handleDelete(context, b),
-                      );
-                    },
-                  ),
-          ),
-        ],
-      )),
     );
   }
 }
 
-// ── Filter Pill ───────────────────────────────────────────────────────────────
+// ── Section card ───────────────────────────────────────────────────────────────
 
-class _FilterPill extends StatelessWidget {
+class _Section extends StatelessWidget {
   final String label;
   final int count;
-  final bool selected;
+  final double total;
+  final NumberFormat money;
   final Color color;
-  final VoidCallback onTap;
+  final IconData icon;
+  final bool expanded;
+  final VoidCallback onToggle;
+  final String emptyText;
+  final List<BillModel> bills;
+  final void Function(BillModel) onMarkPaid;
+  final void Function(BillModel) onDelete;
 
-  const _FilterPill({
+  const _Section({
     required this.label,
     required this.count,
-    required this.selected,
-    required this.onTap,
-    this.color = _primary,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return GestureDetector(
-      onTap: onTap,
-      child: AnimatedContainer(
-        duration: const Duration(milliseconds: 180),
-        padding:
-            const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
-        decoration: BoxDecoration(
-          color: selected ? color.withOpacity(0.10) : _card,
-          borderRadius: BorderRadius.circular(20),
-          border: Border.all(
-            color: selected ? color : _border,
-            width: selected ? 1.5 : 1,
-          ),
-        ),
-        child: Row(
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            Text(
-              label,
-              style: TextStyle(
-                fontSize: 13,
-                fontWeight:
-                    selected ? FontWeight.w600 : FontWeight.w400,
-                color: selected ? color : _textSecondary,
-              ),
-            ),
-            const SizedBox(width: 6),
-            Container(
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
-              decoration: BoxDecoration(
-                color: selected
-                    ? color.withOpacity(0.15)
-                    : const Color(0xFFEDE6DC),
-                borderRadius: BorderRadius.circular(10),
-              ),
-              child: Text(
-                '$count',
-                style: TextStyle(
-                  fontSize: 11,
-                  fontWeight: FontWeight.w600,
-                  color: selected ? color : _textTertiary,
-                ),
-              ),
-            ),
-          ],
-        ),
-      ),
-    );
-  }
-}
-
-// ── Bill Card ─────────────────────────────────────────────────────────────────
-
-class _BillCard extends StatelessWidget {
-  final BillModel bill;
-  final String dateText;
-  final String amountText;
-  final VoidCallback onTap;
-  final VoidCallback onMarkPaid;
-  final VoidCallback onDelete;
-
-  const _BillCard({
-    super.key,
-    required this.bill,
-    required this.dateText,
-    required this.amountText,
-    required this.onTap,
+    required this.total,
+    required this.money,
+    required this.color,
+    required this.icon,
+    required this.expanded,
+    required this.onToggle,
+    required this.emptyText,
+    required this.bills,
     required this.onMarkPaid,
     required this.onDelete,
   });
 
   @override
   Widget build(BuildContext context) {
+    return Container(
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(16),
+        border: Border.all(color: _border),
+        boxShadow: [
+          BoxShadow(
+            color: Colors.black.withValues(alpha: 0.03),
+            blurRadius: 8,
+            offset: const Offset(0, 2),
+          ),
+        ],
+      ),
+      child: Column(
+        children: [
+          // ── Header row ───────────────────────────────────────────────────
+          GestureDetector(
+            onTap: onToggle,
+            behavior: HitTestBehavior.opaque,
+            child: Padding(
+              padding:
+                  const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+              child: Row(
+                children: [
+                  Container(
+                    padding: const EdgeInsets.all(8),
+                    decoration: BoxDecoration(
+                      color: color.withValues(alpha: 0.10),
+                      shape: BoxShape.circle,
+                    ),
+                    child: Icon(icon, color: color, size: 16),
+                  ),
+                  const SizedBox(width: 12),
+                  Expanded(
+                    child: Column(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        Text(
+                          label,
+                          style: TextStyle(
+                              fontSize: 15,
+                              fontWeight: FontWeight.w600,
+                              color: color),
+                        ),
+                        Text(
+                          '$count ${count == 1 ? 'bill' : 'bills'}',
+                          style: const TextStyle(
+                              fontSize: 12, color: _textTertiary),
+                        ),
+                      ],
+                    ),
+                  ),
+                  Text(
+                    total > 0 ? money.format(total) : '—',
+                    style: TextStyle(
+                        fontSize: 16,
+                        fontWeight: FontWeight.w700,
+                        color: color),
+                  ),
+                  const SizedBox(width: 8),
+                  Icon(
+                    expanded
+                        ? Icons.expand_less_rounded
+                        : Icons.expand_more_rounded,
+                    color: _textTertiary,
+                    size: 20,
+                  ),
+                ],
+              ),
+            ),
+          ),
+
+          // ── Expanded bill rows ────────────────────────────────────────────
+          if (expanded) ...[
+            Divider(height: 1, color: _border),
+            if (bills.isEmpty)
+              Padding(
+                padding: const EdgeInsets.all(16),
+                child: Text(emptyText,
+                    style: const TextStyle(
+                        fontSize: 13, color: _textTertiary)),
+              )
+            else
+              ...bills.asMap().entries.map((entry) {
+                final i = entry.key;
+                final b = entry.value;
+                return _BillRow(
+                  key: ValueKey(b.id),
+                  bill: b,
+                  money: money,
+                  isLast: i == bills.length - 1,
+                  onMarkPaid: () => onMarkPaid(b),
+                  onDelete: () => onDelete(b),
+                );
+              }),
+          ],
+        ],
+      ),
+    );
+  }
+}
+
+// ── Bill row ───────────────────────────────────────────────────────────────────
+
+class _BillRow extends StatelessWidget {
+  final BillModel bill;
+  final NumberFormat money;
+  final bool isLast;
+  final VoidCallback onMarkPaid;
+  final VoidCallback onDelete;
+
+  const _BillRow({
+    super.key,
+    required this.bill,
+    required this.money,
+    required this.isLast,
+    required this.onMarkPaid,
+    required this.onDelete,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final df = DateFormat('d MMM');
     final now = DateTime.now();
-    final isOverdue =
-        !bill.isPaid && bill.dueDate.isBefore(DateTime(now.year, now.month, now.day));
+    final isOverdue = !bill.isPaid &&
+        bill.dueDate
+            .isBefore(DateTime(now.year, now.month, now.day));
 
     return Dismissible(
-      key: ValueKey(bill.id),
+      key: ValueKey('row-${bill.id}'),
       direction: DismissDirection.endToStart,
       onDismissed: (_) => onDelete(),
       background: Container(
-        margin: const EdgeInsets.only(bottom: 10),
         alignment: Alignment.centerRight,
-        padding: const EdgeInsets.symmetric(horizontal: 20),
+        padding: const EdgeInsets.only(right: 20),
         decoration: BoxDecoration(
-          color: _red.withOpacity(0.12),
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(color: _red.withOpacity(0.25)),
+          color: _red.withValues(alpha: 0.10),
+          borderRadius: isLast
+              ? const BorderRadius.vertical(bottom: Radius.circular(16))
+              : BorderRadius.zero,
         ),
-        child: Column(
+        child: const Column(
           mainAxisSize: MainAxisSize.min,
-          children: const [
-            Icon(Icons.delete_outline_rounded, color: _red, size: 22),
-            SizedBox(height: 3),
+          children: [
+            Icon(Icons.delete_outline_rounded, color: _red, size: 20),
+            SizedBox(height: 2),
             Text('Delete',
                 style: TextStyle(
-                    fontSize: 11,
+                    fontSize: 10,
                     color: _red,
                     fontWeight: FontWeight.w600)),
           ],
         ),
       ),
       child: GestureDetector(
-        onTap: onTap,
+        onTap: () =>
+            Navigator.pushNamed(context, '/add-bill', arguments: bill),
         child: Container(
-        margin: const EdgeInsets.only(bottom: 10),
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-        decoration: BoxDecoration(
-          color: bill.isPaid ? const Color(0xFFFAFAFA) : _card,
-          borderRadius: BorderRadius.circular(16),
-          border: Border.all(
-            color: isOverdue
-                ? _red.withOpacity(0.3)
-                : _border,
+          padding:
+              const EdgeInsets.symmetric(horizontal: 16, vertical: 11),
+          decoration: BoxDecoration(
+            border: !isLast
+                ? const Border(bottom: BorderSide(color: _border))
+                : null,
+            borderRadius: isLast
+                ? const BorderRadius.vertical(bottom: Radius.circular(16))
+                : null,
           ),
-          boxShadow: bill.isPaid
-              ? []
-              : [
-                  BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
-                    blurRadius: 8,
-                    offset: const Offset(0, 2),
-                  ),
-                ],
-        ),
-        child: Row(
-          children: [
-            // Category logo
-            CategoryLogo(category: bill.category, size: 38, dimmed: bill.isPaid, billName: bill.name),
-            const SizedBox(width: 10),
+          child: Row(
+            children: [
+              // Category logo
+              CategoryLogo(
+                  category: bill.category,
+                  size: 32,
+                  dimmed: bill.isPaid,
+                  billName: bill.name),
+              const SizedBox(width: 10),
 
-            // Name + meta
-            Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                mainAxisAlignment: MainAxisAlignment.center,
-                children: [
-                  Text(
-                    bill.name,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w600,
-                      color: bill.isPaid ? _textTertiary : _textPrimary,
-                      decoration: bill.isPaid
-                          ? TextDecoration.lineThrough
-                          : null,
-                      decorationColor: _textTertiary,
+              // Name + meta
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Text(
+                      bill.name,
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: bill.isPaid ? _textTertiary : _textPrimary,
+                        decoration: bill.isPaid
+                            ? TextDecoration.lineThrough
+                            : null,
+                        decorationColor: _textTertiary,
+                      ),
                     ),
-                  ),
-                  const SizedBox(height: 2),
-                  Row(
-                    children: [
-                      if (isOverdue) ...[
-                        Container(
-                          padding: const EdgeInsets.symmetric(
-                              horizontal: 6, vertical: 2),
-                          decoration: BoxDecoration(
-                            color: _red.withOpacity(0.10),
-                            borderRadius: BorderRadius.circular(4),
+                    const SizedBox(height: 2),
+                    Row(
+                      children: [
+                        if (isOverdue) ...[
+                          Container(
+                            padding: const EdgeInsets.symmetric(
+                                horizontal: 5, vertical: 1),
+                            decoration: BoxDecoration(
+                              color: _red.withValues(alpha: 0.10),
+                              borderRadius: BorderRadius.circular(4),
+                            ),
+                            child: const Text('Overdue',
+                                style: TextStyle(
+                                    fontSize: 10,
+                                    color: _red,
+                                    fontWeight: FontWeight.w600)),
                           ),
-                          child: const Text('Overdue',
-                              style: TextStyle(
-                                  fontSize: 10,
-                                  color: _red,
-                                  fontWeight: FontWeight.w600)),
+                          const SizedBox(width: 5),
+                        ],
+                        Flexible(
+                          child: Text(
+                            '${_capitalize(bill.category)} · ${df.format(bill.dueDate)}',
+                            style: const TextStyle(
+                                fontSize: 11, color: _textSecondary),
+                            overflow: TextOverflow.ellipsis,
+                          ),
                         ),
-                        const SizedBox(width: 6),
                       ],
-                      Flexible(
-                        child: Text(
-                          '${_capitalize(bill.category)} · ${_capitalize(bill.frequency)} · $dateText',
-                          style: const TextStyle(
-                              fontSize: 12, color: _textSecondary),
-                          overflow: TextOverflow.ellipsis,
+                    ),
+                  ],
+                ),
+              ),
+              const SizedBox(width: 8),
+
+              // Amount + mark paid
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.end,
+                children: [
+                  if (bill.amount != null)
+                    Text(
+                      money.format(bill.amount),
+                      style: TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: bill.isPaid ? _textTertiary : _textPrimary,
+                      ),
+                    ),
+                  const SizedBox(height: 4),
+                  GestureDetector(
+                    onTap: onMarkPaid,
+                    child: AnimatedContainer(
+                      duration: const Duration(milliseconds: 200),
+                      padding: const EdgeInsets.symmetric(
+                          horizontal: 7, vertical: 3),
+                      decoration: BoxDecoration(
+                        color: bill.isPaid
+                            ? _green.withValues(alpha: 0.08)
+                            : const Color(0xFFFDF5ED),
+                        borderRadius: BorderRadius.circular(20),
+                        border: Border.all(
+                          color: bill.isPaid
+                              ? _green.withValues(alpha: 0.3)
+                              : _border,
                         ),
                       ),
-                    ],
+                      child: Row(
+                        mainAxisSize: MainAxisSize.min,
+                        children: [
+                          Icon(
+                            bill.isPaid
+                                ? Icons.check_circle_rounded
+                                : Icons.radio_button_unchecked_rounded,
+                            size: 11,
+                            color:
+                                bill.isPaid ? _green : _textTertiary,
+                          ),
+                          const SizedBox(width: 3),
+                          Text(
+                            bill.isPaid ? 'Paid' : 'Mark Paid',
+                            style: TextStyle(
+                              fontSize: 10,
+                              fontWeight: FontWeight.w600,
+                              color: bill.isPaid
+                                  ? _green
+                                  : _textSecondary,
+                            ),
+                          ),
+                        ],
+                      ),
+                    ),
                   ),
                 ],
               ),
-            ),
-            const SizedBox(width: 8),
-
-            // Amount + toggle
-            Column(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              mainAxisAlignment: MainAxisAlignment.center,
-              children: [
-                if (amountText.isNotEmpty)
-                  Text(
-                    amountText,
-                    style: TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: bill.isPaid ? _textTertiary : _textPrimary,
-                    ),
-                  ),
-                const SizedBox(height: 4),
-                GestureDetector(
-                  onTap: onMarkPaid,
-                  child: AnimatedContainer(
-                    duration: const Duration(milliseconds: 200),
-                    padding: const EdgeInsets.symmetric(
-                        horizontal: 8, vertical: 4),
-                    decoration: BoxDecoration(
-                      color: bill.isPaid
-                          ? _green.withOpacity(0.08)
-                          : const Color(0xFFFDF5ED),
-                      borderRadius: BorderRadius.circular(20),
-                      border: Border.all(
-                        color: bill.isPaid
-                            ? _green.withOpacity(0.3)
-                            : _border,
-                      ),
-                    ),
-                    child: Row(
-                      mainAxisSize: MainAxisSize.min,
-                      children: [
-                        Icon(
-                          bill.isPaid
-                              ? Icons.check_circle_rounded
-                              : Icons.radio_button_unchecked_rounded,
-                          size: 12,
-                          color: bill.isPaid ? _green : _textTertiary,
-                        ),
-                        const SizedBox(width: 4),
-                        Text(
-                          bill.isPaid ? 'Paid' : 'Mark Paid',
-                          style: TextStyle(
-                            fontSize: 11,
-                            fontWeight: FontWeight.w600,
-                            color: bill.isPaid ? _green : _textSecondary,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                ),
-              ],
-            ),
-          ],
+            ],
+          ),
         ),
       ),
-    ),
-  );
+    );
   }
 }
 
 // ── Empty State ───────────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
-  final _Filter filter;
-  const _EmptyState({required this.filter});
+  const _EmptyState();
 
   @override
   Widget build(BuildContext context) {
-    final (icon, title, subtitle) = switch (filter) {
-      _Filter.paid => (
-          Icons.check_circle_outline_rounded,
-          'No paid bills',
-          'Bills you mark as paid will appear here'
-        ),
-      _Filter.unpaid => (
-          Icons.check_circle_outline_rounded,
-          'All caught up!',
-          'No unpaid bills right now'
-        ),
-      _Filter.all => (
-          Icons.receipt_long_rounded,
-          'No bills yet',
-          'Tap + to add your first bill'
-        ),
-    };
-
     return Center(
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 40),
+        padding: const EdgeInsets.symmetric(horizontal: 40, vertical: 60),
         child: Column(
           mainAxisSize: MainAxisSize.min,
           children: [
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: _primary.withOpacity(0.08),
+                color: _primary.withValues(alpha: 0.08),
                 shape: BoxShape.circle,
               ),
-              child: Icon(icon, size: 36, color: _primary),
+              child: const Icon(Icons.receipt_long_rounded,
+                  size: 36, color: _primary),
             ),
             const SizedBox(height: 16),
-            Text(title,
-                style: const TextStyle(
+            const Text('No bills this month',
+                style: TextStyle(
                     fontSize: 16,
                     fontWeight: FontWeight.w700,
                     color: _textPrimary)),
             const SizedBox(height: 6),
-            Text(subtitle,
-                style: const TextStyle(fontSize: 13, color: _textSecondary),
+            const Text('Tap + to add your first bill',
+                style: TextStyle(fontSize: 13, color: _textSecondary),
                 textAlign: TextAlign.center),
-            if (filter == _Filter.all) ...[
-              const SizedBox(height: 20),
-              GestureDetector(
-                onTap: () => Navigator.pushNamed(context, '/add-bill'),
-                child: Container(
-                  padding: const EdgeInsets.symmetric(
-                      horizontal: 20, vertical: 11),
-                  decoration: BoxDecoration(
-                    color: _primary,
-                    borderRadius: BorderRadius.circular(20),
-                  ),
-                  child: const Row(
-                    mainAxisSize: MainAxisSize.min,
-                    children: [
-                      Icon(Icons.add_rounded, size: 16, color: Colors.white),
-                      SizedBox(width: 6),
-                      Text('Add Bill',
-                          style: TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w600,
-                              color: Colors.white)),
-                    ],
-                  ),
+            const SizedBox(height: 20),
+            GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/add-bill'),
+              child: Container(
+                padding: const EdgeInsets.symmetric(
+                    horizontal: 20, vertical: 11),
+                decoration: BoxDecoration(
+                  color: _primary,
+                  borderRadius: BorderRadius.circular(20),
+                ),
+                child: const Row(
+                  mainAxisSize: MainAxisSize.min,
+                  children: [
+                    Icon(Icons.add_rounded, size: 16, color: Colors.white),
+                    SizedBox(width: 6),
+                    Text('Add Bill',
+                        style: TextStyle(
+                            fontSize: 13,
+                            fontWeight: FontWeight.w600,
+                            color: Colors.white)),
+                  ],
                 ),
               ),
-            ],
+            ),
           ],
         ),
       ),

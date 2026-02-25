@@ -122,6 +122,11 @@ class BillsProvider extends ChangeNotifier {
   }
 
   Future<void> remove(String billId) async {
+    // Optimistic update — remove immediately so the UI doesn't flicker when
+    // Firestore's stream confirms the deletion (which would otherwise cause
+    // an extra rebuild that interferes with the snackbar dismiss timer).
+    bills.removeWhere((b) => b.id == billId);
+    notifyListeners();
     try {
       await _repo.deleteBill(billId);
       await NotificationService.cancelBill(billId);

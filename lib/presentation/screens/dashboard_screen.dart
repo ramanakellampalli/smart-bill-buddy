@@ -4,8 +4,11 @@ import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../state/app_settings_provider.dart';
 import '../state/bills_provider.dart';
+import '../state/budgets_provider.dart';
+import '../state/dues_provider.dart';
 import '../widgets/category_logo.dart';
 import '../../data/models/bill_model.dart';
+import '../../data/models/budget_model.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 
@@ -20,6 +23,20 @@ const _textTertiary = Color(0xFFA8A29E);
 const _green = Color(0xFF16A34A);
 const _red = Color(0xFFDC2626);
 
+
+String _catLabel(String value) {
+  const labels = {
+    'utilities': 'Utilities',
+    'rent': 'Rent',
+    'emi': 'EMI',
+    'credit_card': 'Credit Card',
+    'subscriptions': 'Subscriptions',
+    'education': 'Education',
+    'other': 'Other',
+  };
+  return labels[value] ??
+      (value.isEmpty ? value : value[0].toUpperCase() + value.substring(1));
+}
 
 bool _isSameDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
@@ -43,7 +60,15 @@ DateTime _nextDueDateCalendar(DateTime from, String frequency) {
 // ── Screen ────────────────────────────────────────────────────────────────────
 
 class DashboardScreen extends StatefulWidget {
-  const DashboardScreen({super.key});
+  final VoidCallback onNavigateToBills;
+  final VoidCallback onNavigateToDues;
+  final VoidCallback onNavigateToBudgets;
+  const DashboardScreen({
+    super.key,
+    required this.onNavigateToBills,
+    required this.onNavigateToDues,
+    required this.onNavigateToBudgets,
+  });
 
   @override
   State<DashboardScreen> createState() => _DashboardScreenState();
@@ -94,12 +119,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
   @override
   Widget build(BuildContext context) {
     final p = context.watch<BillsProvider>();
+    final dp = context.watch<DuesProvider>();
+    final budgetP = context.watch<BudgetsProvider>();
 
     final now = DateTime.now();
     final today = DateTime(now.year, now.month, now.day);
     final monthStart = DateTime(now.year, now.month, 1);
     final monthEnd = DateTime(now.year, now.month + 1, 1);
-    final next7 = now.add(const Duration(days: 7));
 
     final monthBills = p.bills.where(
         (b) => !b.dueDate.isBefore(monthStart) && b.dueDate.isBefore(monthEnd));
@@ -126,13 +152,43 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final hasAlerts = overdue.isNotEmpty || dueToday.isNotEmpty;
 
-    final upcoming = p.bills
-        .where((b) =>
-            !b.isPaid &&
-            !b.dueDate.isBefore(today.subtract(const Duration(seconds: 1))) &&
-            !b.dueDate.isAfter(next7))
-        .toList()
-      ..sort((a, b) => a.dueDate.compareTo(b.dueDate));
+    // ── Dues snapshot data ─────────────────────────────────────────────────
+    final activeDues = dp.dues.where((d) => !d.isSettled).toList();
+    final toReceive = activeDues
+        .where((d) => d.type == 'lent')
+        .fold(0.0, (s, d) => s + d.remaining);
+    final iOwe = activeDues
+        .where((d) => d.type == 'borrowed')
+        .fold(0.0, (s, d) => s + d.remaining);
+    final duesPeople = activeDues
+        .map((d) => d.personName)
+        .toSet()
+        .take(3)
+        .toList();
+    final duesPeopleTotal = activeDues.map((d) => d.personName).toSet().length;
+
+    // ── Budgets snapshot data ───────────────────────────────────────────────
+    final Map<String, double> catSpend = {};
+    for (final b in monthBills) {
+      catSpend[b.category] = (catSpend[b.category] ?? 0) + (b.amount ?? 0);
+    }
+    final totalBudgeted =
+        budgetP.budgets.fold(0.0, (acc, b) => acc + b.limit);
+    final totalBudgetSpent = budgetP.budgets
+        .fold(0.0, (acc, b) => acc + (catSpend[b.category] ?? 0));
+    final overCount = budgetP.budgets
+        .where((b) => (catSpend[b.category] ?? 0) > b.limit)
+        .length;
+    final shownBudgets = ([...budgetP.budgets]
+          ..sort((a, b) {
+            final fa =
+                a.limit <= 0 ? 0.0 : (catSpend[a.category] ?? 0) / a.limit;
+            final fb =
+                b.limit <= 0 ? 0.0 : (catSpend[b.category] ?? 0) / b.limit;
+            return fb.compareTo(fa);
+          }))
+        .take(2)
+        .toList();
 
     final money = context.watch<AppSettingsProvider>().money;
     final df = DateFormat('EEE, dd MMM');
@@ -251,6 +307,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                     paid: money.format(paidThisMonth),
                     remaining: money.format(remainingThisMonth),
                     progress: progress,
+                    onViewBills: widget.onNavigateToBills,
                   ),
                 ),
                 _BillCalendarCard(bills: p.bills),
@@ -290,7 +347,33 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
 
-          const SizedBox(height: 28),
+          const SizedBox(height: 20),
+
+          // ── Dues snapshot ─────────────────────────────────────────────────
+          _DuesSnapshotCard(
+            toReceive: toReceive,
+            iOwe: iOwe,
+            people: duesPeople,
+            totalPeople: duesPeopleTotal,
+            money: money,
+            onTap: widget.onNavigateToDues,
+          ),
+
+          const SizedBox(height: 20),
+
+          // ── Budgets snapshot ───────────────────────────────────────────────
+          _BudgetsSnapshotCard(
+            totalBudgeted: totalBudgeted,
+            totalSpent: totalBudgetSpent,
+            overCount: overCount,
+            budgets: shownBudgets,
+            catSpend: catSpend,
+            money: money,
+            hasBudgets: budgetP.budgets.isNotEmpty,
+            onTap: widget.onNavigateToBudgets,
+          ),
+
+          const SizedBox(height: 20),
 
           // ── Overdue section ───────────────────────────────────────────────
           if (overdue.isNotEmpty) ...[
@@ -313,8 +396,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   ),
                   child: Text(
                     '${overdue.length} ${overdue.length == 1 ? 'bill' : 'bills'}',
-                    style:
-                        const TextStyle(fontSize: 11, color: _red),
+                    style: const TextStyle(fontSize: 11, color: _red),
                   ),
                 ),
               ],
@@ -332,70 +414,435 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   onMarkPaid: () =>
                       context.read<BillsProvider>().setPaid(b.id, true),
                 )),
-            const SizedBox(height: 24),
           ],
+        ],
+      )),
+    );
+  }
+}
 
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
-            children: [
-              const Text(
-                'Upcoming Bills',
-                style: TextStyle(
-                    fontSize: 16,
-                    fontWeight: FontWeight.w700,
-                    color: _textPrimary),
-              ),
-              Container(
-                padding:
-                    const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
-                decoration: BoxDecoration(
-                  color: _surface2,
-                  borderRadius: BorderRadius.circular(20),
+// ── Dues Snapshot Card ────────────────────────────────────────────────────────
+
+class _DuesSnapshotCard extends StatelessWidget {
+  final double toReceive;
+  final double iOwe;
+  final List<String> people;
+  final int totalPeople;
+  final NumberFormat money;
+  final VoidCallback onTap;
+
+  const _DuesSnapshotCard({
+    required this.toReceive,
+    required this.iOwe,
+    required this.people,
+    required this.totalPeople,
+    required this.money,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final hasActivity = toReceive > 0 || iOwe > 0;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: _card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header ──────────────────────────────────────────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Dues',
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: _textPrimary),
                 ),
-                child: const Text('Next 7 days',
-                    style: TextStyle(fontSize: 11, color: _textSecondary)),
-              ),
-            ],
-          ),
-          const SizedBox(height: 12),
+                Row(
+                  children: [
+                    Text(
+                      'View all',
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: _primary,
+                          fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(width: 2),
+                    const Icon(Icons.chevron_right_rounded,
+                        size: 16, color: _primary),
+                  ],
+                ),
+              ],
+            ),
 
-          if (p.error != null)
-            Container(
-              margin: const EdgeInsets.only(bottom: 12),
-              padding:
-                  const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-              decoration: BoxDecoration(
-                color: _red.withOpacity(0.06),
-                borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _red.withOpacity(0.2)),
+            if (!hasActivity) ...[
+              const SizedBox(height: 10),
+              const Text(
+                'No active dues',
+                style: TextStyle(fontSize: 13, color: _textTertiary),
               ),
-              child: Row(
+            ] else ...[
+              const SizedBox(height: 12),
+
+              // ── Two stat chips ───────────────────────────────────────
+              Row(
                 children: [
-                  const Icon(Icons.warning_amber_rounded, color: _red, size: 16),
-                  const SizedBox(width: 8),
+                  if (toReceive > 0)
+                    Expanded(
+                      child: _DuesChip(
+                        label: 'To Receive',
+                        amount: money.format(toReceive),
+                        color: _green,
+                        icon: Icons.arrow_upward_rounded,
+                      ),
+                    ),
+                  if (toReceive > 0 && iOwe > 0) const SizedBox(width: 10),
+                  if (iOwe > 0)
+                    Expanded(
+                      child: _DuesChip(
+                        label: 'You Owe',
+                        amount: money.format(iOwe),
+                        color: _red,
+                        icon: Icons.arrow_downward_rounded,
+                      ),
+                    ),
+                ],
+              ),
+
+              // ── People names ─────────────────────────────────────────
+              if (people.isNotEmpty) ...[
+                const SizedBox(height: 10),
+                Row(
+                  children: [
+                    const Icon(Icons.people_alt_outlined,
+                        size: 13, color: _textTertiary),
+                    const SizedBox(width: 5),
+                    Expanded(
+                      child: Text(
+                        _peopleLabel(people, totalPeople),
+                        style: const TextStyle(
+                            fontSize: 12, color: _textSecondary),
+                        overflow: TextOverflow.ellipsis,
+                      ),
+                    ),
+                  ],
+                ),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+
+  String _peopleLabel(List<String> names, int total) {
+    final shown = names.map((n) => n.split(' ').first).join(' · ');
+    final extra = total - names.length;
+    return extra > 0 ? '$shown · +$extra more' : shown;
+  }
+}
+
+class _DuesChip extends StatelessWidget {
+  final String label;
+  final String amount;
+  final Color color;
+  final IconData icon;
+
+  const _DuesChip({
+    required this.label,
+    required this.amount,
+    required this.color,
+    required this.icon,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+      decoration: BoxDecoration(
+        color: color.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: color.withOpacity(0.2)),
+      ),
+      child: Row(
+        children: [
+          Icon(icon, size: 14, color: color),
+          const SizedBox(width: 6),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Text(label,
+                    style: TextStyle(
+                        fontSize: 10,
+                        color: color,
+                        fontWeight: FontWeight.w500)),
+                const SizedBox(height: 2),
+                Text(amount,
+                    style: TextStyle(
+                        fontSize: 14,
+                        fontWeight: FontWeight.w700,
+                        color: color),
+                    overflow: TextOverflow.ellipsis),
+              ],
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Budgets Snapshot Card ─────────────────────────────────────────────────────
+
+class _BudgetsSnapshotCard extends StatelessWidget {
+  final double totalBudgeted;
+  final double totalSpent;
+  final int overCount;
+  final List<BudgetModel> budgets;
+  final Map<String, double> catSpend;
+  final NumberFormat money;
+  final bool hasBudgets;
+  final VoidCallback onTap;
+
+  const _BudgetsSnapshotCard({
+    required this.totalBudgeted,
+    required this.totalSpent,
+    required this.overCount,
+    required this.budgets,
+    required this.catSpend,
+    required this.money,
+    required this.hasBudgets,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final progress = totalBudgeted <= 0
+        ? 0.0
+        : (totalSpent / totalBudgeted).clamp(0.0, 1.0);
+    final isOver = overCount > 0;
+    final isWarn = !isOver && progress >= 0.75;
+    final statusColor = isOver ? _red : isWarn ? _primary : _green;
+    final statusLabel = isOver
+        ? '$overCount ${overCount == 1 ? 'category' : 'categories'} over budget'
+        : isWarn
+            ? 'Approaching limit'
+            : 'On track';
+    final statusIcon = isOver
+        ? Icons.warning_amber_rounded
+        : isWarn
+            ? Icons.trending_up_rounded
+            : Icons.check_circle_outline_rounded;
+
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: _card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(
+              color: isOver ? _red.withOpacity(0.3) : _border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Column(
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // ── Header ──────────────────────────────────────────────────
+            Row(
+              mainAxisAlignment: MainAxisAlignment.spaceBetween,
+              children: [
+                const Text(
+                  'Budgets',
+                  style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: _textPrimary),
+                ),
+                Row(
+                  children: [
+                    Text(
+                      'View all',
+                      style: TextStyle(
+                          fontSize: 12,
+                          color: _primary,
+                          fontWeight: FontWeight.w500),
+                    ),
+                    const SizedBox(width: 2),
+                    const Icon(Icons.chevron_right_rounded,
+                        size: 16, color: _primary),
+                  ],
+                ),
+              ],
+            ),
+
+            if (!hasBudgets) ...[
+              const SizedBox(height: 10),
+              const Text(
+                'No budgets set',
+                style: TextStyle(fontSize: 13, color: _textTertiary),
+              ),
+            ] else ...[
+              const SizedBox(height: 12),
+
+              // ── Overall progress bar ──────────────────────────────────
+              Row(
+                children: [
                   Expanded(
-                    child: Text(p.error!,
-                        style: const TextStyle(color: _red, fontSize: 13)),
+                    child: ClipRRect(
+                      borderRadius: BorderRadius.circular(4),
+                      child: LinearProgressIndicator(
+                        value: progress,
+                        minHeight: 6,
+                        backgroundColor: const Color(0xFFEDE6DC),
+                        valueColor:
+                            AlwaysStoppedAnimation<Color>(statusColor),
+                      ),
+                    ),
+                  ),
+                  const SizedBox(width: 10),
+                  Text(
+                    '${(progress * 100).toStringAsFixed(0)}%',
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: FontWeight.w700,
+                      color: statusColor,
+                    ),
                   ),
                 ],
               ),
-            ),
+              const SizedBox(height: 8),
 
-          if (upcoming.isEmpty)
-            const _EmptyState()
-          else
-            ...upcoming.map((b) => _BillCard(
-                  bill: b,
-                  dateText: df.format(b.dueDate),
-                  amountText: b.amount == null ? '' : money.format(b.amount),
-                  isToday: _isSameDay(b.dueDate, now),
-                  onTap: () => Navigator.pushNamed(context, '/add-bill',
-                      arguments: b),
-                  onMarkPaid: () =>
-                      context.read<BillsProvider>().setPaid(b.id, true),
-                )),
+              // ── Status row ────────────────────────────────────────────
+              Row(
+                children: [
+                  Icon(statusIcon, size: 13, color: statusColor),
+                  const SizedBox(width: 5),
+                  Text(
+                    statusLabel,
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: statusColor,
+                      fontWeight: FontWeight.w500,
+                    ),
+                  ),
+                  const Spacer(),
+                  Text(
+                    '${money.format(totalSpent)} of ${money.format(totalBudgeted)}',
+                    style: const TextStyle(
+                        fontSize: 11, color: _textTertiary),
+                  ),
+                ],
+              ),
+
+              // ── Top category rows ─────────────────────────────────────
+              if (budgets.isNotEmpty) ...[
+                const SizedBox(height: 12),
+                const Divider(color: _border, height: 1),
+                const SizedBox(height: 10),
+                ...budgets.map((b) => _BudgetCategoryRow(
+                      budget: b,
+                      spent: catSpend[b.category] ?? 0,
+                      money: money,
+                    )),
+              ],
+            ],
+          ],
+        ),
+      ),
+    );
+  }
+}
+
+class _BudgetCategoryRow extends StatelessWidget {
+  final BudgetModel budget;
+  final double spent;
+  final NumberFormat money;
+
+  const _BudgetCategoryRow({
+    required this.budget,
+    required this.spent,
+    required this.money,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    final fraction =
+        budget.limit <= 0 ? 0.0 : (spent / budget.limit).clamp(0.0, 1.0);
+    final isOver = spent > budget.limit;
+    final isWarn = !isOver && fraction >= 0.75;
+    final barColor = isOver ? _red : isWarn ? _primary : _green;
+
+    return Padding(
+      padding: const EdgeInsets.only(bottom: 10),
+      child: Row(
+        children: [
+          CategoryLogo(category: budget.category, size: 28),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Column(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Row(
+                  mainAxisAlignment: MainAxisAlignment.spaceBetween,
+                  children: [
+                    Text(
+                      _catLabel(budget.category),
+                      style: const TextStyle(
+                        fontSize: 12,
+                        fontWeight: FontWeight.w500,
+                        color: _textPrimary,
+                      ),
+                    ),
+                    Text(
+                      '${money.format(spent)} / ${money.format(budget.limit)}',
+                      style: TextStyle(
+                        fontSize: 11,
+                        color: isOver ? _red : _textSecondary,
+                        fontWeight:
+                            isOver ? FontWeight.w600 : FontWeight.w400,
+                      ),
+                    ),
+                  ],
+                ),
+                const SizedBox(height: 4),
+                ClipRRect(
+                  borderRadius: BorderRadius.circular(3),
+                  child: LinearProgressIndicator(
+                    value: fraction,
+                    minHeight: 4,
+                    backgroundColor: const Color(0xFFEDE6DC),
+                    valueColor: AlwaysStoppedAnimation<Color>(barColor),
+                  ),
+                ),
+              ],
+            ),
+          ),
         ],
-      )),
+      ),
     );
   }
 }
@@ -619,12 +1066,14 @@ class _SummaryCard extends StatelessWidget {
   final String paid;
   final String remaining;
   final double progress;
+  final VoidCallback onViewBills;
 
   const _SummaryCard({
     required this.total,
     required this.paid,
     required this.remaining,
     required this.progress,
+    required this.onViewBills,
   });
 
   @override
@@ -692,6 +1141,23 @@ class _SummaryCard extends StatelessWidget {
                   const AlwaysStoppedAnimation<Color>(Color(0xFFF97316)),
             ),
           ),
+          const SizedBox(height: 10),
+          GestureDetector(
+            onTap: onViewBills,
+            child: const Row(
+              mainAxisAlignment: MainAxisAlignment.end,
+              children: [
+                Text('View Bills',
+                    style: TextStyle(
+                        fontSize: 11,
+                        color: Colors.white54,
+                        fontWeight: FontWeight.w500)),
+                SizedBox(width: 2),
+                Icon(Icons.chevron_right_rounded,
+                    size: 14, color: Colors.white54),
+              ],
+            ),
+          ),
         ],
       ),
     );
@@ -730,44 +1196,6 @@ class _StatChip extends StatelessWidget {
   }
 }
 
-// ── Empty State ───────────────────────────────────────────────────────────────
-
-class _EmptyState extends StatelessWidget {
-  const _EmptyState();
-
-  @override
-  Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(vertical: 36, horizontal: 24),
-      decoration: BoxDecoration(
-        color: _card,
-        borderRadius: BorderRadius.circular(18),
-        border: Border.all(color: _border),
-        boxShadow: [
-          BoxShadow(
-              color: Colors.black.withOpacity(0.04),
-              blurRadius: 10,
-              offset: const Offset(0, 2)),
-        ],
-      ),
-      child: const Column(
-        children: [
-          Icon(Icons.check_circle_outline_rounded, color: _green, size: 34),
-          SizedBox(height: 14),
-          Text('All clear!',
-              style: TextStyle(
-                  fontSize: 16,
-                  fontWeight: FontWeight.w700,
-                  color: _textPrimary)),
-          SizedBox(height: 6),
-          Text('No bills due in the next 7 days 🎉',
-              style: TextStyle(fontSize: 13, color: _textSecondary),
-              textAlign: TextAlign.center),
-        ],
-      ),
-    );
-  }
-}
 
 // ── Page Dot ──────────────────────────────────────────────────────────────────
 

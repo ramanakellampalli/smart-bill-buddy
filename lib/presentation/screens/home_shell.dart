@@ -19,14 +19,23 @@ class HomeShell extends StatefulWidget {
 
 class _HomeShellState extends State<HomeShell> {
   int _currentIndex = 0;
+  late final List<Widget> _screens;
 
-  final _screens = const [
-    DashboardScreen(),
-    BillsScreen(),
-    DuesScreen(),
-    BudgetsScreen(),
-    ProfileScreen(),
-  ];
+  @override
+  void initState() {
+    super.initState();
+    _screens = [
+      DashboardScreen(
+        onNavigateToBills: () => setState(() => _currentIndex = 1),
+        onNavigateToDues: () => setState(() => _currentIndex = 2),
+        onNavigateToBudgets: () => setState(() => _currentIndex = 3),
+      ),
+      const BillsScreen(),
+      const DuesScreen(),
+      const BudgetsScreen(),
+      const ProfileScreen(),
+    ];
+  }
 
   @override
   Widget build(BuildContext context) {

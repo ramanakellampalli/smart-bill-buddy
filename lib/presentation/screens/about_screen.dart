@@ -25,7 +25,6 @@ class AboutScreen extends StatefulWidget {
 class _AboutScreenState extends State<AboutScreen> {
   String _appVersion = '';
   String _buildNumber = '';
-  String _packageName = '';
 
   @override
   void initState() {
@@ -39,7 +38,6 @@ class _AboutScreenState extends State<AboutScreen> {
       setState(() {
         _appVersion = info.version;
         _buildNumber = info.buildNumber;
-        _packageName = info.packageName;
       });
     }
   }
@@ -52,6 +50,13 @@ class _AboutScreenState extends State<AboutScreen> {
           const SnackBar(content: Text('Could not open link')),
         );
       }
+    }
+  }
+
+  Future<void> _launchInApp(String url) async {
+    final uri = Uri.parse(url);
+    if (!await launchUrl(uri, mode: LaunchMode.inAppBrowserView)) {
+      await launchUrl(uri, mode: LaunchMode.externalApplication);
     }
   }
 
@@ -140,8 +145,8 @@ class _AboutScreenState extends State<AboutScreen> {
                   _InfoItem(
                     icon: Icons.email_rounded,
                     label: 'Contact',
-                    value: 'support@smartbill.app',
-                    onTap: () => _launch('mailto:support@smartbill.app'),
+                    value: 'info@ohyeahsaas.com',
+                    onTap: () => _launch('mailto:info@ohyeahsaas.com'),
                   ),
                 ],
               ),
@@ -158,7 +163,8 @@ class _AboutScreenState extends State<AboutScreen> {
                     icon: Icons.privacy_tip_outlined,
                     title: 'Privacy Policy',
                     subtitle: 'How we protect your data',
-                    onTap: () => _launch('https://billbuddy.app/privacy'),
+                    onTap: () => _launchInApp(
+                        'https://ohyeahsaas.com/privacy/bill-buddy/policy'),
                   ),
                   const SizedBox(height: 12),
                   _LinkItem(
@@ -166,13 +172,6 @@ class _AboutScreenState extends State<AboutScreen> {
                     title: 'Terms of Service',
                     subtitle: 'Rules and guidelines',
                     onTap: () => _launch('https://billbuddy.app/terms'),
-                  ),
-                  const SizedBox(height: 12),
-                  _LinkItem(
-                    icon: Icons.code_outlined,
-                    title: 'Open Source',
-                    subtitle: 'View source code',
-                    onTap: () => _launch('https://github.com/billbuddy/app'),
                   ),
                 ],
               ),
@@ -195,12 +194,6 @@ class _AboutScreenState extends State<AboutScreen> {
                     icon: Icons.build_rounded,
                     label: 'Build',
                     value: _buildNumber.isEmpty ? '—' : _buildNumber,
-                  ),
-                  const SizedBox(height: 12),
-                  _InfoItem(
-                    icon: Icons.apps_rounded,
-                    label: 'Package',
-                    value: _packageName.isEmpty ? '—' : _packageName,
                   ),
                 ],
               ),
