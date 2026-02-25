@@ -1,7 +1,10 @@
 import 'dart:ui';
 
+import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:flutter/material.dart';
 import 'package:firebase_core/firebase_core.dart';
+import 'package:package_info_plus/package_info_plus.dart';
+import 'package:shared_preferences/shared_preferences.dart';
 import 'firebase_options.dart';
 import 'core/utils/auth_bootstrap.dart';
 import 'services/notification_service.dart';
@@ -25,7 +28,32 @@ void main() async {
   };
 
   await Firebase.initializeApp(options: DefaultFirebaseOptions.currentPlatform);
+
+  // Clear Firestore's offline cache when the app version changes.
+  // Firestore persists a local disk cache that survives OTA updates, which can
+  // cause stale data or layout inconsistencies after a Play Store update. This
+  // runs silently — no user action needed. Must happen before any Firestore
+  // reads (i.e., before providers open their streams via runApp).
+  await _clearFirestoreCacheOnVersionChange();
+
   await AuthBootstrap.ensureSignedIn();
   await NotificationService.init();
   runApp(const SmartBillApp());
+}
+
+Future<void> _clearFirestoreCacheOnVersionChange() async {
+  try {
+    final prefs = await SharedPreferences.getInstance();
+    final info = await PackageInfo.fromPlatform();
+    final currentVersion = '${info.version}+${info.buildNumber}';
+    final storedVersion = prefs.getString('_app_version');
+    if (storedVersion != currentVersion) {
+      final db = FirebaseFirestore.instance;
+      await db.terminate();
+      await db.clearPersistence();
+      await prefs.setString('_app_version', currentVersion);
+    }
+  } catch (_) {
+    // Non-fatal — if this fails, the app continues normally.
+  }
 }
