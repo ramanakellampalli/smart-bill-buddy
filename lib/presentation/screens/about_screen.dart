@@ -79,7 +79,7 @@ class _AboutScreenState extends State<AboutScreen> {
           ),
         ),
         body: ListView(
-          padding: const EdgeInsets.all(16),
+          padding: const EdgeInsets.fromLTRB(16, 16, 16, 40),
           children: [
             // App Icon and Name
             _AppInfoCard(

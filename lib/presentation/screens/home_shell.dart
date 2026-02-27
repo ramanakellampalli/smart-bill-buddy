@@ -4,6 +4,7 @@ import 'bills_screen.dart';
 import 'dues_screen.dart';
 import 'budgets_screen.dart';
 import 'profile_screen.dart';
+import '../widgets/help_chat_sheet.dart';
 
 const _navBg = Colors.white;
 const _navBorder = Color(0xFFEDE6DC);
@@ -40,7 +41,16 @@ class _HomeShellState extends State<HomeShell> {
   @override
   Widget build(BuildContext context) {
     return Scaffold(
-      body: _screens[_currentIndex],
+      body: Stack(
+        children: [
+          _screens[_currentIndex],
+          const Positioned(
+            right: 16,
+            bottom: 16,
+            child: HelpFloatingButton(),
+          ),
+        ],
+      ),
       bottomNavigationBar: _BottomNav(
         currentIndex: _currentIndex,
         onTap: (i) => setState(() => _currentIndex = i),
