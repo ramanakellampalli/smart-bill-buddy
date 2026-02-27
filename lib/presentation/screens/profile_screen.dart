@@ -1,3 +1,4 @@
+import 'package:cached_network_image/cached_network_image.dart';
 import 'package:cloud_firestore/cloud_firestore.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:firebase_storage/firebase_storage.dart';
@@ -350,10 +351,12 @@ class _ProfileHeader extends StatelessWidget {
                       child: profile.photoUrl != null
                           ? ClipRRect(
                               borderRadius: BorderRadius.circular(20),
-                              child: Image.network(
-                                profile.photoUrl!,
+                              child: CachedNetworkImage(
+                                imageUrl: profile.photoUrl!,
                                 fit: BoxFit.cover,
-                                errorBuilder: (context, error, stackTrace) =>
+                                placeholder: (context, url) =>
+                                    _buildInitials(profile),
+                                errorWidget: (context, url, error) =>
                                     _buildInitials(profile),
                               ),
                             )
