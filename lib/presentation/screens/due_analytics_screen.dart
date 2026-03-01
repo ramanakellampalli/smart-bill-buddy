@@ -20,6 +20,13 @@ const _textSecondary = Color(0xFF78716C);
 const _textTertiary = Color(0xFFA8A29E);
 const _green = Color(0xFF16A34A);
 const _red = Color(0xFFDC2626);
+const _amber = Color(0xFFD97706);
+
+// ── Aging thresholds (days) ────────────────────────────────────────────────────
+
+const _freshDays = 30;
+const _pendingDays = 90;
+const _oldDays = 365;
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
 
@@ -30,15 +37,13 @@ class DueAnalyticsScreen extends StatefulWidget {
   State<DueAnalyticsScreen> createState() => _DueAnalyticsScreenState();
 }
 
-class _DueAnalyticsScreenState extends State<DueAnalyticsScreen> with TickerProviderStateMixin {
+class _DueAnalyticsScreenState extends State<DueAnalyticsScreen>
+    with SingleTickerProviderStateMixin {
   late TabController _tabController;
-  late DateTime _month;
 
   @override
   void initState() {
     super.initState();
-    final now = DateTime.now();
-    _month = DateTime(now.year, now.month, 1);
     _tabController = TabController(length: 2, vsync: this);
   }
 
@@ -48,56 +53,44 @@ class _DueAnalyticsScreenState extends State<DueAnalyticsScreen> with TickerProv
     super.dispose();
   }
 
-  void _prev() =>
-      setState(() => _month = DateTime(_month.year, _month.month - 1, 1));
-
-  void _next() {
-    final now = DateTime.now();
-    final next = DateTime(_month.year, _month.month + 1, 1);
-    if (!next.isAfter(DateTime(now.year, now.month, 1))) {
-      setState(() => _month = next);
-    }
-  }
-
-  bool get _isCurrent {
-    final now = DateTime.now();
-    return _month.year == now.year && _month.month == now.month;
-  }
-
   @override
   Widget build(BuildContext context) {
     final p = context.watch<DuesProvider>();
-    final monthEnd = DateTime(_month.year, _month.month + 1, 1);
     final money = context.watch<AppSettingsProvider>().money;
+    final now = DateTime.now();
 
-    final monthDues = p.dues
-        .where((d) =>
-            !d.date.isBefore(_month) && d.date.isBefore(monthEnd))
-        .toList()
-      ..sort((a, b) => a.date.compareTo(b.date));
+    final allDues = p.dues;
+    final activeDues = allDues.where((d) => !d.isSettled).toList()
+      ..sort((a, b) => a.date.compareTo(b.date)); // oldest first
 
-    final activeDues = monthDues.where((d) => !d.isSettled).toList();
-    final settledDues = monthDues.where((d) => d.isSettled).toList();
+    double sumActive(Iterable<DueModel> dues) =>
+        dues.fold(0.0, (acc, d) => acc + d.remaining);
 
-    double sumAmount(Iterable<DueModel> dues) =>
-        dues.fold(0.0, (acc, d) => acc + d.amount);
-
-    final totalLent = sumAmount(activeDues.where((d) => d.type == 'lent'));
-    final totalBorrowed = sumAmount(activeDues.where((d) => d.type == 'borrowed'));
+    final totalLent = sumActive(activeDues.where((d) => d.type == 'lent'));
+    final totalBorrowed = sumActive(activeDues.where((d) => d.type == 'borrowed'));
     final netAmount = totalLent - totalBorrowed;
 
-    final settledLent = sumAmount(settledDues.where((d) => d.type == 'lent'));
-    final settledBorrowed = sumAmount(settledDues.where((d) => d.type == 'borrowed'));
+    // Aging buckets — based on days since the due was created
+    List<DueModel> ageBucket(int minDays, int? maxDays) => activeDues.where((d) {
+          final age = now.difference(d.date).inDays;
+          return age >= minDays && (maxDays == null || age < maxDays);
+        }).toList();
 
-    // Group by person for analytics
+    final freshDues = ageBucket(0, _freshDays);
+    final pendingDues = ageBucket(_freshDays, _pendingDays);
+    final oldDues = ageBucket(_pendingDays, _oldDays);
+    final veryOldDues = ageBucket(_oldDays, null);
+
+    // Overdue — dueDate is set and has passed
+    final overdueDues = activeDues
+        .where((d) => d.dueDate != null && d.dueDate!.isBefore(now))
+        .toList();
+
+    // People — all-time active balance per person
     final Map<String, List<DueModel>> personGroups = {};
-    for (final due in monthDues) {
+    for (final due in activeDues) {
       personGroups.putIfAbsent(due.personName, () => []).add(due);
     }
-
-    final overdueCount = activeDues.where((d) =>
-        d.dueDate != null && d.dueDate!.isBefore(DateTime.now())
-    ).length;
 
     return Scaffold(
       backgroundColor: _bg,
@@ -117,8 +110,8 @@ class _DueAnalyticsScreenState extends State<DueAnalyticsScreen> with TickerProv
         actions: [
           IconButton(
             icon: const Icon(Icons.share_outlined, color: _textSecondary),
-            onPressed: () => _exportDues(context, monthDues),
-            tooltip: 'Export Dues',
+            onPressed: () => _exportDues(context, activeDues),
+            tooltip: 'Export Active Dues',
           ),
           const SizedBox(width: 4),
         ],
@@ -137,40 +130,25 @@ class _DueAnalyticsScreenState extends State<DueAnalyticsScreen> with TickerProv
       ),
       body: p.isLoading
           ? const Center(
-              child: CircularProgressIndicator(
-                  strokeWidth: 2.5, color: _primary))
-          : Column(
+              child: CircularProgressIndicator(strokeWidth: 2.5, color: _primary))
+          : TabBarView(
+              controller: _tabController,
               children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 8, 16, 0),
-                  child: _MonthPicker(
-                    label: DateFormat('MMMM yyyy').format(_month),
-                    onPrev: _prev,
-                    onNext: _isCurrent ? null : _next,
-                  ),
+                _OverviewTab(
+                  activeDues: activeDues,
+                  totalLent: totalLent,
+                  totalBorrowed: totalBorrowed,
+                  netAmount: netAmount,
+                  freshDues: freshDues,
+                  pendingDues: pendingDues,
+                  oldDues: oldDues,
+                  veryOldDues: veryOldDues,
+                  overdueDues: overdueDues,
+                  money: money,
                 ),
-                Expanded(
-                  child: TabBarView(
-                    controller: _tabController,
-                    children: [
-                      _OverviewTab(
-                        monthDues: monthDues,
-                        activeDues: activeDues,
-                        settledDues: settledDues,
-                        totalLent: totalLent,
-                        totalBorrowed: totalBorrowed,
-                        netAmount: netAmount,
-                        settledLent: settledLent,
-                        settledBorrowed: settledBorrowed,
-                        overdueCount: overdueCount,
-                        money: money,
-                      ),
-                      _PeopleTab(
-                        personGroups: personGroups,
-                        money: money,
-                      ),
-                    ],
-                  ),
+                _PeopleTab(
+                  personGroups: personGroups,
+                  money: money,
                 ),
               ],
             ),
@@ -178,210 +156,103 @@ class _DueAnalyticsScreenState extends State<DueAnalyticsScreen> with TickerProv
   }
 }
 
-// ── Month Picker ──────────────────────────────────────────────────────────────
-
-class _MonthPicker extends StatelessWidget {
-  final String label;
-  final VoidCallback onPrev;
-  final VoidCallback? onNext;
-
-  const _MonthPicker({
-    required this.label,
-    required this.onPrev,
-    this.onNext,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Row(
-      mainAxisAlignment: MainAxisAlignment.center,
-      children: [
-        _Arrow(icon: Icons.chevron_left_rounded, onTap: onPrev),
-        const SizedBox(width: 16),
-        Text(
-          label,
-          style: const TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: _textPrimary,
-          ),
-        ),
-        const SizedBox(width: 16),
-        _Arrow(icon: Icons.chevron_right_rounded, onTap: onNext),
-      ],
-    );
-  }
-}
-
-class _Arrow extends StatelessWidget {
-  final IconData icon;
-  final VoidCallback? onTap;
-
-  const _Arrow({required this.icon, this.onTap});
-
-  @override
-  Widget build(BuildContext context) {
-    final disabled = onTap == null;
-    return GestureDetector(
-      onTap: onTap,
-      child: Container(
-        padding: const EdgeInsets.all(6),
-        decoration: BoxDecoration(
-          color: disabled ? const Color(0xFFF0EDE9) : _card,
-          borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: _border),
-        ),
-        child: Icon(
-          icon,
-          size: 20,
-          color: disabled ? _textTertiary : _textSecondary,
-        ),
-      ),
-    );
-  }
-}
-
-// ── Overview Tab ─────────────────────────────────────────────────────────────
+// ── Overview Tab ──────────────────────────────────────────────────────────────
 
 class _OverviewTab extends StatelessWidget {
-  final List<DueModel> monthDues;
   final List<DueModel> activeDues;
-  final List<DueModel> settledDues;
   final double totalLent;
   final double totalBorrowed;
   final double netAmount;
-  final double settledLent;
-  final double settledBorrowed;
-  final int overdueCount;
+  final List<DueModel> freshDues;
+  final List<DueModel> pendingDues;
+  final List<DueModel> oldDues;
+  final List<DueModel> veryOldDues;
+  final List<DueModel> overdueDues;
   final NumberFormat money;
 
   const _OverviewTab({
-    required this.monthDues,
     required this.activeDues,
-    required this.settledDues,
     required this.totalLent,
     required this.totalBorrowed,
     required this.netAmount,
-    required this.settledLent,
-    required this.settledBorrowed,
-    required this.overdueCount,
+    required this.freshDues,
+    required this.pendingDues,
+    required this.oldDues,
+    required this.veryOldDues,
+    required this.overdueDues,
     required this.money,
   });
 
   @override
   Widget build(BuildContext context) {
+    if (activeDues.isEmpty) {
+      return const _EmptyState();
+    }
+
     return SelectionArea(
       child: ListView(
         padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
         children: [
-          _SummaryCard(
+          _BalanceSummaryCard(
             totalLent: money.format(totalLent),
             totalBorrowed: money.format(totalBorrowed),
             netAmount: money.format(netAmount.abs()),
             isPositive: netAmount >= 0,
             activeCount: activeDues.length,
-            settledCount: settledDues.length,
-            overdueCount: overdueCount,
+            overdueCount: overdueDues.length,
           ),
           const SizedBox(height: 24),
-          if (monthDues.isEmpty)
-            _EmptyState(month: DateFormat('MMMM yyyy').format(DateTime.now()))
-          else ...[
-            const _SectionLabel('RECENT TRANSACTIONS'),
-            const SizedBox(height: 12),
-            ...monthDues.take(10).map(
-              (due) => _DueRow(
-                due: due,
-                amountText: money.format(due.amount),
-                dateText: DateFormat('d MMM').format(due.date),
-              ),
-            ),
-          ],
-        ],
-      ),
-    );
-  }
-}
-
-// ── People Tab ───────────────────────────────────────────────────────────────
-
-class _PeopleTab extends StatelessWidget {
-  final Map<String, List<DueModel>> personGroups;
-  final NumberFormat money;
-
-  const _PeopleTab({
-    required this.personGroups,
-    required this.money,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    final sortedPeople = personGroups.entries.toList()
-      ..sort((a, b) {
-        final netA = a.value.fold(0.0, (s, d) => 
-          d.type == 'lent' ? s + d.amount : s - d.amount);
-        final netB = b.value.fold(0.0, (s, d) => 
-          d.type == 'lent' ? s + d.amount : s - d.amount);
-        return netB.abs().compareTo(netA.abs());
-      });
-
-    return SelectionArea(
-      child: ListView(
-        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
-        children: [
-          const _SectionLabel('PEOPLE SUMMARY'),
+          const _SectionLabel('AGING BREAKDOWN'),
           const SizedBox(height: 12),
-          ...sortedPeople.map(
-            (entry) => _PersonCard(
-              name: entry.key,
-              dues: entry.value,
-              money: money,
-            ),
+          _AgingBreakdown(
+            freshDues: freshDues,
+            pendingDues: pendingDues,
+            oldDues: oldDues,
+            veryOldDues: veryOldDues,
+            money: money,
           ),
+          if (overdueDues.isNotEmpty) ...[
+            const SizedBox(height: 20),
+            _OverdueBanner(count: overdueDues.length),
+            const SizedBox(height: 12),
+            const _SectionLabel('OVERDUE DUES'),
+            const SizedBox(height: 12),
+            ...overdueDues.map((due) => _DueRow(
+                  due: due,
+                  money: money,
+                  showAge: true,
+                )),
+          ],
+          const SizedBox(height: 20),
+          const _SectionLabel('ALL ACTIVE DUES — OLDEST FIRST'),
+          const SizedBox(height: 12),
+          ...activeDues.map((due) => _DueRow(
+                due: due,
+                money: money,
+                showAge: true,
+              )),
         ],
       ),
     );
   }
 }
 
-// ── Section Label ─────────────────────────────────────────────────────────────
+// ── Balance Summary Card ───────────────────────────────────────────────────────
 
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-        color: _textTertiary,
-        letterSpacing: 1.2,
-      ),
-    );
-  }
-}
-
-// ── Summary Card ──────────────────────────────────────────────────────────────
-
-class _SummaryCard extends StatelessWidget {
+class _BalanceSummaryCard extends StatelessWidget {
   final String totalLent;
   final String totalBorrowed;
   final String netAmount;
   final bool isPositive;
   final int activeCount;
-  final int settledCount;
   final int overdueCount;
 
-  const _SummaryCard({
+  const _BalanceSummaryCard({
     required this.totalLent,
     required this.totalBorrowed,
     required this.netAmount,
     required this.isPositive,
     required this.activeCount,
-    required this.settledCount,
     required this.overdueCount,
   });
 
@@ -408,7 +279,7 @@ class _SummaryCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           const Text(
-            'Monthly Summary',
+            'Balance Overview',
             style: TextStyle(
               fontSize: 12,
               color: Colors.white70,
@@ -428,7 +299,7 @@ class _SummaryCard extends StatelessWidget {
           ),
           const SizedBox(height: 4),
           Text(
-            isPositive ? 'You are owed' : 'You owe',
+            isPositive ? 'Total you are owed' : 'Total you owe',
             style: const TextStyle(
               fontSize: 13,
               color: Colors.white70,
@@ -439,24 +310,16 @@ class _SummaryCard extends StatelessWidget {
           Row(
             children: [
               Expanded(
-                child: _StatChip(
-                  label: 'Lent',
-                  value: totalLent,
-                  sub: '$activeCount active',
-                ),
+                child: _StatChip(label: 'Lent Out', value: totalLent),
               ),
               const SizedBox(width: 10),
               Expanded(
-                child: _StatChip(
-                  label: 'Borrowed',
-                  value: totalBorrowed,
-                  sub: '$settledCount settled',
-                ),
+                child: _StatChip(label: 'Borrowed', value: totalBorrowed),
               ),
             ],
           ),
-          const SizedBox(height: 12),
-          if (overdueCount > 0)
+          if (overdueCount > 0) ...[
+            const SizedBox(height: 12),
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
@@ -466,11 +329,10 @@ class _SummaryCard extends StatelessWidget {
               ),
               child: Row(
                 children: [
-                  const Icon(Icons.warning_amber_rounded, 
-                      color: _red, size: 16),
+                  const Icon(Icons.warning_amber_rounded, color: _red, size: 16),
                   const SizedBox(width: 8),
                   Text(
-                    '$overdueCount overdue ${overdueCount == 1 ? 'due' : 'dues'}',
+                    '$overdueCount ${overdueCount == 1 ? 'due has' : 'dues have'} passed due date',
                     style: const TextStyle(
                       color: _red,
                       fontSize: 12,
@@ -480,21 +342,21 @@ class _SummaryCard extends StatelessWidget {
                 ],
               ),
             ),
+          ],
         ],
       ),
     );
   }
+
 }
 
 class _StatChip extends StatelessWidget {
   final String label;
   final String value;
-  final String sub;
 
   const _StatChip({
     required this.label,
     required this.value,
-    required this.sub,
   });
 
   @override
@@ -520,40 +382,289 @@ class _StatChip extends StatelessWidget {
               color: Colors.white,
             ),
           ),
-          const SizedBox(height: 2),
-          Text(sub,
-              style: const TextStyle(fontSize: 10, color: Colors.white54)),
         ],
       ),
     );
   }
 }
 
-// ── Due Row ──────────────────────────────────────────────────────────────────
+// ── Aging Breakdown ────────────────────────────────────────────────────────────
 
-class _DueRow extends StatelessWidget {
-  final DueModel due;
-  final String amountText;
-  final String dateText;
+class _AgingBreakdown extends StatelessWidget {
+  final List<DueModel> freshDues;
+  final List<DueModel> pendingDues;
+  final List<DueModel> oldDues;
+  final List<DueModel> veryOldDues;
+  final NumberFormat money;
 
-  const _DueRow({
-    required this.due,
-    required this.amountText,
-    required this.dateText,
+  const _AgingBreakdown({
+    required this.freshDues,
+    required this.pendingDues,
+    required this.oldDues,
+    required this.veryOldDues,
+    required this.money,
+  });
+
+  double _sum(List<DueModel> dues) =>
+      dues.fold(0.0, (acc, d) => acc + d.remaining);
+
+  @override
+  Widget build(BuildContext context) {
+    return Row(
+      children: [
+        Expanded(
+          child: _AgingBucket(
+            label: 'Fresh',
+            sublabel: '< 30 days',
+            count: freshDues.length,
+            amount: money.format(_sum(freshDues)),
+            color: _green,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _AgingBucket(
+            label: 'Pending',
+            sublabel: '30–90 days',
+            count: pendingDues.length,
+            amount: money.format(_sum(pendingDues)),
+            color: _primary,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _AgingBucket(
+            label: 'Old',
+            sublabel: '3–12 months',
+            count: oldDues.length,
+            amount: money.format(_sum(oldDues)),
+            color: _amber,
+          ),
+        ),
+        const SizedBox(width: 8),
+        Expanded(
+          child: _AgingBucket(
+            label: 'Very Old',
+            sublabel: '1+ year',
+            count: veryOldDues.length,
+            amount: money.format(_sum(veryOldDues)),
+            color: _red,
+          ),
+        ),
+      ],
+    );
+  }
+}
+
+class _AgingBucket extends StatelessWidget {
+  final String label;
+  final String sublabel;
+  final int count;
+  final String amount;
+  final Color color;
+
+  const _AgingBucket({
+    required this.label,
+    required this.sublabel,
+    required this.count,
+    required this.amount,
+    required this.color,
   });
 
   @override
   Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 12),
+      decoration: BoxDecoration(
+        color: _card,
+        borderRadius: BorderRadius.circular(14),
+        border: Border.all(
+          color: count > 0 ? color.withOpacity(0.35) : _border,
+        ),
+      ),
+      child: Column(
+        crossAxisAlignment: CrossAxisAlignment.start,
+        children: [
+          Container(
+            padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
+            decoration: BoxDecoration(
+              color: color.withOpacity(0.12),
+              borderRadius: BorderRadius.circular(6),
+            ),
+            child: Text(
+              label,
+              style: TextStyle(
+                fontSize: 10,
+                fontWeight: FontWeight.w700,
+                color: color,
+              ),
+            ),
+          ),
+          const SizedBox(height: 8),
+          Text(
+            count == 0 ? '—' : amount,
+            style: TextStyle(
+              fontSize: 13,
+              fontWeight: FontWeight.w700,
+              color: count > 0 ? _textPrimary : _textTertiary,
+            ),
+          ),
+          const SizedBox(height: 2),
+          Text(
+            count == 0 ? 'none' : '$count ${count == 1 ? 'due' : 'dues'}',
+            style: TextStyle(
+              fontSize: 10,
+              color: count > 0 ? _textSecondary : _textTertiary,
+            ),
+          ),
+          const SizedBox(height: 4),
+          Text(
+            sublabel,
+            style: const TextStyle(fontSize: 9, color: _textTertiary),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Overdue Banner ─────────────────────────────────────────────────────────────
+
+class _OverdueBanner extends StatelessWidget {
+  final int count;
+  const _OverdueBanner({required this.count});
+
+  @override
+  Widget build(BuildContext context) {
+    return Container(
+      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
+      decoration: BoxDecoration(
+        color: _red.withOpacity(0.07),
+        borderRadius: BorderRadius.circular(12),
+        border: Border.all(color: _red.withOpacity(0.25)),
+      ),
+      child: Row(
+        children: [
+          const Icon(Icons.schedule_rounded, color: _red, size: 18),
+          const SizedBox(width: 10),
+          Expanded(
+            child: Text(
+              '$count ${count == 1 ? 'due has' : 'dues have'} passed their due date and are still unsettled.',
+              style: const TextStyle(
+                fontSize: 13,
+                color: _red,
+                fontWeight: FontWeight.w500,
+              ),
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── People Tab ────────────────────────────────────────────────────────────────
+
+class _PeopleTab extends StatelessWidget {
+  final Map<String, List<DueModel>> personGroups;
+  final NumberFormat money;
+
+  const _PeopleTab({
+    required this.personGroups,
+    required this.money,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    if (personGroups.isEmpty) {
+      return const _EmptyState();
+    }
+
+    final sortedPeople = personGroups.entries.toList()
+      ..sort((a, b) {
+        final netA = a.value.fold(
+            0.0, (s, d) => d.type == 'lent' ? s + d.remaining : s - d.remaining);
+        final netB = b.value.fold(
+            0.0, (s, d) => d.type == 'lent' ? s + d.remaining : s - d.remaining);
+        return netB.abs().compareTo(netA.abs());
+      });
+
+    return SelectionArea(
+      child: ListView(
+        padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+        children: [
+          const _SectionLabel('ACTIVE BALANCES BY PERSON'),
+          const SizedBox(height: 12),
+          ...sortedPeople.map(
+            (entry) => _PersonCard(
+              name: entry.key,
+              dues: entry.value,
+              money: money,
+            ),
+          ),
+        ],
+      ),
+    );
+  }
+}
+
+// ── Section Label ──────────────────────────────────────────────────────────────
+
+class _SectionLabel extends StatelessWidget {
+  final String text;
+  const _SectionLabel(this.text);
+
+  @override
+  Widget build(BuildContext context) {
+    return Text(
+      text,
+      style: const TextStyle(
+        fontSize: 11,
+        fontWeight: FontWeight.w600,
+        color: _textTertiary,
+        letterSpacing: 1.2,
+      ),
+    );
+  }
+}
+
+// ── Due Row ───────────────────────────────────────────────────────────────────
+
+class _DueRow extends StatelessWidget {
+  final DueModel due;
+  final NumberFormat money;
+  final bool showAge;
+
+  const _DueRow({
+    required this.due,
+    required this.money,
+    this.showAge = false,
+  });
+
+  String _ageLabel(DateTime date) {
+    final days = DateTime.now().difference(date).inDays;
+    if (days < 1) return 'today';
+    if (days < 30) return '${days}d ago';
+    if (days < 365) return '${(days / 30).round()}mo ago';
+    return '${(days / 365).floor()}yr ${((days % 365) / 30).round()}mo ago';
+  }
+
+  @override
+  Widget build(BuildContext context) {
     final isLent = due.type == 'lent';
-    final color = due.isSettled ? _textTertiary : (isLent ? _green : _red);
+    final color = isLent ? _green : _red;
+    final isOverdue =
+        due.dueDate != null && due.dueDate!.isBefore(DateTime.now());
 
     return Container(
       margin: const EdgeInsets.only(bottom: 8),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: due.isSettled ? const Color(0xFFFAFAFA) : _card,
+        color: _card,
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: _border),
+        border: Border.all(
+          color: isOverdue ? _red.withOpacity(0.4) : _border,
+        ),
       ),
       child: Row(
         children: [
@@ -564,9 +675,7 @@ class _DueRow extends StatelessWidget {
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
-              isLent
-                  ? Icons.call_received_rounded
-                  : Icons.call_made_rounded,
+              isLent ? Icons.call_received_rounded : Icons.call_made_rounded,
               color: color,
               size: 16,
             ),
@@ -577,23 +686,38 @@ class _DueRow extends StatelessWidget {
               crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Text(
-                  due.description ?? (isLent ? 'Lent' : 'Borrowed'),
-                  style: TextStyle(
+                  due.personName,
+                  style: const TextStyle(
                     fontSize: 14,
                     fontWeight: FontWeight.w600,
-                    color: due.isSettled
-                        ? _textTertiary
-                        : _textPrimary,
-                    decoration: due.isSettled
-                        ? TextDecoration.lineThrough
-                        : null,
-                    decorationColor: _textTertiary,
+                    color: _textPrimary,
                   ),
                 ),
                 const SizedBox(height: 2),
-                Text(
-                  '${due.personName} · $dateText',
-                  style: const TextStyle(fontSize: 12, color: _textSecondary),
+                Row(
+                  children: [
+                    if (showAge) ...[
+                      Text(
+                        _ageLabel(due.date),
+                        style: const TextStyle(
+                            fontSize: 11, color: _textSecondary),
+                      ),
+                      if (due.description != null &&
+                          due.description!.isNotEmpty)
+                        const Text(' · ',
+                            style: TextStyle(
+                                fontSize: 11, color: _textTertiary)),
+                    ],
+                    if (due.description != null && due.description!.isNotEmpty)
+                      Expanded(
+                        child: Text(
+                          due.description!,
+                          style: const TextStyle(
+                              fontSize: 11, color: _textSecondary),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                  ],
                 ),
               ],
             ),
@@ -602,31 +726,39 @@ class _DueRow extends StatelessWidget {
             crossAxisAlignment: CrossAxisAlignment.end,
             children: [
               Text(
-                amountText,
+                money.format(due.remaining),
                 style: TextStyle(
                   fontSize: 14,
                   fontWeight: FontWeight.w700,
-                  color: due.isSettled ? _textTertiary : color,
+                  color: color,
                 ),
               ),
               const SizedBox(height: 3),
-              Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 7, vertical: 2),
-                decoration: BoxDecoration(
-                  color: color.withOpacity(0.10),
-                  borderRadius: BorderRadius.circular(5),
-                ),
-                child: Text(
-                  due.isSettled
-                      ? 'Settled'
-                      : (isLent ? 'Lent' : 'Borrowed'),
-                  style: TextStyle(
-                    fontSize: 10,
-                    fontWeight: FontWeight.w600,
-                    color: color,
+              Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  if (isOverdue) ...[
+                    const Icon(Icons.schedule_rounded,
+                        size: 10, color: _red),
+                    const SizedBox(width: 3),
+                  ],
+                  Container(
+                    padding: const EdgeInsets.symmetric(
+                        horizontal: 7, vertical: 2),
+                    decoration: BoxDecoration(
+                      color: color.withOpacity(0.10),
+                      borderRadius: BorderRadius.circular(5),
+                    ),
+                    child: Text(
+                      isLent ? 'Lent' : 'Borrowed',
+                      style: TextStyle(
+                        fontSize: 10,
+                        fontWeight: FontWeight.w600,
+                        color: color,
+                      ),
+                    ),
                   ),
-                ),
+                ],
               ),
             ],
           ),
@@ -636,7 +768,7 @@ class _DueRow extends StatelessWidget {
   }
 }
 
-// ── Person Card ───────────────────────────────────────────────────────────────
+// ── Person Card ────────────────────────────────────────────────────────────────
 
 class _PersonCard extends StatelessWidget {
   final String name;
@@ -652,12 +784,23 @@ class _PersonCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     final netAmount = dues.fold(0.0, (s, d) {
-      return d.type == 'lent' ? s + d.amount : s - d.amount;
+      return d.type == 'lent' ? s + d.remaining : s - d.remaining;
     });
-    
+
     final isPositive = netAmount >= 0;
     final color = isPositive ? _green : _red;
-    final activeCount = dues.where((d) => !d.isSettled).length;
+    final overdueCount = dues.where((d) {
+      return d.dueDate != null && d.dueDate!.isBefore(DateTime.now());
+    }).length;
+
+    // Oldest active due for context
+    final oldest = dues.reduce((a, b) => a.date.isBefore(b.date) ? a : b);
+    final oldestAge = DateTime.now().difference(oldest.date).inDays;
+    final ageLabel = oldestAge < 30
+        ? '${oldestAge}d'
+        : oldestAge < 365
+            ? '${(oldestAge / 30).round()}mo'
+            : '${(oldestAge / 365).floor()}yr+';
 
     return Container(
       margin: const EdgeInsets.only(bottom: 12),
@@ -665,7 +808,9 @@ class _PersonCard extends StatelessWidget {
       decoration: BoxDecoration(
         color: _card,
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _border),
+        border: Border.all(
+          color: overdueCount > 0 ? _red.withOpacity(0.3) : _border,
+        ),
         boxShadow: [
           BoxShadow(
             color: Colors.black.withOpacity(0.03),
@@ -677,8 +822,8 @@ class _PersonCard extends StatelessWidget {
       child: Row(
         children: [
           Container(
-            width: 40,
-            height: 40,
+            width: 42,
+            height: 42,
             decoration: BoxDecoration(
               color: color.withOpacity(0.15),
               borderRadius: BorderRadius.circular(12),
@@ -707,10 +852,33 @@ class _PersonCard extends StatelessWidget {
                     color: _textPrimary,
                   ),
                 ),
-                const SizedBox(height: 2),
-                Text(
-                  '$activeCount active ${activeCount == 1 ? 'due' : 'dues'}',
-                  style: const TextStyle(fontSize: 11, color: _textSecondary),
+                const SizedBox(height: 3),
+                Row(
+                  children: [
+                    Text(
+                      '${dues.length} ${dues.length == 1 ? 'due' : 'dues'} · oldest $ageLabel ago',
+                      style: const TextStyle(fontSize: 11, color: _textSecondary),
+                    ),
+                    if (overdueCount > 0) ...[
+                      const SizedBox(width: 6),
+                      Container(
+                        padding: const EdgeInsets.symmetric(
+                            horizontal: 5, vertical: 1),
+                        decoration: BoxDecoration(
+                          color: _red.withOpacity(0.10),
+                          borderRadius: BorderRadius.circular(4),
+                        ),
+                        child: Text(
+                          '$overdueCount overdue',
+                          style: const TextStyle(
+                            fontSize: 10,
+                            color: _red,
+                            fontWeight: FontWeight.w600,
+                          ),
+                        ),
+                      ),
+                    ],
+                  ],
                 ),
               ],
             ),
@@ -726,16 +894,15 @@ class _PersonCard extends StatelessWidget {
                   color: color,
                 ),
               ),
-              const SizedBox(height: 2),
+              const SizedBox(height: 3),
               Container(
-                padding: const EdgeInsets.symmetric(
-                    horizontal: 6, vertical: 2),
+                padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
                   color: color.withOpacity(0.10),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
-                  isPositive ? 'Owe Me' : 'I Owe',
+                  isPositive ? 'Owes Me' : 'I Owe',
                   style: TextStyle(
                     fontSize: 10,
                     fontWeight: FontWeight.w600,
@@ -751,82 +918,92 @@ class _PersonCard extends StatelessWidget {
   }
 }
 
-// ── Empty State ───────────────────────────────────────────────────────────────
+// ── Empty State ────────────────────────────────────────────────────────────────
 
 class _EmptyState extends StatelessWidget {
-  final String month;
-  const _EmptyState({required this.month});
+  const _EmptyState();
 
   @override
   Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 32),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        children: [
-          Container(
-            padding: const EdgeInsets.all(20),
-            decoration: BoxDecoration(
-              color: _primary.withOpacity(0.08),
-              shape: BoxShape.circle,
+    return Center(
+      child: Padding(
+        padding: const EdgeInsets.symmetric(vertical: 40, horizontal: 32),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          children: [
+            Container(
+              padding: const EdgeInsets.all(20),
+              decoration: BoxDecoration(
+                color: _primary.withOpacity(0.08),
+                shape: BoxShape.circle,
+              ),
+              child: const Icon(
+                Icons.people_alt_outlined,
+                size: 36,
+                color: _primary,
+              ),
             ),
-            child: const Icon(
-              Icons.people_alt_outlined,
-              size: 36,
-              color: _primary,
+            const SizedBox(height: 16),
+            const Text(
+              'No active dues',
+              style: TextStyle(
+                fontSize: 16,
+                fontWeight: FontWeight.w700,
+                color: _textPrimary,
+              ),
             ),
-          ),
-          const SizedBox(height: 16),
-          const Text(
-            'No dues found',
-            style: TextStyle(
-              fontSize: 16,
-              fontWeight: FontWeight.w700,
-              color: _textPrimary,
+            const SizedBox(height: 6),
+            const Text(
+              'All settled up! Add dues from the Dues screen to track lending and borrowing.',
+              style: TextStyle(fontSize: 13, color: _textSecondary),
+              textAlign: TextAlign.center,
             ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            'No dues are recorded in $month',
-            style: const TextStyle(fontSize: 13, color: _textSecondary),
-            textAlign: TextAlign.center,
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
 }
 
-// ── Export Functionality ─────────────────────────────────────────────────────
+// ── Export ────────────────────────────────────────────────────────────────────
 
 Future<void> _exportDues(BuildContext context, List<DueModel> dues) async {
   try {
     final csvData = [
-      ['Date', 'Person', 'Type', 'Amount', 'Description', 'Due Date', 'Status'],
-      ...dues.map((due) => [
-        DateFormat('yyyy-MM-dd').format(due.date),
-        due.personName,
-        due.type == 'lent' ? 'Lent' : 'Borrowed',
-        due.amount.toStringAsFixed(2),
-        due.description ?? '',
-        due.dueDate != null ? DateFormat('yyyy-MM-dd').format(due.dueDate!) : '',
-        due.isSettled ? 'Settled' : 'Active',
-      ]),
+      ['Person', 'Type', 'Amount', 'Remaining', 'Description', 'Date', 'Due Date', 'Age (days)'],
+      ...dues.map((due) {
+        final age = DateTime.now().difference(due.date).inDays;
+        return [
+          due.personName,
+          due.type == 'lent' ? 'Lent' : 'Borrowed',
+          due.amount.toStringAsFixed(2),
+          due.remaining.toStringAsFixed(2),
+          due.description ?? '',
+          DateFormat('yyyy-MM-dd').format(due.date),
+          due.dueDate != null ? DateFormat('yyyy-MM-dd').format(due.dueDate!) : '',
+          age.toString(),
+        ];
+      }),
     ];
 
     final csv = csvData
-        .map((row) => row.map((cell) => '"${cell.toString().replaceAll('"', '""')}"').join(','))
+        .map((row) =>
+            row.map((cell) => '"${cell.toString().replaceAll('"', '""')}"').join(','))
         .join('\n');
 
     final directory = await getApplicationDocumentsDirectory();
-    final fileName = 'dues_export_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.csv';
+    final fileName =
+        'dues_export_${DateFormat('yyyyMMdd_HHmmss').format(DateTime.now())}.csv';
     final file = File('${directory.path}/$fileName');
     await file.writeAsString(csv);
 
     if (!context.mounted) return;
-    
-    await Share.shareXFiles([XFile(file.path)], text: 'Dues Export - ${DateFormat('MMM dd, yyyy').format(DateTime.now())}');
-    
+
+    await Share.shareXFiles(
+      [XFile(file.path)],
+      text: 'Active Dues Export — ${DateFormat('MMM dd, yyyy').format(DateTime.now())}',
+    );
+
     if (!context.mounted) return;
     ScaffoldMessenger.of(context).showSnackBar(
       const SnackBar(
