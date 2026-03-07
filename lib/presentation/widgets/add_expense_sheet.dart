@@ -132,7 +132,7 @@ class _AddExpenseSheetState extends State<AddExpenseSheet> {
             ),
             const SizedBox(height: 20),
             Row(
-              crossAxisAlignment: CrossAxisAlignment.stretch,
+              crossAxisAlignment: CrossAxisAlignment.start,
               children: [
                 Expanded(flex: 2, child: _AmountField(controller: _amtCtrl, symbol: symbol)),
                 const SizedBox(width: 10),
@@ -235,20 +235,20 @@ class _AmountField extends StatelessWidget {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
       style: const TextStyle(
-        fontSize: 26,
-        fontWeight: FontWeight.w800,
+        fontSize: 16,
+        fontWeight: FontWeight.w700,
         color: _textPrimary,
       ),
       decoration: InputDecoration(
         prefixText: '$symbol ',
         prefixStyle: const TextStyle(
-          fontSize: 26,
-          fontWeight: FontWeight.w800,
+          fontSize: 16,
+          fontWeight: FontWeight.w700,
           color: _textSecondary,
         ),
         hintText: '0',
         hintStyle: const TextStyle(
-          fontSize: 26,
+          fontSize: 16,
           fontWeight: FontWeight.w400,
           color: _textTertiary,
         ),
@@ -258,7 +258,7 @@ class _AmountField extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 18),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       ),
       validator: (v) {
         if (v == null || v.trim().isEmpty) return 'Enter an amount';
@@ -344,11 +344,10 @@ class _DescriptionField extends StatelessWidget {
     return TextFormField(
       controller: controller,
       textCapitalization: TextCapitalization.sentences,
-      style: const TextStyle(fontSize: 13, color: _textPrimary),
-      maxLines: null,
+      style: const TextStyle(fontSize: 14, color: _textPrimary),
       decoration: InputDecoration(
         hintText: 'Note (optional)',
-        hintStyle: const TextStyle(fontSize: 13, color: _textTertiary),
+        hintStyle: const TextStyle(fontSize: 14, color: _textTertiary),
         filled: true,
         fillColor: const Color(0xFFF5F0EA),
         border: OutlineInputBorder(
