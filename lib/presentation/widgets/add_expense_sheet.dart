@@ -131,14 +131,19 @@ class _AddExpenseSheetState extends State<AddExpenseSheet> {
               onDelete: saving ? null : (widget.isEditing ? _delete : null),
             ),
             const SizedBox(height: 20),
-            _AmountField(controller: _amtCtrl, symbol: symbol),
-            const SizedBox(height: 20),
+            Row(
+              crossAxisAlignment: CrossAxisAlignment.start,
+              children: [
+                Expanded(flex: 2, child: _AmountField(controller: _amtCtrl, symbol: symbol)),
+                const SizedBox(width: 10),
+                Expanded(flex: 3, child: _DescriptionField(controller: _descCtrl)),
+              ],
+            ),
+            const SizedBox(height: 16),
             _CategoryPicker(
               selected: _category,
               onChanged: (c) => setState(() => _category = c),
             ),
-            const SizedBox(height: 20),
-            _DescriptionField(controller: _descCtrl),
             const SizedBox(height: 16),
             _DateRow(date: _date, onTap: _pickDate),
             const SizedBox(height: 24),
@@ -230,20 +235,20 @@ class _AmountField extends StatelessWidget {
       keyboardType: const TextInputType.numberWithOptions(decimal: true),
       inputFormatters: [FilteringTextInputFormatter.allow(RegExp(r'^\d+\.?\d{0,2}'))],
       style: const TextStyle(
-        fontSize: 32,
-        fontWeight: FontWeight.w800,
+        fontSize: 20,
+        fontWeight: FontWeight.w700,
         color: _textPrimary,
       ),
       decoration: InputDecoration(
         prefixText: '$symbol ',
         prefixStyle: const TextStyle(
-          fontSize: 32,
-          fontWeight: FontWeight.w800,
+          fontSize: 20,
+          fontWeight: FontWeight.w700,
           color: _textSecondary,
         ),
         hintText: '0',
         hintStyle: const TextStyle(
-          fontSize: 32,
+          fontSize: 20,
           fontWeight: FontWeight.w400,
           color: _textTertiary,
         ),
@@ -253,7 +258,7 @@ class _AmountField extends StatelessWidget {
           borderRadius: BorderRadius.circular(14),
           borderSide: BorderSide.none,
         ),
-        contentPadding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        contentPadding: const EdgeInsets.symmetric(horizontal: 14, vertical: 14),
       ),
       validator: (v) {
         if (v == null || v.trim().isEmpty) return 'Enter an amount';
