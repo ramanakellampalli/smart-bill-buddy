@@ -98,7 +98,7 @@ class DuesProvider extends ChangeNotifier {
       final due = dues.firstWhere((d) => d.id == dueId);
       await _repo.settleDue(dueId);
       await NotificationService.cancelDue(dueId);
-      if (due.type == 'borrowed' && _currentUid != null) {
+      if (due.type == 'borrowed') {
         final totalPaid = due.payments.fold(0.0, (s, p) => s + p.amount);
         final remaining = due.amount - totalPaid;
         if (remaining > 0) {
@@ -144,7 +144,7 @@ class DuesProvider extends ChangeNotifier {
       if (autoSettled) {
         await NotificationService.cancelDue(dueId);
       }
-      if (due.type == 'borrowed' && _currentUid != null) {
+      if (due.type == 'borrowed') {
         final expense = ExpenseModel.create(
           amount: payment.amount,
           category: ExpenseCategory.finance,
