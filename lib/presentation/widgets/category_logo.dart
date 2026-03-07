@@ -222,19 +222,19 @@ class _GradientIcon extends StatelessWidget {
         return (Icons.school_rounded,             const Color(0xFF38BDF8), const Color(0xFF1D4ED8));
       // ── Expense categories ───────────────────────────────────────────────────
       case 'food':
-        return (Icons.restaurant_rounded,         const Color(0xFFFF8C42), const Color(0xFFDC2626));
+        return (Icons.lunch_dining,               const Color(0xFFFF8C42), const Color(0xFFDC2626));
       case 'transport':
-        return (Icons.directions_car_rounded,     const Color(0xFF38BDF8), const Color(0xFF0369A1));
+        return (Icons.commute,                    const Color(0xFF38BDF8), const Color(0xFF0369A1));
       case 'housing':
-        return (Icons.house_rounded,              const Color(0xFF818CF8), const Color(0xFF4338CA));
+        return (Icons.cottage,                    const Color(0xFF818CF8), const Color(0xFF4338CA));
       case 'shopping':
-        return (Icons.shopping_bag_rounded,       const Color(0xFFF472B6), const Color(0xFFBE185D));
+        return (Icons.local_mall,                 const Color(0xFFF472B6), const Color(0xFFBE185D));
       case 'health':
-        return (Icons.favorite_rounded,           const Color(0xFF4ADE80), const Color(0xFF15803D));
+        return (Icons.medical_services,           const Color(0xFF4ADE80), const Color(0xFF15803D));
       case 'entertainment':
-        return (Icons.movie_rounded,              const Color(0xFFA78BFA), const Color(0xFF6D28D9));
+        return (Icons.theaters,                   const Color(0xFFA78BFA), const Color(0xFF6D28D9));
       case 'finance':
-        return (Icons.account_balance_wallet_rounded, const Color(0xFF67E8F9), const Color(0xFF0E7490));
+        return (Icons.payments,                   const Color(0xFF67E8F9), const Color(0xFF0E7490));
       default:
         return (Icons.receipt_long_rounded,       const Color(0xFFA8A29E), const Color(0xFF57534E));
     }
