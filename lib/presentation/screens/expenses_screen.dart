@@ -297,7 +297,7 @@ class _ExpenseCategoryRowState extends State<ExpenseCategoryRow>
     final sorted = [...widget.expenses]..sort((a, b) => b.date.compareTo(a.date));
 
     return Container(
-      margin: const EdgeInsets.only(bottom: 10),
+      margin: const EdgeInsets.only(bottom: 2),
       decoration: BoxDecoration(
         color: _card,
         borderRadius: BorderRadius.circular(16),
