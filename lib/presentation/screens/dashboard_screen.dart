@@ -7,6 +7,7 @@ import '../state/bills_provider.dart';
 import '../state/budgets_provider.dart';
 import '../state/dues_provider.dart';
 import '../state/expenses_provider.dart';
+import '../widgets/app_toast.dart';
 import '../widgets/category_logo.dart';
 import '../../data/models/bill_model.dart';
 import '../../data/models/budget_model.dart';
@@ -430,8 +431,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   isOverdue: true,
                   onTap: () => Navigator.pushNamed(context, '/add-bill',
                       arguments: b),
-                  onMarkPaid: () =>
-                      context.read<BillsProvider>().setPaid(b.id, true),
+                  onMarkPaid: () {
+                    if (b.amount != null) {
+                      showAppToast(context, 'Added to Expenses',
+                          icon: Icons.receipt_long_rounded);
+                    }
+                    context.read<BillsProvider>().setPaid(b.id, true);
+                  },
                 )),
           ],
         ],
