@@ -358,9 +358,19 @@ class _ExpenseCategoryRowState extends State<ExpenseCategoryRow>
                           ),
                         ),
                         const SizedBox(height: 2),
-                        Text(
-                          '${widget.expenses.length} ${widget.expenses.length == 1 ? 'expense' : 'expenses'}',
-                          style: const TextStyle(fontSize: 11, color: _textSecondary),
+                        Row(
+                          children: [
+                            Text(
+                              '${widget.expenses.length} ${widget.expenses.length == 1 ? 'expense' : 'expenses'}',
+                              style: const TextStyle(fontSize: 11, color: _textSecondary),
+                            ),
+                            const SizedBox(width: 2),
+                            Icon(
+                              _expanded ? Icons.expand_less_rounded : Icons.expand_more_rounded,
+                              size: 14,
+                              color: _textSecondary,
+                            ),
+                          ],
                         ),
                       ],
                     ),
@@ -372,13 +382,6 @@ class _ExpenseCategoryRowState extends State<ExpenseCategoryRow>
                       fontWeight: FontWeight.w700,
                       color: _textPrimary,
                     ),
-                  ),
-                  const SizedBox(width: 8),
-                  AnimatedRotation(
-                    turns: _expanded ? 0.5 : 0,
-                    duration: const Duration(milliseconds: 220),
-                    child: const Icon(Icons.keyboard_arrow_down_rounded,
-                        size: 20, color: _textTertiary),
                   ),
                 ],
               ),
