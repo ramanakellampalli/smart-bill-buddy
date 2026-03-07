@@ -462,31 +462,27 @@ class ExpenseItemRow extends StatelessWidget {
               child: Padding(
                 padding: EdgeInsets.only(bottom: isLast ? 0 : 10),
                 child: Row(
-                  crossAxisAlignment: CrossAxisAlignment.start,
                   children: [
-                    Expanded(
-                      child: Column(
-                        crossAxisAlignment: CrossAxisAlignment.start,
-                        children: [
-                          Text(
-                            money.format(expense.amount),
-                            style: const TextStyle(
-                              fontSize: 13,
-                              fontWeight: FontWeight.w700,
-                              color: _textPrimary,
-                            ),
-                          ),
-                          if (hasDesc) ...[
-                            const SizedBox(height: 2),
-                            Text(
-                              expense.description!,
-                              style: const TextStyle(fontSize: 11, color: _textSecondary),
-                              overflow: TextOverflow.ellipsis,
-                            ),
-                          ],
-                        ],
+                    Text(
+                      money.format(expense.amount),
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w700,
+                        color: _textPrimary,
                       ),
                     ),
+                    if (hasDesc) ...[
+                      const SizedBox(width: 6),
+                      Expanded(
+                        child: Text(
+                          expense.description!,
+                          style: const TextStyle(fontSize: 12, color: _textSecondary),
+                          overflow: TextOverflow.ellipsis,
+                        ),
+                      ),
+                    ] else
+                      const Spacer(),
+                    const SizedBox(width: 8),
                     Text(
                       dateLabel,
                       style: const TextStyle(fontSize: 11, color: _textTertiary),
