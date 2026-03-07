@@ -285,42 +285,48 @@ class _CategoryPicker extends StatelessWidget {
           ),
         ),
         const SizedBox(height: 10),
-        Wrap(
-          spacing: 8,
-          runSpacing: 8,
-          children: ExpenseCategory.values.map((cat) {
-            final isSel = cat == selected;
-            return GestureDetector(
-              onTap: () => onChanged(cat),
-              child: AnimatedContainer(
-                duration: const Duration(milliseconds: 150),
-                padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 8),
-                decoration: BoxDecoration(
-                  color: isSel ? _primary.withOpacity(0.10) : _bg,
-                  borderRadius: BorderRadius.circular(12),
-                  border: Border.all(
-                    color: isSel ? _primary : _border,
-                    width: isSel ? 1.5 : 1,
+        SizedBox(
+          height: 40,
+          child: ListView.separated(
+            scrollDirection: Axis.horizontal,
+            padding: const EdgeInsets.symmetric(horizontal: 1),
+            itemCount: ExpenseCategory.values.length,
+            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            itemBuilder: (_, i) {
+              final cat = ExpenseCategory.values[i];
+              final isSel = cat == selected;
+              return GestureDetector(
+                onTap: () => onChanged(cat),
+                child: AnimatedContainer(
+                  duration: const Duration(milliseconds: 150),
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  decoration: BoxDecoration(
+                    color: isSel ? _primary.withOpacity(0.10) : _bg,
+                    borderRadius: BorderRadius.circular(20),
+                    border: Border.all(
+                      color: isSel ? _primary : _border,
+                      width: isSel ? 1.5 : 1,
+                    ),
+                  ),
+                  child: Row(
+                    mainAxisSize: MainAxisSize.min,
+                    children: [
+                      CategoryLogo(category: cat.value, size: 18),
+                      const SizedBox(width: 6),
+                      Text(
+                        cat.label,
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
+                          color: isSel ? _primary : _textPrimary,
+                        ),
+                      ),
+                    ],
                   ),
                 ),
-                child: Row(
-                  mainAxisSize: MainAxisSize.min,
-                  children: [
-                    CategoryLogo(category: cat.value, size: 20),
-                    const SizedBox(width: 6),
-                    Text(
-                      cat.label,
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
-                        color: isSel ? _primary : _textPrimary,
-                      ),
-                    ),
-                  ],
-                ),
-              ),
-            );
-          }).toList(),
+              );
+            },
+          ),
         ),
       ],
     );
