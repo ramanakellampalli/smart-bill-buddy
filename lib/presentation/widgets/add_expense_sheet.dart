@@ -346,7 +346,7 @@ class _DescriptionField extends StatelessWidget {
       textCapitalization: TextCapitalization.sentences,
       style: const TextStyle(fontSize: 14, color: _textPrimary),
       decoration: InputDecoration(
-        hintText: 'Note (optional)',
+        hintText: 'Description (optional)',
         hintStyle: const TextStyle(fontSize: 14, color: _textTertiary),
         filled: true,
         fillColor: const Color(0xFFF5F0EA),
