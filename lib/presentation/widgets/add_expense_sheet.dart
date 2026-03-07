@@ -270,88 +270,119 @@ class _AmountField extends StatelessWidget {
   }
 }
 
-class _CategoryPicker extends StatelessWidget {
+class _CategoryPicker extends StatefulWidget {
   final ExpenseCategory selected;
   final ValueChanged<ExpenseCategory> onChanged;
 
   const _CategoryPicker({required this.selected, required this.onChanged});
 
   @override
+  State<_CategoryPicker> createState() => _CategoryPickerState();
+}
+
+class _CategoryPickerState extends State<_CategoryPicker> {
+  bool _expanded = false;
+
+  @override
   Widget build(BuildContext context) {
     final cats = ExpenseCategory.values;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFAF8F5),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        children: cats.asMap().entries.map((entry) {
-          final i = entry.key;
-          final cat = entry.value;
-          final isSel = cat == selected;
-          final isLast = i == cats.length - 1;
+    return GestureDetector(
+      onTap: _expanded ? null : () => setState(() => _expanded = true),
+      child: Container(
+        padding: const EdgeInsets.all(12),
+        decoration: BoxDecoration(
+          color: const Color(0xFFFAF8F5),
+          borderRadius: BorderRadius.circular(10),
+        ),
+        child: _expanded
+            ? Column(
+                children: cats.asMap().entries.map((entry) {
+                  final i = entry.key;
+                  final cat = entry.value;
+                  final isSel = cat == widget.selected;
+                  final isLast = i == cats.length - 1;
 
-          return IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 20,
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        margin: const EdgeInsets.only(top: 4),
-                        decoration: BoxDecoration(
-                          color: isSel ? _primary : const Color(0xFFC8C3BB),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      if (!isLast)
-                        Expanded(
-                          child: Container(
-                            width: 1.5,
-                            margin: const EdgeInsets.only(top: 2),
-                            color: const Color(0xFFEDE6DC),
+                  return IntrinsicHeight(
+                    child: Row(
+                      crossAxisAlignment: CrossAxisAlignment.start,
+                      children: [
+                        SizedBox(
+                          width: 20,
+                          child: Column(
+                            children: [
+                              Container(
+                                width: 8,
+                                height: 8,
+                                margin: const EdgeInsets.only(top: 4),
+                                decoration: BoxDecoration(
+                                  color: isSel ? _primary : const Color(0xFFC8C3BB),
+                                  shape: BoxShape.circle,
+                                ),
+                              ),
+                              if (!isLast)
+                                Expanded(
+                                  child: Container(
+                                    width: 1.5,
+                                    margin: const EdgeInsets.only(top: 2),
+                                    color: const Color(0xFFEDE6DC),
+                                  ),
+                                ),
+                            ],
                           ),
                         ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => onChanged(cat),
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: isLast ? 0 : 10),
-                      child: Row(
-                        children: [
-                          CategoryLogo(category: cat.value, size: 22),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              cat.label,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
-                                color: isSel ? _primary : _textPrimary,
+                        const SizedBox(width: 8),
+                        Expanded(
+                          child: GestureDetector(
+                            behavior: HitTestBehavior.opaque,
+                            onTap: () {
+                              widget.onChanged(cat);
+                              setState(() => _expanded = false);
+                            },
+                            child: Padding(
+                              padding: EdgeInsets.only(bottom: isLast ? 0 : 10),
+                              child: Row(
+                                children: [
+                                  CategoryLogo(category: cat.value, size: 22),
+                                  const SizedBox(width: 10),
+                                  Expanded(
+                                    child: Text(
+                                      cat.label,
+                                      style: TextStyle(
+                                        fontSize: 13,
+                                        fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
+                                        color: isSel ? _primary : _textPrimary,
+                                      ),
+                                    ),
+                                  ),
+                                  if (isSel)
+                                    const Icon(Icons.check_rounded, size: 15, color: _primary),
+                                ],
                               ),
                             ),
                           ),
-                          if (isSel)
-                            const Icon(Icons.check_rounded, size: 15, color: _primary),
-                        ],
+                        ),
+                      ],
+                    ),
+                  );
+                }).toList(),
+              )
+            : Row(
+                children: [
+                  CategoryLogo(category: widget.selected.value, size: 22),
+                  const SizedBox(width: 10),
+                  Expanded(
+                    child: Text(
+                      widget.selected.label,
+                      style: const TextStyle(
+                        fontSize: 13,
+                        fontWeight: FontWeight.w600,
+                        color: _textPrimary,
                       ),
                     ),
                   ),
-                ),
-              ],
-            ),
-          );
-        }).toList(),
+                  const Icon(Icons.expand_more_rounded, size: 16, color: _textTertiary),
+                ],
+              ),
       ),
     );
   }
