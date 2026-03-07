@@ -39,7 +39,7 @@ class SmartBillApp extends StatelessWidget {
           create: (ctx) => BudgetsProvider(ctx.read<BudgetsRepository>()),
         ),
         ChangeNotifierProvider(
-          create: (ctx) => DuesProvider(ctx.read<DuesRepository>()),
+          create: (ctx) => DuesProvider(ctx.read<DuesRepository>(), ctx.read<ExpensesRepository>()),
         ),
         ChangeNotifierProvider(
           create: (ctx) => ExpensesProvider(ctx.read<ExpensesRepository>()),

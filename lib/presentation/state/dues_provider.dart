@@ -3,11 +3,14 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../data/models/due_model.dart';
+import '../../data/models/expense_model.dart';
 import '../../data/repositories/dues_repository.dart';
+import '../../data/repositories/expenses_repository.dart';
 import '../../services/notification_service.dart';
 
 class DuesProvider extends ChangeNotifier {
   final DuesRepository _repo;
+  final ExpensesRepository _expensesRepo;
 
   StreamSubscription<User?>? _authSub;
   StreamSubscription<List<DueModel>>? _duesSub;
@@ -19,7 +22,7 @@ class DuesProvider extends ChangeNotifier {
 
   String? _currentUid;
 
-  DuesProvider(this._repo) {
+  DuesProvider(this._repo, this._expensesRepo) {
     _authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
       if (user == null) {
         if (_currentUid == null) return;
@@ -92,8 +95,23 @@ class DuesProvider extends ChangeNotifier {
 
   Future<void> settle(String dueId) async {
     try {
+      final due = dues.firstWhere((d) => d.id == dueId);
       await _repo.settleDue(dueId);
       await NotificationService.cancelDue(dueId);
+      if (due.type == 'borrowed' && _currentUid != null) {
+        final totalPaid = due.payments.fold(0.0, (s, p) => s + p.amount);
+        final remaining = due.amount - totalPaid;
+        if (remaining > 0) {
+          final expense = ExpenseModel.create(
+            amount: remaining,
+            category: ExpenseCategory.finance,
+            description: 'Paid to ${due.personName}',
+            date: DateTime.now(),
+            linkedDueId: dueId,
+          );
+          await _expensesRepo.addExpense(expense);
+        }
+      }
     } catch (e) {
       error = e.toString();
       notifyListeners();
@@ -125,6 +143,16 @@ class DuesProvider extends ChangeNotifier {
       await _repo.addPayment(dueId, updatedPayments, autoSettle: autoSettled);
       if (autoSettled) {
         await NotificationService.cancelDue(dueId);
+      }
+      if (due.type == 'borrowed' && _currentUid != null) {
+        final expense = ExpenseModel.create(
+          amount: payment.amount,
+          category: ExpenseCategory.finance,
+          description: 'Paid to ${due.personName}',
+          date: payment.paidAt,
+          linkedDueId: dueId,
+        );
+        await _expensesRepo.addExpense(expense);
       }
     } catch (e) {
       error = e.toString();
