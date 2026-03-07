@@ -424,52 +424,49 @@ class ExpenseItemRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isToday = DateUtils.isSameDay(expense.date, DateTime.now());
     final dateLabel = isToday ? 'Today' : DateFormat('d MMM').format(expense.date);
-    final hasDesc = expense.description?.isNotEmpty == true;
+    final hasDesc = expense.description != null && expense.description!.isNotEmpty;
 
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 9, 14, 9),
+        padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.start,
+          crossAxisAlignment: CrossAxisAlignment.center,
           children: [
             // Bullet
-            Padding(
-              padding: const EdgeInsets.only(top: 5, right: 10),
-              child: Container(
-                width: 6,
-                height: 6,
-                decoration: const BoxDecoration(color: _primary, shape: BoxShape.circle),
-              ),
+            Container(
+              width: 5,
+              height: 5,
+              margin: const EdgeInsets.only(right: 8),
+              decoration: const BoxDecoration(color: _primary, shape: BoxShape.circle),
             ),
-            // Amount + optional description
+            // Description
             Expanded(
-              child: Column(
-                crossAxisAlignment: CrossAxisAlignment.start,
-                children: [
-                  Text(
-                    money.format(expense.amount),
-                    style: const TextStyle(
-                      fontSize: 14,
-                      fontWeight: FontWeight.w700,
-                      color: _textPrimary,
-                    ),
-                  ),
-                  if (hasDesc) ...[
-                    const SizedBox(height: 1),
-                    Text(
-                      expense.description!,
-                      style: const TextStyle(fontSize: 11, color: _textSecondary),
-                    ),
-                  ],
-                ],
+              child: Text(
+                hasDesc ? expense.description! : '—',
+                style: const TextStyle(fontSize: 13, color: _textSecondary),
+                overflow: TextOverflow.ellipsis,
               ),
             ),
-            // Date
+            // Amount
             Text(
-              dateLabel,
-              style: const TextStyle(fontSize: 11, color: _textTertiary),
+              money.format(expense.amount),
+              style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w600,
+                color: _textPrimary,
+              ),
+            ),
+            const SizedBox(width: 10),
+            // Date
+            SizedBox(
+              width: 44,
+              child: Text(
+                dateLabel,
+                textAlign: TextAlign.end,
+                style: const TextStyle(fontSize: 11, color: _textTertiary),
+              ),
             ),
           ],
         ),
