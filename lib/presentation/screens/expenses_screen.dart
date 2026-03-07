@@ -340,11 +340,11 @@ class _ExpenseCategoryRowState extends State<ExpenseCategoryRow>
             onTap: _toggle,
             behavior: HitTestBehavior.opaque,
             child: Padding(
-              padding: const EdgeInsets.all(14),
+              padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
               child: Row(
                 children: [
-                  CategoryLogo(category: widget.category.value, size: 40),
-                  const SizedBox(width: 12),
+                  CategoryLogo(category: widget.category.value, size: 34),
+                  const SizedBox(width: 10),
                   Expanded(
                     child: Column(
                       crossAxisAlignment: CrossAxisAlignment.start,
@@ -424,52 +424,53 @@ class ExpenseItemRow extends StatelessWidget {
   Widget build(BuildContext context) {
     final isToday = DateUtils.isSameDay(expense.date, DateTime.now());
     final dateLabel = isToday ? 'Today' : DateFormat('d MMM').format(expense.date);
+    final hasDesc = expense.description?.isNotEmpty == true;
 
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
       child: Padding(
-        padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
+        padding: const EdgeInsets.fromLTRB(14, 9, 14, 9),
         child: Row(
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            Container(
-              width: 6,
-              height: 6,
-              margin: const EdgeInsets.only(right: 12),
-              decoration: const BoxDecoration(
-                color: _primary,
-                shape: BoxShape.circle,
+            // Bullet
+            Padding(
+              padding: const EdgeInsets.only(top: 5, right: 10),
+              child: Container(
+                width: 6,
+                height: 6,
+                decoration: const BoxDecoration(color: _primary, shape: BoxShape.circle),
               ),
             ),
+            // Amount + optional description
             Expanded(
               child: Column(
                 crossAxisAlignment: CrossAxisAlignment.start,
                 children: [
                   Text(
-                    expense.description?.isNotEmpty == true
-                        ? expense.description!
-                        : expense.category.label,
+                    money.format(expense.amount),
                     style: const TextStyle(
-                      fontSize: 13,
-                      fontWeight: FontWeight.w500,
+                      fontSize: 14,
+                      fontWeight: FontWeight.w700,
                       color: _textPrimary,
                     ),
                   ),
-                  const SizedBox(height: 1),
-                  Text(dateLabel, style: const TextStyle(fontSize: 11, color: _textTertiary)),
+                  if (hasDesc) ...[
+                    const SizedBox(height: 1),
+                    Text(
+                      expense.description!,
+                      style: const TextStyle(fontSize: 11, color: _textSecondary),
+                    ),
+                  ],
                 ],
               ),
             ),
+            // Date
             Text(
-              money.format(expense.amount),
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: _textPrimary,
-              ),
+              dateLabel,
+              style: const TextStyle(fontSize: 11, color: _textTertiary),
             ),
-            const SizedBox(width: 4),
-            const Icon(Icons.chevron_right_rounded, size: 14, color: _textTertiary),
           ],
         ),
       ),
