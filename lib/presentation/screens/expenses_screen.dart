@@ -28,27 +28,9 @@ class ExpensesScreen extends StatefulWidget {
 }
 
 class _ExpensesScreenState extends State<ExpensesScreen> {
-  late DateTime _month;
-
-  @override
-  void initState() {
-    super.initState();
+  DateTime get _month {
     final now = DateTime.now();
-    _month = DateTime(now.year, now.month, 1);
-  }
-
-  void _prev() => setState(() => _month = DateTime(_month.year, _month.month - 1));
-  void _next() {
-    final now = DateTime.now();
-    final next = DateTime(_month.year, _month.month + 1);
-    if (!next.isAfter(DateTime(now.year, now.month, 1))) {
-      setState(() => _month = next);
-    }
-  }
-
-  bool get _isCurrent {
-    final now = DateTime.now();
-    return _month.year == now.year && _month.month == now.month;
+    return DateTime(now.year, now.month, 1);
   }
 
   void _openSheet({ExpenseModel? existing}) {
@@ -109,18 +91,7 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       ),
       body: p.isLoading
           ? const Center(child: CircularProgressIndicator(strokeWidth: 2.5, color: _primary))
-          : Column(
-              children: [
-                Padding(
-                  padding: const EdgeInsets.fromLTRB(16, 4, 16, 0),
-                  child: MonthPicker(
-                    label: DateFormat('MMMM yyyy').format(_month),
-                    onPrev: _prev,
-                    onNext: _isCurrent ? null : _next,
-                  ),
-                ),
-                Expanded(
-                  child: monthExpenses.isEmpty
+          : monthExpenses.isEmpty
                       ? ExpenseEmptyState(onAdd: () => _openSheet())
                       : ListView(
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
@@ -139,9 +110,6 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
                             ),
                           ],
                         ),
-                ),
-              ],
-            ),
     );
   }
 }
