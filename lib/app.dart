@@ -5,10 +5,12 @@ import 'data/models/bill_model.dart';
 import 'data/repositories/bills_repository.dart';
 import 'data/repositories/budgets_repository.dart';
 import 'data/repositories/dues_repository.dart';
+import 'data/repositories/expenses_repository.dart';
 import 'presentation/state/app_settings_provider.dart';
 import 'presentation/state/bills_provider.dart';
 import 'presentation/state/budgets_provider.dart';
 import 'presentation/state/dues_provider.dart';
+import 'presentation/state/expenses_provider.dart';
 import 'presentation/state/user_provider.dart';
 import 'presentation/screens/auth_wrapper.dart';
 import 'presentation/screens/home_shell.dart';
@@ -29,6 +31,7 @@ class SmartBillApp extends StatelessWidget {
         Provider(create: (_) => BillsRepository()),
         Provider(create: (_) => BudgetsRepository()),
         Provider(create: (_) => DuesRepository()),
+        Provider(create: (_) => ExpensesRepository()),
         ChangeNotifierProvider(
           create: (ctx) => BillsProvider(ctx.read<BillsRepository>()),
         ),
@@ -37,6 +40,9 @@ class SmartBillApp extends StatelessWidget {
         ),
         ChangeNotifierProvider(
           create: (ctx) => DuesProvider(ctx.read<DuesRepository>()),
+        ),
+        ChangeNotifierProvider(
+          create: (ctx) => ExpensesProvider(ctx.read<ExpensesRepository>()),
         ),
         ChangeNotifierProvider(create: (_) => UserProvider()),
       ],

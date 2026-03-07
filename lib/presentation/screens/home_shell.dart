@@ -2,6 +2,7 @@ import 'package:flutter/material.dart';
 import 'dashboard_screen.dart';
 import 'bills_screen.dart';
 import 'dues_screen.dart';
+import 'expenses_screen.dart';
 import 'budgets_screen.dart';
 import 'profile_screen.dart';
 import '../widgets/help_chat_sheet.dart';
@@ -29,10 +30,12 @@ class _HomeShellState extends State<HomeShell> {
       DashboardScreen(
         onNavigateToBills: () => setState(() => _currentIndex = 1),
         onNavigateToDues: () => setState(() => _currentIndex = 2),
-        onNavigateToBudgets: () => setState(() => _currentIndex = 3),
+        onNavigateToExpenses: () => setState(() => _currentIndex = 3),
+        onNavigateToBudgets: () => setState(() => _currentIndex = 4),
       ),
       const BillsScreen(),
       const DuesScreen(),
+      const ExpensesScreen(),
       const BudgetsScreen(),
       const ProfileScreen(),
     ];
@@ -78,6 +81,10 @@ class _BottomNav extends StatelessWidget {
         icon: Icons.people_alt_outlined,
         activeIcon: Icons.people_alt_rounded,
         label: 'Dues'),
+    _NavItem(
+        icon: Icons.wallet_outlined,
+        activeIcon: Icons.wallet_rounded,
+        label: 'Expenses'),
     _NavItem(
         icon: Icons.account_balance_wallet_outlined,
         activeIcon: Icons.account_balance_wallet_rounded,

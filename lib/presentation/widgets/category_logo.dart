@@ -207,20 +207,36 @@ class _GradientIcon extends StatelessWidget {
 
   static (IconData, Color, Color) _catData(String cat) {
     switch (cat) {
+      // ── Bill categories ──────────────────────────────────────────────────────
       case 'utilities':
-        return (Icons.bolt_rounded,           const Color(0xFFFBBF24), const Color(0xFFF97316));
+        return (Icons.bolt_rounded,               const Color(0xFFFBBF24), const Color(0xFFF97316));
       case 'rent':
-        return (Icons.home_rounded,           const Color(0xFF818CF8), const Color(0xFF4338CA));
+        return (Icons.home_rounded,               const Color(0xFF818CF8), const Color(0xFF4338CA));
       case 'emi':
-        return (Icons.account_balance_rounded,const Color(0xFFC084FC), const Color(0xFF7C3AED));
+        return (Icons.account_balance_rounded,    const Color(0xFFC084FC), const Color(0xFF7C3AED));
       case 'credit_card':
-        return (Icons.credit_card_rounded,    const Color(0xFFFB7185), const Color(0xFFBE123C));
+        return (Icons.credit_card_rounded,        const Color(0xFFFB7185), const Color(0xFFBE123C));
       case 'subscriptions':
-        return (Icons.play_circle_rounded,    const Color(0xFF34D399), const Color(0xFF0F766E));
+        return (Icons.play_circle_rounded,        const Color(0xFF34D399), const Color(0xFF0F766E));
       case 'education':
-        return (Icons.school_rounded,         const Color(0xFF38BDF8), const Color(0xFF1D4ED8));
+        return (Icons.school_rounded,             const Color(0xFF38BDF8), const Color(0xFF1D4ED8));
+      // ── Expense categories ───────────────────────────────────────────────────
+      case 'food':
+        return (Icons.restaurant_rounded,         const Color(0xFFFF8C42), const Color(0xFFDC2626));
+      case 'transport':
+        return (Icons.directions_car_rounded,     const Color(0xFF38BDF8), const Color(0xFF0369A1));
+      case 'housing':
+        return (Icons.house_rounded,              const Color(0xFF818CF8), const Color(0xFF4338CA));
+      case 'shopping':
+        return (Icons.shopping_bag_rounded,       const Color(0xFFF472B6), const Color(0xFFBE185D));
+      case 'health':
+        return (Icons.favorite_rounded,           const Color(0xFF4ADE80), const Color(0xFF15803D));
+      case 'entertainment':
+        return (Icons.movie_rounded,              const Color(0xFFA78BFA), const Color(0xFF6D28D9));
+      case 'finance':
+        return (Icons.account_balance_wallet_rounded, const Color(0xFF67E8F9), const Color(0xFF0E7490));
       default:
-        return (Icons.receipt_long_rounded,   const Color(0xFFA8A29E), const Color(0xFF57534E));
+        return (Icons.receipt_long_rounded,       const Color(0xFFA8A29E), const Color(0xFF57534E));
     }
   }
 }
