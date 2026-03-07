@@ -280,10 +280,10 @@ class _CategoryPicker extends StatelessWidget {
   Widget build(BuildContext context) {
     final cats = ExpenseCategory.values;
     return Container(
-      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
+      padding: const EdgeInsets.all(12),
       decoration: BoxDecoration(
-        color: const Color(0xFFF5F0EA),
-        borderRadius: BorderRadius.circular(14),
+        color: const Color(0xFFFAF8F5),
+        borderRadius: BorderRadius.circular(10),
       ),
       child: Column(
         children: cats.asMap().entries.map((entry) {
@@ -303,7 +303,7 @@ class _CategoryPicker extends StatelessWidget {
                       Container(
                         width: 8,
                         height: 8,
-                        margin: const EdgeInsets.only(top: 6),
+                        margin: const EdgeInsets.only(top: 4),
                         decoration: BoxDecoration(
                           color: isSel ? _primary : const Color(0xFFC8C3BB),
                           shape: BoxShape.circle,
@@ -313,8 +313,8 @@ class _CategoryPicker extends StatelessWidget {
                         Expanded(
                           child: Container(
                             width: 1.5,
-                            margin: const EdgeInsets.only(top: 3),
-                            color: const Color(0xFFDDD8D0),
+                            margin: const EdgeInsets.only(top: 2),
+                            color: const Color(0xFFEDE6DC),
                           ),
                         ),
                     ],
