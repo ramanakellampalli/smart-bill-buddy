@@ -278,80 +278,43 @@ class _CategoryPicker extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final cats = ExpenseCategory.values;
-    return Container(
-      padding: const EdgeInsets.all(12),
-      decoration: BoxDecoration(
-        color: const Color(0xFFFAF8F5),
-        borderRadius: BorderRadius.circular(10),
-      ),
-      child: Column(
-        children: cats.asMap().entries.map((entry) {
-          final i = entry.key;
-          final cat = entry.value;
+    return SizedBox(
+      height: 34,
+      child: ListView.separated(
+        scrollDirection: Axis.horizontal,
+        padding: const EdgeInsets.symmetric(horizontal: 1),
+        itemCount: ExpenseCategory.values.length,
+        separatorBuilder: (_, __) => const SizedBox(width: 6),
+        itemBuilder: (_, i) {
+          final cat = ExpenseCategory.values[i];
           final isSel = cat == selected;
-          final isLast = i == cats.length - 1;
-
-          return IntrinsicHeight(
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                SizedBox(
-                  width: 20,
-                  child: Column(
-                    children: [
-                      Container(
-                        width: 8,
-                        height: 8,
-                        margin: const EdgeInsets.only(top: 4),
-                        decoration: BoxDecoration(
-                          color: isSel ? _primary : const Color(0xFFC8C3BB),
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                      if (!isLast)
-                        Expanded(
-                          child: Container(
-                            width: 1.5,
-                            margin: const EdgeInsets.only(top: 2),
-                            color: const Color(0xFFEDE6DC),
-                          ),
-                        ),
-                    ],
-                  ),
-                ),
-                const SizedBox(width: 8),
-                Expanded(
-                  child: GestureDetector(
-                    behavior: HitTestBehavior.opaque,
-                    onTap: () => onChanged(cat),
-                    child: Padding(
-                      padding: EdgeInsets.only(bottom: isLast ? 0 : 10),
-                      child: Row(
-                        children: [
-                          CategoryLogo(category: cat.value, size: 22),
-                          const SizedBox(width: 10),
-                          Expanded(
-                            child: Text(
-                              cat.label,
-                              style: TextStyle(
-                                fontSize: 13,
-                                fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
-                                color: isSel ? _primary : _textPrimary,
-                              ),
-                            ),
-                          ),
-                          if (isSel)
-                            const Icon(Icons.check_rounded, size: 15, color: _primary),
-                        ],
-                      ),
+          return GestureDetector(
+            onTap: () => onChanged(cat),
+            child: AnimatedContainer(
+              duration: const Duration(milliseconds: 150),
+              padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
+              decoration: BoxDecoration(
+                color: isSel ? _primary.withOpacity(0.12) : const Color(0xFFF5F0EA),
+                borderRadius: BorderRadius.circular(8),
+              ),
+              child: Row(
+                mainAxisSize: MainAxisSize.min,
+                children: [
+                  CategoryLogo(category: cat.value, size: 16),
+                  const SizedBox(width: 5),
+                  Text(
+                    cat.label,
+                    style: TextStyle(
+                      fontSize: 12,
+                      fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
+                      color: isSel ? _primary : _textSecondary,
                     ),
                   ),
-                ),
-              ],
+                ],
+              ),
             ),
           );
-        }).toList(),
+        },
       ),
     );
   }
