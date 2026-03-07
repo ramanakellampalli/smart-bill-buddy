@@ -1,0 +1,54 @@
+name: PR Build Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Analyze & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Java (required for Android toolchain) ──────────────────────────
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # ── 3. Flutter ───────────────────────────────────────────────────────────
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      # ── 4. Create .env from secrets ─────────────────────────────────────────
+      #    Add these in GitHub → Settings → Secrets → Actions:
+      #      GROQ_API_KEY  (required for dart-define, can be a dummy value for CI)
+      - name: Create .env
+        run: |
+          echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY || 'ci_placeholder' }}" > .env
+          echo "KEYSTORE_PASSWORD=ci_placeholder" >> .env
+          echo "KEY_ALIAS=ci_placeholder" >> .env
+          echo "KEY_PASSWORD=ci_placeholder" >> .env
+
+      # ── 5. Dependencies ──────────────────────────────────────────────────────
+      - name: Install dependencies
+        run: flutter pub get
+
+      # ── 6. Analyze ───────────────────────────────────────────────────────────
+      #    Fails on errors and warnings — infos are ignored.
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      # ── 7. Build debug APK ───────────────────────────────────────────────────
+      #    Debug build — no signing required. Purpose: catch compilation errors.
+      - name: Build debug APK
+        run: flutter build apk --debug --dart-define-from-file=.env
