@@ -205,6 +205,7 @@ flutterfire configure
 
 # 3. Run
 flutter run
+flutter run --dart-define-from-file=.env  # Run with env vars
 ```
 
 **Required Firebase services:**
@@ -219,6 +220,7 @@ flutter run
 flutter build apk          # Android release APK
 flutter build appbundle    # Android App Bundle (Play Store)
 flutter build ios          # iOS (requires macOS + Xcode)
+flutter run --dart-define-from-file=.env  # Build with env vars
 ```
 
 ---
