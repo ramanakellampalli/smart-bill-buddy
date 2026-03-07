@@ -210,9 +210,18 @@ class ExpenseSummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Total Spent',
-            style: TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w500, letterSpacing: 0.3),
+          Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            children: [
+              const Text(
+                'Total Spent',
+                style: TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w500, letterSpacing: 0.3),
+              ),
+              Text(
+                DateFormat('MMMM yyyy').format(DateTime.now()),
+                style: const TextStyle(fontSize: 11, color: Colors.white54, fontWeight: FontWeight.w400),
+              ),
+            ],
           ),
           const SizedBox(height: 6),
           Text(
