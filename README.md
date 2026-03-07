@@ -220,7 +220,7 @@ flutter run --dart-define-from-file=.env  # Run with env vars
 flutter build apk          # Android release APK
 flutter build appbundle    # Android App Bundle (Play Store)
 flutter build ios          # iOS (requires macOS + Xcode)
-flutter run --dart-define-from-file=.env  # Build with env vars
+flutter clean && flutter build appbundle --release --dart-define-from-file=.env  # Build with env vars
 ```
 
 ---
