@@ -390,11 +390,27 @@ class _ExpenseCategoryRowState extends State<ExpenseCategoryRow>
             child: Column(
               children: [
                 Divider(height: 1, thickness: 1, color: _border),
-                ...sorted.map(
-                  (e) => ExpenseItemRow(
-                    expense: e,
-                    money: widget.money,
-                    onTap: () => widget.onExpenseTap(e),
+                Padding(
+                  padding: const EdgeInsets.all(12),
+                  child: Container(
+                    padding: const EdgeInsets.all(12),
+                    decoration: BoxDecoration(
+                      color: const Color(0xFFFAF8F5),
+                      borderRadius: BorderRadius.circular(10),
+                    ),
+                    child: Column(
+                      children: sorted.asMap().entries.map((entry) {
+                        final idx = entry.key;
+                        final e = entry.value;
+                        final isLast = idx == sorted.length - 1;
+                        return ExpenseItemRow(
+                          expense: e,
+                          money: widget.money,
+                          isLast: isLast,
+                          onTap: () => widget.onExpenseTap(e),
+                        );
+                      }).toList(),
+                    ),
                   ),
                 ),
               ],
@@ -412,12 +428,14 @@ class ExpenseItemRow extends StatelessWidget {
   final ExpenseModel expense;
   final NumberFormat money;
   final VoidCallback onTap;
+  final bool isLast;
 
   const ExpenseItemRow({
     super.key,
     required this.expense,
     required this.money,
     required this.onTap,
+    this.isLast = false,
   });
 
   @override
@@ -429,43 +447,72 @@ class ExpenseItemRow extends StatelessWidget {
     return GestureDetector(
       onTap: onTap,
       behavior: HitTestBehavior.opaque,
-      child: Padding(
-        padding: const EdgeInsets.fromLTRB(14, 8, 14, 8),
+      child: IntrinsicHeight(
         child: Row(
-          crossAxisAlignment: CrossAxisAlignment.center,
+          crossAxisAlignment: CrossAxisAlignment.start,
           children: [
-            // Bullet
-            Container(
-              width: 5,
-              height: 5,
-              margin: const EdgeInsets.only(right: 8),
-              decoration: const BoxDecoration(color: _primary, shape: BoxShape.circle),
-            ),
-            // Description
-            Expanded(
-              child: Text(
-                hasDesc ? expense.description! : '—',
-                style: const TextStyle(fontSize: 13, color: _textSecondary),
-                overflow: TextOverflow.ellipsis,
-              ),
-            ),
-            // Amount
-            Text(
-              money.format(expense.amount),
-              style: const TextStyle(
-                fontSize: 13,
-                fontWeight: FontWeight.w600,
-                color: _textPrimary,
-              ),
-            ),
-            const SizedBox(width: 10),
-            // Date
+            // Dot + connector
             SizedBox(
-              width: 44,
-              child: Text(
-                dateLabel,
-                textAlign: TextAlign.end,
-                style: const TextStyle(fontSize: 11, color: _textTertiary),
+              width: 20,
+              child: Column(
+                children: [
+                  Container(
+                    width: 8,
+                    height: 8,
+                    margin: const EdgeInsets.only(top: 4),
+                    decoration: const BoxDecoration(
+                      color: _primary,
+                      shape: BoxShape.circle,
+                    ),
+                  ),
+                  if (!isLast)
+                    Expanded(
+                      child: Container(
+                        width: 1.5,
+                        margin: const EdgeInsets.only(top: 2),
+                        color: const Color(0xFFEDE6DC),
+                      ),
+                    ),
+                ],
+              ),
+            ),
+            const SizedBox(width: 8),
+            // Content
+            Expanded(
+              child: Padding(
+                padding: EdgeInsets.only(bottom: isLast ? 0 : 10),
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            money.format(expense.amount),
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w700,
+                              color: _textPrimary,
+                            ),
+                          ),
+                          if (hasDesc) ...[
+                            const SizedBox(height: 2),
+                            Text(
+                              expense.description!,
+                              style: const TextStyle(fontSize: 11, color: _textSecondary),
+                              overflow: TextOverflow.ellipsis,
+                            ),
+                          ],
+                        ],
+                      ),
+                    ),
+                    Text(
+                      dateLabel,
+                      style: const TextStyle(fontSize: 11, color: _textTertiary),
+                    ),
+                  ],
+                ),
               ),
             ),
           ],
