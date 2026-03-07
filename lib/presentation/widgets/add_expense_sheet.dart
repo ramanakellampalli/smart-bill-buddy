@@ -286,12 +286,12 @@ class _CategoryPicker extends StatelessWidget {
         ),
         const SizedBox(height: 10),
         SizedBox(
-          height: 40,
+          height: 34,
           child: ListView.separated(
             scrollDirection: Axis.horizontal,
             padding: const EdgeInsets.symmetric(horizontal: 1),
             itemCount: ExpenseCategory.values.length,
-            separatorBuilder: (_, __) => const SizedBox(width: 8),
+            separatorBuilder: (_, __) => const SizedBox(width: 6),
             itemBuilder: (_, i) {
               final cat = ExpenseCategory.values[i];
               final isSel = cat == selected;
@@ -299,26 +299,22 @@ class _CategoryPicker extends StatelessWidget {
                 onTap: () => onChanged(cat),
                 child: AnimatedContainer(
                   duration: const Duration(milliseconds: 150),
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
+                  padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
                   decoration: BoxDecoration(
-                    color: isSel ? _primary.withOpacity(0.10) : _bg,
-                    borderRadius: BorderRadius.circular(20),
-                    border: Border.all(
-                      color: isSel ? _primary : _border,
-                      width: isSel ? 1.5 : 1,
-                    ),
+                    color: isSel ? _primary.withOpacity(0.12) : const Color(0xFFF5F0EA),
+                    borderRadius: BorderRadius.circular(8),
                   ),
                   child: Row(
                     mainAxisSize: MainAxisSize.min,
                     children: [
-                      CategoryLogo(category: cat.value, size: 18),
-                      const SizedBox(width: 6),
+                      CategoryLogo(category: cat.value, size: 16),
+                      const SizedBox(width: 5),
                       Text(
                         cat.label,
                         style: TextStyle(
-                          fontSize: 13,
+                          fontSize: 12,
                           fontWeight: isSel ? FontWeight.w600 : FontWeight.w400,
-                          color: isSel ? _primary : _textPrimary,
+                          color: isSel ? _primary : _textSecondary,
                         ),
                       ),
                     ],
