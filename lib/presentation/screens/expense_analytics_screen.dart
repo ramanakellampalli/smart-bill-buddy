@@ -1,3 +1,4 @@
+import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -16,7 +17,6 @@ const _primary = Color(0xFFF97316);
 const _textPrimary = Color(0xFF1C1917);
 const _textSecondary = Color(0xFF78716C);
 const _textTertiary = Color(0xFFA8A29E);
-const _green = Color(0xFF16A34A);
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
 
@@ -66,10 +66,16 @@ class _ExpenseAnalyticsScreenState extends State<ExpenseAnalyticsScreen> {
     final sortedCats = catTotals.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
 
-    // Compare with previous month
+    // Prev month comparison
     final prevMonth = DateTime(_month.year, _month.month - 1);
     final prevTotal = ep.totalForMonth(prevMonth);
     final diff = total - prevTotal;
+
+    // Last 6 months for mini trend chart
+    final monthBars = List.generate(6, (i) {
+      final m = DateTime(_month.year, _month.month - (5 - i));
+      return (label: DateFormat('MMM').format(m), amount: ep.totalForMonth(m));
+    });
 
     return Scaffold(
       backgroundColor: _bg,
@@ -101,21 +107,17 @@ class _ExpenseAnalyticsScreenState extends State<ExpenseAnalyticsScreen> {
                       : ListView(
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                           children: [
-                            _AnalyticsSummaryCard(
+                            _SummaryCard(
                               total: total,
                               count: monthExpenses.length,
                               prevTotal: prevTotal,
                               diff: diff,
                               money: money,
+                              monthBars: monthBars,
+                              currentMonth: _month,
                             ),
                             const SizedBox(height: 24),
-                            _SpendingBarChart(
-                              catTotals: sortedCats,
-                              total: total,
-                              money: money,
-                            ),
-                            const SizedBox(height: 24),
-                            _CategoryBreakdownList(
+                            _CategoryList(
                               catTotals: sortedCats,
                               total: total,
                               money: money,
@@ -129,21 +131,25 @@ class _ExpenseAnalyticsScreenState extends State<ExpenseAnalyticsScreen> {
   }
 }
 
-// ── Analytics Summary Card ─────────────────────────────────────────────────────
+// ── Summary Card with Trend Chart ──────────────────────────────────────────────
 
-class _AnalyticsSummaryCard extends StatelessWidget {
+class _SummaryCard extends StatelessWidget {
   final double total;
   final int count;
   final double prevTotal;
   final double diff;
   final NumberFormat money;
+  final List<({String label, double amount})> monthBars;
+  final DateTime currentMonth;
 
-  const _AnalyticsSummaryCard({
+  const _SummaryCard({
     required this.total,
     required this.count,
     required this.prevTotal,
     required this.diff,
     required this.money,
+    required this.monthBars,
+    required this.currentMonth,
   });
 
   @override
@@ -151,9 +157,11 @@ class _AnalyticsSummaryCard extends StatelessWidget {
     final hasPrev = prevTotal > 0;
     final isHigher = diff > 0;
     final pct = hasPrev ? ((diff / prevTotal) * 100).abs().toStringAsFixed(0) : null;
+    final maxBar = monthBars.isEmpty ? 0.0 : monthBars.map((b) => b.amount).reduce(max);
+    final currentLabel = DateFormat('MMM').format(currentMonth);
 
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
       decoration: BoxDecoration(
         borderRadius: BorderRadius.circular(20),
         gradient: const LinearGradient(
@@ -172,70 +180,116 @@ class _AnalyticsSummaryCard extends StatelessWidget {
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Total Spent',
-            style: TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w500, letterSpacing: 0.3),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            money.format(total),
-            style: const TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: -1,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '$count ${count == 1 ? 'expense' : 'expenses'} recorded',
-            style: const TextStyle(fontSize: 13, color: Colors.white70),
-          ),
-          if (hasPrev) ...[
-            const SizedBox(height: 16),
-            Container(
-              padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
-              decoration: BoxDecoration(
-                color: Colors.white.withOpacity(0.12),
-                borderRadius: BorderRadius.circular(10),
+          // Amount + trend badge
+          Row(
+            crossAxisAlignment: CrossAxisAlignment.start,
+            children: [
+              Expanded(
+                child: Column(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    const Text(
+                      'TOTAL SPENT',
+                      style: TextStyle(fontSize: 11, color: Colors.white54, fontWeight: FontWeight.w600, letterSpacing: 1),
+                    ),
+                    const SizedBox(height: 6),
+                    Text(
+                      money.format(total),
+                      style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -1),
+                    ),
+                    const SizedBox(height: 4),
+                    Text(
+                      '$count ${count == 1 ? 'expense' : 'expenses'} this month',
+                      style: const TextStyle(fontSize: 13, color: Colors.white60),
+                    ),
+                  ],
+                ),
               ),
-              child: Row(
-                mainAxisSize: MainAxisSize.min,
-                children: [
-                  Icon(
-                    isHigher ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                    color: isHigher ? const Color(0xFFFCA5A5) : const Color(0xFF86EFAC),
-                    size: 16,
+              if (hasPrev)
+                Container(
+                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
+                  decoration: BoxDecoration(
+                    color: Colors.white.withOpacity(0.12),
+                    borderRadius: BorderRadius.circular(12),
                   ),
-                  const SizedBox(width: 6),
-                  Text(
-                    isHigher
-                        ? '$pct% more than last month'
-                        : '$pct% less than last month',
-                    style: TextStyle(
-                      fontSize: 12,
-                      color: isHigher ? const Color(0xFFFCA5A5) : const Color(0xFF86EFAC),
-                      fontWeight: FontWeight.w500,
+                  child: Column(
+                    children: [
+                      Icon(
+                        isHigher ? Icons.trending_up_rounded : Icons.trending_down_rounded,
+                        color: isHigher ? const Color(0xFFFCA5A5) : const Color(0xFF86EFAC),
+                        size: 20,
+                      ),
+                      const SizedBox(height: 3),
+                      Text(
+                        '${isHigher ? '+' : '-'}$pct%',
+                        style: TextStyle(
+                          fontSize: 13,
+                          color: isHigher ? const Color(0xFFFCA5A5) : const Color(0xFF86EFAC),
+                          fontWeight: FontWeight.w700,
+                        ),
+                      ),
+                      const SizedBox(height: 2),
+                      Text(
+                        'vs last mo',
+                        style: const TextStyle(fontSize: 9, color: Colors.white38),
+                      ),
+                    ],
+                  ),
+                ),
+            ],
+          ),
+          const SizedBox(height: 20),
+          // 6-month mini bar chart
+          SizedBox(
+            height: 60,
+            child: Row(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: monthBars.map((bar) {
+                final frac = maxBar <= 0 ? 0.05 : (bar.amount / maxBar).clamp(0.05, 1.0);
+                final isCurrent = bar.label == currentLabel;
+                return Expanded(
+                  child: Padding(
+                    padding: const EdgeInsets.symmetric(horizontal: 3),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.end,
+                      children: [
+                        Container(
+                          height: 44 * frac,
+                          decoration: BoxDecoration(
+                            color: isCurrent ? _primary : Colors.white.withOpacity(0.22),
+                            borderRadius: BorderRadius.circular(4),
+                          ),
+                        ),
+                        const SizedBox(height: 5),
+                        Text(
+                          bar.label,
+                          style: TextStyle(
+                            fontSize: 9,
+                            color: isCurrent ? Colors.white70 : Colors.white38,
+                            fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
+                          ),
+                        ),
+                      ],
                     ),
                   ),
-                ],
-              ),
+                );
+              }).toList(),
             ),
-          ],
+          ),
         ],
       ),
     );
   }
 }
 
-// ── Spending Bar Chart ─────────────────────────────────────────────────────────
+// ── Category List ──────────────────────────────────────────────────────────────
 
-class _SpendingBarChart extends StatelessWidget {
+class _CategoryList extends StatelessWidget {
   final List<MapEntry<ExpenseCategory, double>> catTotals;
   final double total;
   final NumberFormat money;
 
-  const _SpendingBarChart({
+  const _CategoryList({
     required this.catTotals,
     required this.total,
     required this.money,
@@ -244,105 +298,10 @@ class _SpendingBarChart extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     if (catTotals.isEmpty) return const SizedBox();
-    final maxVal = catTotals.first.value;
-
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
-        const _SectionLabel('SPENDING BY CATEGORY'),
-        const SizedBox(height: 12),
-        ...catTotals.map((entry) {
-          final fraction = maxVal <= 0 ? 0.0 : (entry.value / maxVal).clamp(0.0, 1.0);
-          final pct = total <= 0 ? 0.0 : (entry.value / total * 100);
-          return _CategoryBar(
-            category: entry.key,
-            amount: money.format(entry.value),
-            fraction: fraction,
-            pct: pct,
-          );
-        }),
-      ],
-    );
-  }
-}
-
-class _CategoryBar extends StatelessWidget {
-  final ExpenseCategory category;
-  final String amount;
-  final double fraction;
-  final double pct;
-
-  const _CategoryBar({
-    required this.category,
-    required this.amount,
-    required this.fraction,
-    required this.pct,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Padding(
-      padding: const EdgeInsets.only(bottom: 14),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Row(
-            children: [
-              CategoryLogo(category: category.value, size: 28),
-              const SizedBox(width: 10),
-              Expanded(
-                child: Text(
-                  category.label,
-                  style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w500, color: _textPrimary),
-                ),
-              ),
-              Text(amount, style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: _textPrimary)),
-              const SizedBox(width: 6),
-              SizedBox(
-                width: 36,
-                child: Text(
-                  '${pct.toStringAsFixed(0)}%',
-                  textAlign: TextAlign.end,
-                  style: const TextStyle(fontSize: 11, color: _textTertiary),
-                ),
-              ),
-            ],
-          ),
-          const SizedBox(height: 6),
-          ClipRRect(
-            borderRadius: BorderRadius.circular(4),
-            child: LinearProgressIndicator(
-              value: fraction,
-              minHeight: 6,
-              backgroundColor: const Color(0xFFEDE6DC),
-              valueColor: const AlwaysStoppedAnimation<Color>(_primary),
-            ),
-          ),
-        ],
-      ),
-    );
-  }
-}
-
-// ── Category Breakdown List ────────────────────────────────────────────────────
-
-class _CategoryBreakdownList extends StatelessWidget {
-  final List<MapEntry<ExpenseCategory, double>> catTotals;
-  final double total;
-  final NumberFormat money;
-
-  const _CategoryBreakdownList({
-    required this.catTotals,
-    required this.total,
-    required this.money,
-  });
-
-  @override
-  Widget build(BuildContext context) {
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionLabel('BREAKDOWN'),
+        const _SectionLabel('BY CATEGORY'),
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
@@ -354,42 +313,53 @@ class _CategoryBreakdownList extends StatelessWidget {
             children: catTotals.asMap().entries.map((mapEntry) {
               final index = mapEntry.key;
               final entry = mapEntry.value;
-              final pct = total <= 0 ? 0.0 : (entry.value / total * 100);
+              final pct = total <= 0 ? 0.0 : entry.value / total;
               final isLast = index == catTotals.length - 1;
               return Column(
                 children: [
                   Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 12),
-                    child: Row(
+                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
+                    child: Column(
                       children: [
-                        CategoryLogo(category: entry.key.value, size: 34),
-                        const SizedBox(width: 12),
-                        Expanded(
-                          child: Text(
-                            entry.key.label,
-                            style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: _textPrimary),
-                          ),
+                        Row(
+                          children: [
+                            CategoryLogo(category: entry.key.value, size: 32),
+                            const SizedBox(width: 12),
+                            Expanded(
+                              child: Text(
+                                entry.key.label,
+                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: _textPrimary),
+                              ),
+                            ),
+                            Text(
+                              money.format(entry.value),
+                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: _textPrimary),
+                            ),
+                            const SizedBox(width: 8),
+                            SizedBox(
+                              width: 34,
+                              child: Text(
+                                '${(pct * 100).toStringAsFixed(0)}%',
+                                textAlign: TextAlign.end,
+                                style: const TextStyle(fontSize: 11, color: _textTertiary),
+                              ),
+                            ),
+                          ],
                         ),
-                        Text(
-                          money.format(entry.value),
-                          style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: _textPrimary),
-                        ),
-                        const SizedBox(width: 8),
-                        Container(
-                          padding: const EdgeInsets.symmetric(horizontal: 7, vertical: 3),
-                          decoration: BoxDecoration(
-                            color: _primary.withOpacity(0.10),
-                            borderRadius: BorderRadius.circular(6),
-                          ),
-                          child: Text(
-                            '${pct.toStringAsFixed(0)}%',
-                            style: const TextStyle(fontSize: 10, fontWeight: FontWeight.w600, color: _primary),
+                        const SizedBox(height: 8),
+                        ClipRRect(
+                          borderRadius: BorderRadius.circular(4),
+                          child: LinearProgressIndicator(
+                            value: pct,
+                            minHeight: 4,
+                            backgroundColor: const Color(0xFFEDE6DC),
+                            valueColor: const AlwaysStoppedAnimation<Color>(_primary),
                           ),
                         ),
                       ],
                     ),
                   ),
-                  if (!isLast) Divider(height: 1, thickness: 1, color: _border, indent: 62),
+                  if (!isLast) Divider(height: 1, thickness: 1, color: _border, indent: 60),
                 ],
               );
             }).toList(),
