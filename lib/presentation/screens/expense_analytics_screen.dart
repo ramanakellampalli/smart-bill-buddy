@@ -199,7 +199,7 @@ class _StatTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return Expanded(
       child: Container(
-        padding: const EdgeInsets.fromLTRB(14, 14, 14, 14),
+        padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
         decoration: BoxDecoration(
           color: _card,
           borderRadius: BorderRadius.circular(16),
@@ -209,11 +209,11 @@ class _StatTile extends StatelessWidget {
           crossAxisAlignment: CrossAxisAlignment.start,
           children: [
             Icon(icon, size: 18, color: iconColor ?? _primary),
-            const SizedBox(height: 8),
+            const SizedBox(height: 4),
             Text(
               value,
               style: const TextStyle(
-                fontSize: 15,
+                fontSize: 13,
                 fontWeight: FontWeight.w700,
                 color: _textPrimary,
                 letterSpacing: -0.3,
