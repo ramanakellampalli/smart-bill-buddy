@@ -1,5 +1,5 @@
 import 'package:flutter/material.dart';
-import 'package:intl/intl.dart';
+import 'package:intl/intl.dart' show DateFormat, NumberFormat;
 import 'package:provider/provider.dart';
 import '../../data/models/expense_model.dart';
 import '../../services/receipt_scanner_service.dart';
@@ -104,7 +104,7 @@ class _Header extends StatelessWidget {
 
 class _PreviewCard extends StatelessWidget {
   final ScannedExpense scanned;
-  final dynamic money;
+  final NumberFormat money;
 
   const _PreviewCard({required this.scanned, required this.money});
 
@@ -125,7 +125,7 @@ class _PreviewCard extends StatelessWidget {
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(
-            money.fmt(scanned.amount),
+            money.format(scanned.amount),
             style: const TextStyle(
               fontSize: 30,
               fontWeight: FontWeight.w800,
