@@ -9,6 +9,8 @@ import 'package:provider/provider.dart';
 import '../state/user_provider.dart';
 import '../../data/models/user_model.dart';
 import '../state/bills_provider.dart';
+import '../state/dues_provider.dart';
+import '../state/expenses_provider.dart';
 import '../widgets/auth_guard.dart';
 import 'insights_screen.dart';
 import 'due_analytics_screen.dart';
@@ -200,6 +202,8 @@ class _ProfileScreenState extends State<_ProfileScreenContent> {
   Widget build(BuildContext context) {
     final user = context.watch<UserProvider>();
     final billsProvider = context.watch<BillsProvider>();
+    final expensesProvider = context.watch<ExpensesProvider>();
+    final duesProvider = context.watch<DuesProvider>();
     
     if (user.isLoading) {
       return Scaffold(
@@ -275,6 +279,8 @@ class _ProfileScreenState extends State<_ProfileScreenContent> {
           _StatsSection(
             profile: profile,
             billsProvider: billsProvider,
+            expensesProvider: expensesProvider,
+            duesProvider: duesProvider,
             currency: currency,
           ),
           const SizedBox(height: 24),
@@ -473,97 +479,83 @@ class _ProfileHeader extends StatelessWidget {
 class _StatsSection extends StatelessWidget {
   final UserProfile profile;
   final BillsProvider billsProvider;
+  final ExpensesProvider expensesProvider;
+  final DuesProvider duesProvider;
   final NumberFormat currency;
 
   const _StatsSection({
     required this.profile,
     required this.billsProvider,
+    required this.expensesProvider,
+    required this.duesProvider,
     required this.currency,
   });
 
   @override
   Widget build(BuildContext context) {
     final bills = billsProvider.bills;
+    final now = DateTime.now();
+
     final totalBills = bills.length;
-    final paidBills = bills.where((bill) => bill.isPaid).length;
+    final paidBills = bills.where((b) => b.isPaid).length;
     final completionRate = totalBills > 0 ? (paidBills / totalBills * 100) : 0.0;
     final totalSpent = bills
-        .where((bill) => bill.isPaid && bill.amount != null)
-        .fold<double>(0.0, (sum, bill) => sum + bill.amount!);
+        .where((b) => b.isPaid && b.amount != null)
+        .fold<double>(0.0, (s, b) => s + b.amount!);
     final upcomingBills = bills
-        .where((bill) => !bill.isPaid && bill.dueDate.isAfter(DateTime.now()))
+        .where((b) => !b.isPaid && b.dueDate.isAfter(now))
         .length;
     final overdueBills = bills
-        .where((bill) => !bill.isPaid && bill.dueDate.isBefore(DateTime.now()))
+        .where((b) => !b.isPaid && b.dueDate.isBefore(now))
         .length;
 
-    return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const Text(
-          'Your Statistics',
-          style: TextStyle(
-            fontSize: 16,
-            fontWeight: FontWeight.w700,
-            color: _textPrimary,
-          ),
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
+    final thisMonth = DateTime(now.year, now.month, 1);
+    final monthExpenses = expensesProvider.forMonth(thisMonth);
+    final monthTotal = monthExpenses.fold<double>(0.0, (s, e) => s + e.amount);
+    final daysElapsed = now.day.clamp(1, 31);
+    final avgPerDay = monthTotal / daysElapsed;
+
+    final activeDues = duesProvider.dues.where((d) => !d.isSettled).length;
+
+    final cards = [
+      (icon: Icons.receipt_long_rounded,   label: 'Total Bills',  value: totalBills.toString(),                   color: _blue),
+      (icon: Icons.check_circle_rounded,   label: 'Paid Bills',   value: paidBills.toString(),                    color: _green),
+      (icon: Icons.trending_up_rounded,    label: 'Completion',   value: '${completionRate.toStringAsFixed(0)}%', color: _purple),
+      (icon: Icons.currency_rupee_rounded, label: 'Bills Spent',  value: currency.format(totalSpent),             color: _primary),
+      (icon: Icons.upcoming_rounded,       label: 'Upcoming',     value: upcomingBills.toString(),                color: Colors.orange),
+      (icon: Icons.warning_rounded,        label: 'Overdue',      value: overdueBills.toString(),                 color: _red),
+      (icon: Icons.wallet_rounded,         label: 'This Month',   value: currency.format(monthTotal),             color: const Color(0xFF0EA5E9)),
+      (icon: Icons.people_alt_rounded,     label: 'Active Dues',  value: activeDues.toString(),                   color: const Color(0xFF8B5CF6)),
+      (icon: Icons.show_chart_rounded,     label: 'Avg / Day',    value: currency.format(avgPerDay),              color: const Color(0xFF10B981)),
+    ];
+
+    final rows = <Widget>[
+      const Text(
+        'Your Statistics',
+        style: TextStyle(fontSize: 16, fontWeight: FontWeight.w700, color: _textPrimary),
+      ),
+      const SizedBox(height: 12),
+    ];
+
+    for (var i = 0; i < cards.length; i += 3) {
+      if (i > 0) rows.add(const SizedBox(height: 6));
+      final rowCards = cards.sublist(i, (i + 3).clamp(0, cards.length));
+      rows.add(Row(
+        children: [
+          for (var j = 0; j < rowCards.length; j++) ...[
+            if (j > 0) const SizedBox(width: 8),
             Expanded(child: _StatCard(
-              icon: Icons.receipt_long_rounded,
-              label: 'Total Bills',
-              value: totalBills.toString(),
-              color: _blue,
-            )),
-            const SizedBox(width: 12),
-            Expanded(child: _StatCard(
-              icon: Icons.check_circle_rounded,
-              label: 'Paid Bills',
-              value: paidBills.toString(),
-              color: _green,
-            )),
-          ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(child: _StatCard(
-              icon: Icons.trending_up_rounded,
-              label: 'Completion',
-              value: '${completionRate.toStringAsFixed(0)}%',
-              color: _purple,
-            )),
-            const SizedBox(width: 12),
-            Expanded(child: _StatCard(
-              icon: Icons.currency_rupee_rounded,
-              label: 'Total Spent',
-              value: currency.format(totalSpent),
-              color: _primary,
+              icon: rowCards[j].icon,
+              label: rowCards[j].label,
+              value: rowCards[j].value,
+              color: rowCards[j].color,
             )),
           ],
-        ),
-        const SizedBox(height: 12),
-        Row(
-          children: [
-            Expanded(child: _StatCard(
-              icon: Icons.upcoming_rounded,
-              label: 'Upcoming',
-              value: upcomingBills.toString(),
-              color: Colors.orange,
-            )),
-            const SizedBox(width: 12),
-            Expanded(child: _StatCard(
-              icon: Icons.warning_rounded,
-              label: 'Overdue',
-              value: overdueBills.toString(),
-              color: _red,
-            )),
-          ],
-        ),
-      ],
-    );
+        ],
+      ));
+    }
+
+    return Column(crossAxisAlignment: CrossAxisAlignment.start, children: rows);
   }
 }
 
@@ -583,40 +575,38 @@ class _StatCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(16),
+      padding: const EdgeInsets.fromLTRB(12, 10, 12, 10),
       decoration: BoxDecoration(
         color: _card,
-        borderRadius: BorderRadius.circular(16),
+        borderRadius: BorderRadius.circular(14),
         border: Border.all(color: _border),
-        boxShadow: [
-          BoxShadow(
-            color: Colors.black.withOpacity(0.04),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          Icon(icon, color: color, size: 20),
-          const SizedBox(height: 8),
-          Text(
-            value,
-            style: const TextStyle(
-              fontSize: 20,
-              fontWeight: FontWeight.w800,
-              color: _textPrimary,
-            ),
+          Row(
+            children: [
+              Icon(icon, color: color, size: 15),
+              const SizedBox(width: 6),
+              Expanded(
+                child: Text(
+                  value,
+                  style: const TextStyle(
+                    fontSize: 14,
+                    fontWeight: FontWeight.w700,
+                    color: _textPrimary,
+                    letterSpacing: -0.3,
+                  ),
+                  maxLines: 1,
+                  overflow: TextOverflow.ellipsis,
+                ),
+              ),
+            ],
           ),
-          const SizedBox(height: 2),
+          const SizedBox(height: 3),
           Text(
             label,
-            style: const TextStyle(
-              fontSize: 11,
-              color: _textSecondary,
-              fontWeight: FontWeight.w500,
-            ),
+            style: const TextStyle(fontSize: 11, color: _textSecondary),
           ),
         ],
       ),

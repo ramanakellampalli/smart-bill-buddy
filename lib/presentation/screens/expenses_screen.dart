@@ -2,10 +2,12 @@ import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
 import '../../data/models/expense_model.dart';
+import '../../services/receipt_scanner_service.dart';
 import '../state/app_settings_provider.dart';
 import '../state/expenses_provider.dart';
 import '../widgets/add_expense_sheet.dart';
 import '../widgets/category_logo.dart';
+import '../widgets/scanned_expense_preview.dart';
 
 // ── Palette ────────────────────────────────────────────────────────────────────
 
@@ -28,9 +30,18 @@ class ExpensesScreen extends StatefulWidget {
 }
 
 class _ExpensesScreenState extends State<ExpensesScreen> {
+  final _scanner = ReceiptScannerService();
+  bool _scanning = false;
+
   DateTime get _month {
     final now = DateTime.now();
     return DateTime(now.year, now.month, 1);
+  }
+
+  @override
+  void dispose() {
+    _scanner.dispose();
+    super.dispose();
   }
 
   void _openSheet({ExpenseModel? existing}) {
@@ -45,6 +56,41 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
       builder: (_) => ChangeNotifierProvider.value(
         value: provider,
         child: AddExpenseSheet(existing: existing),
+      ),
+    );
+  }
+
+  Future<void> _scanReceipt() async {
+    setState(() => _scanning = true);
+    final result = await _scanner.scanFromCamera();
+    if (!mounted) return;
+    setState(() => _scanning = false);
+
+    if (result == null) {
+      ScaffoldMessenger.of(context).showSnackBar(
+        const SnackBar(
+          content: Text("Couldn't read receipt. Add manually."),
+          duration: Duration(seconds: 2),
+        ),
+      );
+      return;
+    }
+
+    final expProvider = context.read<ExpensesProvider>();
+    final settingsProvider = context.read<AppSettingsProvider>();
+    showModalBottomSheet(
+      context: context,
+      isScrollControlled: true,
+      backgroundColor: Colors.white,
+      shape: const RoundedRectangleBorder(
+        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
+      ),
+      builder: (_) => MultiProvider(
+        providers: [
+          ChangeNotifierProvider.value(value: expProvider),
+          ChangeNotifierProvider.value(value: settingsProvider),
+        ],
+        child: ScannedExpensePreview(scanned: result),
       ),
     );
   }
@@ -81,6 +127,21 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
           style: TextStyle(fontSize: 18, fontWeight: FontWeight.w700, color: _textPrimary),
         ),
         actions: [
+          if (_scanning)
+            const Padding(
+              padding: EdgeInsets.only(right: 8),
+              child: SizedBox(
+                width: 20,
+                height: 20,
+                child: CircularProgressIndicator(strokeWidth: 2, color: _primary),
+              ),
+            )
+          else
+            IconButton(
+              icon: const Icon(Icons.document_scanner_outlined, color: _primary, size: 22),
+              tooltip: 'Scan Receipt',
+              onPressed: _scanReceipt,
+            ),
           IconButton(
             icon: const Icon(Icons.add_circle_outline_rounded, color: _primary, size: 24),
             tooltip: 'Add Expense',
