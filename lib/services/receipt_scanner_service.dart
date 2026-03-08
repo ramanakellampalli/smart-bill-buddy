@@ -69,10 +69,12 @@ class ReceiptScannerService {
   }
 
   double? _extractAmount(String text) {
-    // Priority 1: amount near a total/payable label
+    // Priority 1: number on same line as a total/payable label
+    // Supports ₹, Rs, $, or bare numbers after the label
     final labeled = RegExp(
-      r'(?:grand\s*total|total\s*amount|net\s*payable|amount\s*payable|net\s*amt?|bill\s*amount|to\s*pay|total)[:\s]*(?:rs\.?|₹|inr)?\s*([\d,]+\.?\d*)',
+      r'(?:grand\s*total|total\s*amount|net\s*payable|amount\s*payable|net\s*amt?|bill\s*amount|amount\s*tendered|to\s*pay|^total)[:\s]*(?:\$|rs\.?|₹|inr)?\s*([\d,]+\.?\d*)',
       caseSensitive: false,
+      multiLine: true,
     );
     double? best;
     for (final m in labeled.allMatches(text)) {
@@ -81,9 +83,9 @@ class ReceiptScannerService {
     }
     if (best != null) return best;
 
-    // Priority 2: currency-prefixed number
+    // Priority 2: currency-prefixed number (₹500, $16.23, Rs 450)
     final currencyPrefixed = RegExp(
-      r'(?:rs\.?|₹|inr)\s*([\d,]+\.?\d*)',
+      r'(?:\$|rs\.?|₹|inr)\s*([\d,]+\.?\d*)',
       caseSensitive: false,
     );
     for (final m in currencyPrefixed.allMatches(text)) {
@@ -92,16 +94,15 @@ class ReceiptScannerService {
     }
     if (best != null) return best;
 
-    // Fallback: largest standalone number (> 1)
-    final nums = RegExp(r'\b([\d,]+\.?\d*)\b');
-    double? largest;
-    for (final m in nums.allMatches(text)) {
-      final val = double.tryParse(m.group(1)!.replaceAll(',', ''));
-      if (val != null && val > 1 && (largest == null || val > largest)) {
-        largest = val;
-      }
+    // Fallback: last decimal number in the text (e.g. "16.23")
+    // Decimal numbers are almost always prices, not IDs or phone numbers
+    final decimals = RegExp(r'\b(\d{1,6}\.\d{1,2})\b');
+    double? lastDecimal;
+    for (final m in decimals.allMatches(text)) {
+      final val = double.tryParse(m.group(1)!);
+      if (val != null && val > 0) lastDecimal = val;
     }
-    return largest;
+    return lastDecimal;
   }
 
   ExpenseCategory _extractCategory(String text) {
