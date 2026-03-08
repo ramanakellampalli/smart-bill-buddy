@@ -1,7 +1,9 @@
 import 'package:flutter/material.dart';
+import 'package:font_awesome_flutter/font_awesome_flutter.dart';
 import 'dashboard_screen.dart';
 import 'bills_screen.dart';
 import 'dues_screen.dart';
+import 'expenses_screen.dart';
 import 'budgets_screen.dart';
 import 'profile_screen.dart';
 import '../widgets/help_chat_sheet.dart';
@@ -29,10 +31,12 @@ class _HomeShellState extends State<HomeShell> {
       DashboardScreen(
         onNavigateToBills: () => setState(() => _currentIndex = 1),
         onNavigateToDues: () => setState(() => _currentIndex = 2),
-        onNavigateToBudgets: () => setState(() => _currentIndex = 3),
+        onNavigateToExpenses: () => setState(() => _currentIndex = 3),
+        onNavigateToBudgets: () => setState(() => _currentIndex = 4),
       ),
       const BillsScreen(),
       const DuesScreen(),
+      const ExpensesScreen(),
       const BudgetsScreen(),
       const ProfileScreen(),
     ];
@@ -66,26 +70,12 @@ class _BottomNav extends StatelessWidget {
   const _BottomNav({required this.currentIndex, required this.onTap});
 
   static const _items = [
-    _NavItem(
-        icon: Icons.home_outlined,
-        activeIcon: Icons.home_rounded,
-        label: 'Home'),
-    _NavItem(
-        icon: Icons.receipt_long_outlined,
-        activeIcon: Icons.receipt_long_rounded,
-        label: 'Bills'),
-    _NavItem(
-        icon: Icons.people_alt_outlined,
-        activeIcon: Icons.people_alt_rounded,
-        label: 'Dues'),
-    _NavItem(
-        icon: Icons.account_balance_wallet_outlined,
-        activeIcon: Icons.account_balance_wallet_rounded,
-        label: 'Budgets'),
-    _NavItem(
-        icon: Icons.person_outline_rounded,
-        activeIcon: Icons.person_rounded,
-        label: 'Profile'),
+    _NavItem(icon: FontAwesomeIcons.house,            label: 'Home'),
+    _NavItem(icon: FontAwesomeIcons.fileInvoiceDollar, label: 'Bills'),
+    _NavItem(icon: FontAwesomeIcons.handshake,         label: 'Dues'),
+    _NavItem(icon: FontAwesomeIcons.wallet,            label: 'Expenses'),
+    _NavItem(icon: FontAwesomeIcons.piggyBank,         label: 'Budgets'),
+    _NavItem(icon: FontAwesomeIcons.circleUser,        label: 'Profile'),
   ];
 
   @override
@@ -130,9 +120,9 @@ class _BottomNav extends StatelessWidget {
                         ),
                       ),
                       const Spacer(),
-                      Icon(
-                        selected ? item.activeIcon : item.icon,
-                        size: 22,
+                      FaIcon(
+                        item.icon,
+                        size: 20,
                         color: selected ? _navSelected : _navUnselected,
                       ),
                       const SizedBox(height: 3),
@@ -161,9 +151,7 @@ class _BottomNav extends StatelessWidget {
 
 class _NavItem {
   final IconData icon;
-  final IconData activeIcon;
   final String label;
 
-  const _NavItem(
-      {required this.icon, required this.activeIcon, required this.label});
+  const _NavItem({required this.icon, required this.label});
 }

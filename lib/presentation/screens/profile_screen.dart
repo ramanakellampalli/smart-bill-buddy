@@ -12,6 +12,7 @@ import '../state/bills_provider.dart';
 import '../widgets/auth_guard.dart';
 import 'insights_screen.dart';
 import 'due_analytics_screen.dart';
+import 'expense_analytics_screen.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 
@@ -659,6 +660,16 @@ class _InsightsShortcut extends StatelessWidget {
           onTap: () => Navigator.push(
             context,
             MaterialPageRoute(builder: (_) => const DueAnalyticsScreen()),
+          ),
+        ),
+        const SizedBox(height: 8),
+        _AnalyticsTile(
+          icon: Icons.wallet_rounded,
+          title: 'Expense Analytics',
+          subtitle: 'Monthly spending by category',
+          onTap: () => Navigator.push(
+            context,
+            MaterialPageRoute(builder: (_) => const ExpenseAnalyticsScreen()),
           ),
         ),
       ],

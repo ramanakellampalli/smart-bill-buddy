@@ -6,6 +6,8 @@ import '../state/app_settings_provider.dart';
 import '../state/bills_provider.dart';
 import '../state/budgets_provider.dart';
 import '../state/dues_provider.dart';
+import '../state/expenses_provider.dart';
+import '../widgets/app_toast.dart';
 import '../widgets/category_logo.dart';
 import '../../data/models/bill_model.dart';
 import '../../data/models/budget_model.dart';
@@ -62,11 +64,13 @@ DateTime _nextDueDateCalendar(DateTime from, String frequency) {
 class DashboardScreen extends StatefulWidget {
   final VoidCallback onNavigateToBills;
   final VoidCallback onNavigateToDues;
+  final VoidCallback onNavigateToExpenses;
   final VoidCallback onNavigateToBudgets;
   const DashboardScreen({
     super.key,
     required this.onNavigateToBills,
     required this.onNavigateToDues,
+    required this.onNavigateToExpenses,
     required this.onNavigateToBudgets,
   });
 
@@ -120,6 +124,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   Widget build(BuildContext context) {
     final p = context.watch<BillsProvider>();
     final dp = context.watch<DuesProvider>();
+    final ep = context.watch<ExpensesProvider>();
     final budgetP = context.watch<BudgetsProvider>();
 
     final now = DateTime.now();
@@ -166,6 +171,11 @@ class _DashboardScreenState extends State<DashboardScreen> {
         .take(3)
         .toList();
     final duesPeopleTotal = activeDues.map((d) => d.personName).toSet().length;
+
+    // ── Expenses snapshot data ──────────────────────────────────────────────
+    final thisMonthExpenses = ep.forMonth(now);
+    final totalExpenses = ep.totalForMonth(now);
+    final expenseCount = thisMonthExpenses.length;
 
     // ── Budgets snapshot data ───────────────────────────────────────────────
     final Map<String, double> catSpend = {};
@@ -361,6 +371,16 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
           const SizedBox(height: 20),
 
+          // ── Expenses snapshot ──────────────────────────────────────────────
+          _ExpensesSnapshotCard(
+            total: totalExpenses,
+            count: expenseCount,
+            money: money,
+            onTap: widget.onNavigateToExpenses,
+          ),
+
+          const SizedBox(height: 20),
+
           // ── Budgets snapshot ───────────────────────────────────────────────
           _BudgetsSnapshotCard(
             totalBudgeted: totalBudgeted,
@@ -411,8 +431,13 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   isOverdue: true,
                   onTap: () => Navigator.pushNamed(context, '/add-bill',
                       arguments: b),
-                  onMarkPaid: () =>
-                      context.read<BillsProvider>().setPaid(b.id, true),
+                  onMarkPaid: () {
+                    if (b.amount != null) {
+                      showAppToast(context, 'Added to Expenses',
+                          icon: Icons.receipt_long_rounded);
+                    }
+                    context.read<BillsProvider>().setPaid(b.id, true);
+                  },
                 )),
           ],
         ],
@@ -1664,4 +1689,92 @@ class _BillCard extends StatelessWidget {
 
   static String _capitalize(String s) =>
       s.isEmpty ? s : s[0].toUpperCase() + s.substring(1);
+}
+
+// ── Expenses Snapshot Card ────────────────────────────────────────────────────
+
+class _ExpensesSnapshotCard extends StatelessWidget {
+  final double total;
+  final int count;
+  final NumberFormat money;
+  final VoidCallback onTap;
+
+  const _ExpensesSnapshotCard({
+    required this.total,
+    required this.count,
+    required this.money,
+    required this.onTap,
+  });
+
+  @override
+  Widget build(BuildContext context) {
+    return GestureDetector(
+      onTap: onTap,
+      child: Container(
+        padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
+        decoration: BoxDecoration(
+          color: _card,
+          borderRadius: BorderRadius.circular(16),
+          border: Border.all(color: _border),
+          boxShadow: [
+            BoxShadow(
+              color: Colors.black.withOpacity(0.04),
+              blurRadius: 8,
+              offset: const Offset(0, 2),
+            ),
+          ],
+        ),
+        child: Row(
+          children: [
+            Container(
+              padding: const EdgeInsets.all(10),
+              decoration: BoxDecoration(
+                color: _primary.withOpacity(0.10),
+                borderRadius: BorderRadius.circular(12),
+              ),
+              child: const Icon(Icons.wallet_rounded, color: _primary, size: 20),
+            ),
+            const SizedBox(width: 14),
+            Expanded(
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Expenses',
+                    style: TextStyle(
+                      fontSize: 14,
+                      fontWeight: FontWeight.w600,
+                      color: _textPrimary,
+                    ),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    count == 0
+                        ? 'No expenses this month'
+                        : '$count ${count == 1 ? 'expense' : 'expenses'} this month',
+                    style: const TextStyle(fontSize: 12, color: _textSecondary),
+                  ),
+                ],
+              ),
+            ),
+            Column(
+              crossAxisAlignment: CrossAxisAlignment.end,
+              children: [
+                Text(
+                  count == 0 ? '—' : money.format(total),
+                  style: TextStyle(
+                    fontSize: 15,
+                    fontWeight: FontWeight.w700,
+                    color: count == 0 ? _textTertiary : _textPrimary,
+                  ),
+                ),
+                const SizedBox(height: 2),
+                const Icon(Icons.chevron_right_rounded, size: 16, color: _textTertiary),
+              ],
+            ),
+          ],
+        ),
+      ),
+    );
+  }
 }

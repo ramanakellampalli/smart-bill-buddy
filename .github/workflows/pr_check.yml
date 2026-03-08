@@ -1,0 +1,57 @@
+name: PR Build Check
+
+on:
+  pull_request:
+    branches:
+      - main
+
+jobs:
+  build:
+    name: Analyze & Build
+    runs-on: ubuntu-latest
+
+    steps:
+      # ── 1. Checkout ──────────────────────────────────────────────────────────
+      - name: Checkout
+        uses: actions/checkout@v4
+
+      # ── 2. Java (required for Android toolchain) ──────────────────────────
+      - name: Set up Java
+        uses: actions/setup-java@v4
+        with:
+          distribution: 'temurin'
+          java-version: '17'
+
+      # ── 3. Flutter ───────────────────────────────────────────────────────────
+      - name: Set up Flutter
+        uses: subosito/flutter-action@v2
+        with:
+          channel: 'stable'
+          cache: true
+
+      # ── 4. Stub gitignored files needed for compilation ──────────────────────
+      - name: Stub required files
+        run: |
+          echo "GROQ_API_KEY=ci_placeholder" > .env
+          cat > lib/firebase_options.dart << 'EOF'
+          // ignore_for_file: type=lint
+          import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
+          import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
+          class DefaultFirebaseOptions {
+            static FirebaseOptions get currentPlatform => android;
+            static const FirebaseOptions android = FirebaseOptions(apiKey:'x',appId:'x',messagingSenderId:'x',projectId:'x',storageBucket:'x');
+            static const FirebaseOptions web = FirebaseOptions(apiKey:'x',appId:'x',messagingSenderId:'x',projectId:'x',storageBucket:'x');
+          }
+          EOF
+
+      # ── 5. Dependencies ───────────────────────────────────────────────────────
+      - name: Install dependencies
+        run: flutter pub get
+
+      # ── 6. Analyze ────────────────────────────────────────────────────────────
+      - name: Analyze
+        run: flutter analyze --no-fatal-infos
+
+      # ── 7. Build debug APK ────────────────────────────────────────────────────
+      - name: Build debug APK
+        run: flutter build apk --debug --dart-define-from-file=.env

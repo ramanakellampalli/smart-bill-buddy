@@ -3,7 +3,9 @@ import 'dart:async';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:flutter/material.dart';
 import '../../data/models/bill_model.dart';
+import '../../data/models/expense_model.dart';
 import '../../data/repositories/bills_repository.dart';
+import '../../data/repositories/expenses_repository.dart';
 import '../../services/notification_service.dart';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
@@ -11,8 +13,18 @@ import '../../services/notification_service.dart';
 bool _isSameDay(DateTime a, DateTime b) =>
     a.year == b.year && a.month == b.month && a.day == b.day;
 
+ExpenseCategory _billCategoryToExpense(String billCategory) => switch (billCategory) {
+      'rent' => ExpenseCategory.housing,
+      'utilities' => ExpenseCategory.housing,
+      'emi' => ExpenseCategory.finance,
+      'credit_card' => ExpenseCategory.finance,
+      'subscriptions' => ExpenseCategory.entertainment,
+      _ => ExpenseCategory.other,
+    };
+
 class BillsProvider extends ChangeNotifier {
   final BillsRepository _repo;
+  final ExpensesRepository _expensesRepo;
 
   StreamSubscription<User?>? _authSub;
   StreamSubscription<List<BillModel>>? _billsSub;
@@ -25,7 +37,7 @@ class BillsProvider extends ChangeNotifier {
   String? _currentUid;
   bool _rolledOver = false;
 
-  BillsProvider(this._repo) {
+  BillsProvider(this._repo, this._expensesRepo) {
     // Only re-subscribe when the uid actually changes.
     _authSub = FirebaseAuth.instance.authStateChanges().listen((user) {
       if (user == null) {
@@ -112,6 +124,15 @@ class BillsProvider extends ChangeNotifier {
       if (isPaid) {
         // Cancel reminders for this cycle — rollover will reschedule next cycle.
         await NotificationService.cancelBill(billId);
+        if (bill.amount != null) {
+          final expense = ExpenseModel.create(
+            amount: bill.amount!,
+            category: _billCategoryToExpense(bill.category),
+            description: bill.name,
+            date: bill.dueDate,
+          );
+          await _expensesRepo.addExpense(expense);
+        }
       } else {
         await NotificationService.scheduleBill(bill.copyWith(isPaid: false));
       }

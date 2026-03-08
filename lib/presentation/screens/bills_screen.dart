@@ -4,6 +4,7 @@ import 'package:provider/provider.dart';
 import '../../data/models/bill_model.dart';
 import '../state/app_settings_provider.dart';
 import '../state/bills_provider.dart';
+import '../widgets/app_toast.dart';
 import '../widgets/category_logo.dart';
 
 // ── Palette ────────────────────────────────────────────────────────────────────
@@ -180,8 +181,13 @@ class _BillsScreenState extends State<BillsScreen> {
                           setState(() => _unpaidExpanded = !_unpaidExpanded),
                       emptyText: 'All bills paid this month!',
                       bills: unpaid,
-                      onMarkPaid: (b) =>
-                          context.read<BillsProvider>().setPaid(b.id, !b.isPaid),
+                      onMarkPaid: (b) {
+                        if (!b.isPaid && b.amount != null) {
+                          showAppToast(context, 'Added to Expenses',
+                              icon: Icons.receipt_long_rounded);
+                        }
+                        context.read<BillsProvider>().setPaid(b.id, !b.isPaid);
+                      },
                       onDelete: (b) => _handleDelete(context, b),
                     ),
 
