@@ -29,55 +29,29 @@ jobs:
           channel: 'stable'
           cache: true
 
-      # ── 4. Create .env from secrets ─────────────────────────────────────────
-      #    Add GROQ_API_KEY in GitHub → Settings → Secrets → Actions
-      - name: Create .env
+      # ── 4. Stub gitignored files needed for compilation ──────────────────────
+      - name: Stub required files
         run: |
-          echo "GROQ_API_KEY=${{ secrets.GROQ_API_KEY || 'ci_placeholder' }}" > .env
-          echo "KEYSTORE_PASSWORD=ci_placeholder" >> .env
-          echo "KEY_ALIAS=ci_placeholder" >> .env
-          echo "KEY_PASSWORD=ci_placeholder" >> .env
-
-      # ── 5. Generate firebase_options.dart stub ───────────────────────────────
-      #    firebase_options.dart is gitignored (contains API keys).
-      #    A compile-only stub is sufficient for the build check.
-      - name: Create firebase_options stub
-        run: |
+          echo "GROQ_API_KEY=ci_placeholder" > .env
           cat > lib/firebase_options.dart << 'EOF'
-          // CI stub — not used at runtime, exists only for compilation.
           // ignore_for_file: type=lint
           import 'package:firebase_core/firebase_core.dart' show FirebaseOptions;
-          import 'package:flutter/foundation.dart'
-              show defaultTargetPlatform, kIsWeb, TargetPlatform;
+          import 'package:flutter/foundation.dart' show defaultTargetPlatform, kIsWeb, TargetPlatform;
           class DefaultFirebaseOptions {
             static FirebaseOptions get currentPlatform => android;
-            static const FirebaseOptions android = FirebaseOptions(
-              apiKey: 'ci-stub',
-              appId: 'ci-stub',
-              messagingSenderId: 'ci-stub',
-              projectId: 'ci-stub',
-              storageBucket: 'ci-stub',
-            );
-            static const FirebaseOptions web = FirebaseOptions(
-              apiKey: 'ci-stub',
-              appId: 'ci-stub',
-              messagingSenderId: 'ci-stub',
-              projectId: 'ci-stub',
-              storageBucket: 'ci-stub',
-            );
+            static const FirebaseOptions android = FirebaseOptions(apiKey:'x',appId:'x',messagingSenderId:'x',projectId:'x',storageBucket:'x');
+            static const FirebaseOptions web = FirebaseOptions(apiKey:'x',appId:'x',messagingSenderId:'x',projectId:'x',storageBucket:'x');
           }
           EOF
 
-      # ── 6. Dependencies ──────────────────────────────────────────────────────
+      # ── 5. Dependencies ───────────────────────────────────────────────────────
       - name: Install dependencies
         run: flutter pub get
 
-      # ── 6. Analyze ───────────────────────────────────────────────────────────
-      #    Fails on errors and warnings — infos are ignored.
+      # ── 6. Analyze ────────────────────────────────────────────────────────────
       - name: Analyze
         run: flutter analyze --no-fatal-infos
 
-      # ── 7. Build debug APK ───────────────────────────────────────────────────
-      #    Debug build — no signing required. Purpose: catch compilation errors.
+      # ── 7. Build debug APK ────────────────────────────────────────────────────
       - name: Build debug APK
         run: flutter build apk --debug --dart-define-from-file=.env
