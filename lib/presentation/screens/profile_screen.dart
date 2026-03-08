@@ -538,7 +538,7 @@ class _StatsSection extends StatelessWidget {
     ];
 
     for (var i = 0; i < cards.length; i += 3) {
-      if (i > 0) rows.add(const SizedBox(height: 10));
+      if (i > 0) rows.add(const SizedBox(height: 6));
       final rowCards = cards.sublist(i, (i + 3).clamp(0, cards.length));
       rows.add(Row(
         children: [
