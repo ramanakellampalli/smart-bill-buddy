@@ -105,7 +105,7 @@ class _ExpenseAnalyticsScreenState extends State<ExpenseAnalyticsScreen> {
                   child: monthExpenses.isEmpty
                       ? _EmptyAnalytics(month: DateFormat('MMMM yyyy').format(_month))
                       : ListView(
-                          padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
+                          padding: EdgeInsets.fromLTRB(16, 16, 16, 32 + MediaQuery.of(context).padding.bottom),
                           children: [
                             _QuickStatsRow(
                               total: total,
