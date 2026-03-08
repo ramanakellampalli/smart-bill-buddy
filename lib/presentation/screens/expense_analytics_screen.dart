@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../../data/models/expense_model.dart';
 import '../state/app_settings_provider.dart';
 import '../state/expenses_provider.dart';
-import '../widgets/category_logo.dart';
 import 'expenses_screen.dart' show MonthPicker;
 
 // ── Palette ────────────────────────────────────────────────────────────────────
@@ -17,6 +16,19 @@ const _primary = Color(0xFFF97316);
 const _textPrimary = Color(0xFF1C1917);
 const _textSecondary = Color(0xFF78716C);
 const _textTertiary = Color(0xFFA8A29E);
+
+const _categoryColors = <ExpenseCategory, Color>{
+  ExpenseCategory.food: Color(0xFFF59E0B),
+  ExpenseCategory.transport: Color(0xFF3B82F6),
+  ExpenseCategory.housing: Color(0xFF10B981),
+  ExpenseCategory.shopping: Color(0xFFEC4899),
+  ExpenseCategory.health: Color(0xFFEF4444),
+  ExpenseCategory.entertainment: Color(0xFF8B5CF6),
+  ExpenseCategory.finance: Color(0xFF6366F1),
+  ExpenseCategory.other: Color(0xFF78716C),
+};
+
+Color _colorFor(ExpenseCategory cat) => _categoryColors[cat] ?? const Color(0xFF78716C);
 
 // ── Screen ─────────────────────────────────────────────────────────────────────
 
@@ -58,24 +70,12 @@ class _ExpenseAnalyticsScreenState extends State<ExpenseAnalyticsScreen> {
     final monthExpenses = ep.forMonth(_month);
     final total = monthExpenses.fold(0.0, (acc, e) => acc + e.amount);
 
-    // Group by category
     final Map<ExpenseCategory, double> catTotals = {};
     for (final e in monthExpenses) {
       catTotals[e.category] = (catTotals[e.category] ?? 0) + e.amount;
     }
     final sortedCats = catTotals.entries.toList()
       ..sort((a, b) => b.value.compareTo(a.value));
-
-    // Prev month comparison
-    final prevMonth = DateTime(_month.year, _month.month - 1);
-    final prevTotal = ep.totalForMonth(prevMonth);
-    final diff = total - prevTotal;
-
-    // Last 6 months for mini trend chart
-    final monthBars = List.generate(6, (i) {
-      final m = DateTime(_month.year, _month.month - (5 - i));
-      return (label: DateFormat('MMM').format(m), amount: ep.totalForMonth(m));
-    });
 
     return Scaffold(
       backgroundColor: _bg,
@@ -107,19 +107,9 @@ class _ExpenseAnalyticsScreenState extends State<ExpenseAnalyticsScreen> {
                       : ListView(
                           padding: const EdgeInsets.fromLTRB(16, 16, 16, 32),
                           children: [
-                            _SummaryCard(
+                            _BreakdownCard(
                               total: total,
-                              count: monthExpenses.length,
-                              prevTotal: prevTotal,
-                              diff: diff,
-                              money: money,
-                              monthBars: monthBars,
-                              currentMonth: _month,
-                            ),
-                            const SizedBox(height: 24),
-                            _CategoryList(
-                              catTotals: sortedCats,
-                              total: total,
+                              sortedCats: sortedCats,
                               money: money,
                             ),
                           ],
@@ -131,261 +121,209 @@ class _ExpenseAnalyticsScreenState extends State<ExpenseAnalyticsScreen> {
   }
 }
 
-// ── Summary Card with Trend Chart ──────────────────────────────────────────────
+// ── Breakdown Card ─────────────────────────────────────────────────────────────
 
-class _SummaryCard extends StatelessWidget {
+class _BreakdownCard extends StatelessWidget {
   final double total;
-  final int count;
-  final double prevTotal;
-  final double diff;
+  final List<MapEntry<ExpenseCategory, double>> sortedCats;
   final NumberFormat money;
-  final List<({String label, double amount})> monthBars;
-  final DateTime currentMonth;
 
-  const _SummaryCard({
+  const _BreakdownCard({
     required this.total,
-    required this.count,
-    required this.prevTotal,
-    required this.diff,
+    required this.sortedCats,
     required this.money,
-    required this.monthBars,
-    required this.currentMonth,
   });
 
   @override
   Widget build(BuildContext context) {
-    final hasPrev = prevTotal > 0;
-    final isHigher = diff > 0;
-    final pct = hasPrev ? ((diff / prevTotal) * 100).abs().toStringAsFixed(0) : null;
-    final maxBar = monthBars.isEmpty ? 0.0 : monthBars.map((b) => b.amount).reduce(max);
-    final currentLabel = DateFormat('MMM').format(currentMonth);
-
     return Container(
-      padding: const EdgeInsets.fromLTRB(22, 22, 22, 18),
+      padding: const EdgeInsets.all(20),
       decoration: BoxDecoration(
+        color: _card,
         borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF292524), Color(0xFF57534E)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
+        border: Border.all(color: _border),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1C1917).withOpacity(0.22),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: Colors.black.withOpacity(0.04),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          // Amount + trend badge
           Row(
-            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(
-                child: Column(
-                  crossAxisAlignment: CrossAxisAlignment.start,
-                  children: [
-                    const Text(
-                      'TOTAL SPENT',
-                      style: TextStyle(fontSize: 11, color: Colors.white54, fontWeight: FontWeight.w600, letterSpacing: 1),
-                    ),
-                    const SizedBox(height: 6),
-                    Text(
-                      money.format(total),
-                      style: const TextStyle(fontSize: 34, fontWeight: FontWeight.w800, color: Colors.white, letterSpacing: -1),
-                    ),
-                    const SizedBox(height: 4),
-                    Text(
-                      '$count ${count == 1 ? 'expense' : 'expenses'} this month',
-                      style: const TextStyle(fontSize: 13, color: Colors.white60),
-                    ),
-                  ],
-                ),
+              Icon(Icons.receipt_long_rounded, color: _primary, size: 18),
+              const SizedBox(width: 8),
+              const Text(
+                'Expense Breakdown by Category',
+                style: TextStyle(fontSize: 15, fontWeight: FontWeight.w700, color: _textPrimary),
               ),
-              if (hasPrev)
-                Container(
-                  padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
-                  decoration: BoxDecoration(
-                    color: Colors.white.withOpacity(0.12),
-                    borderRadius: BorderRadius.circular(12),
-                  ),
+            ],
+          ),
+          const SizedBox(height: 24),
+          // Donut chart
+          Center(
+            child: SizedBox(
+              width: 200,
+              height: 200,
+              child: CustomPaint(
+                painter: _DonutPainter(
+                  segments: sortedCats,
+                  total: total,
+                ),
+                child: Center(
                   child: Column(
+                    mainAxisSize: MainAxisSize.min,
                     children: [
-                      Icon(
-                        isHigher ? Icons.trending_up_rounded : Icons.trending_down_rounded,
-                        color: isHigher ? const Color(0xFFFCA5A5) : const Color(0xFF86EFAC),
-                        size: 20,
-                      ),
-                      const SizedBox(height: 3),
                       Text(
-                        '${isHigher ? '+' : '-'}$pct%',
-                        style: TextStyle(
-                          fontSize: 13,
-                          color: isHigher ? const Color(0xFFFCA5A5) : const Color(0xFF86EFAC),
-                          fontWeight: FontWeight.w700,
+                        money.format(total),
+                        style: const TextStyle(
+                          fontSize: 20,
+                          fontWeight: FontWeight.w800,
+                          color: _textPrimary,
+                          letterSpacing: -0.5,
                         ),
                       ),
                       const SizedBox(height: 2),
-                      Text(
-                        'vs last mo',
-                        style: const TextStyle(fontSize: 9, color: Colors.white38),
+                      const Text(
+                        'Total',
+                        style: TextStyle(fontSize: 12, color: _textSecondary),
                       ),
                     ],
                   ),
                 ),
-            ],
-          ),
-          const SizedBox(height: 20),
-          // 6-month mini bar chart
-          SizedBox(
-            height: 60,
-            child: Row(
-              crossAxisAlignment: CrossAxisAlignment.end,
-              children: monthBars.map((bar) {
-                final frac = maxBar <= 0 ? 0.05 : (bar.amount / maxBar).clamp(0.05, 1.0);
-                final isCurrent = bar.label == currentLabel;
-                return Expanded(
-                  child: Padding(
-                    padding: const EdgeInsets.symmetric(horizontal: 3),
-                    child: Column(
-                      mainAxisAlignment: MainAxisAlignment.end,
-                      children: [
-                        Container(
-                          height: 44 * frac,
-                          decoration: BoxDecoration(
-                            color: isCurrent ? _primary : Colors.white.withOpacity(0.22),
-                            borderRadius: BorderRadius.circular(4),
-                          ),
-                        ),
-                        const SizedBox(height: 5),
-                        Text(
-                          bar.label,
-                          style: TextStyle(
-                            fontSize: 9,
-                            color: isCurrent ? Colors.white70 : Colors.white38,
-                            fontWeight: isCurrent ? FontWeight.w600 : FontWeight.w400,
-                          ),
-                        ),
-                      ],
-                    ),
-                  ),
-                );
-              }).toList(),
+              ),
             ),
           ),
+          const SizedBox(height: 24),
+          // 2-column legend grid
+          _LegendGrid(sortedCats: sortedCats, total: total, money: money),
         ],
       ),
     );
   }
 }
 
-// ── Category List ──────────────────────────────────────────────────────────────
+// ── Donut Painter ─────────────────────────────────────────────────────────────
 
-class _CategoryList extends StatelessWidget {
-  final List<MapEntry<ExpenseCategory, double>> catTotals;
+class _DonutPainter extends CustomPainter {
+  final List<MapEntry<ExpenseCategory, double>> segments;
+  final double total;
+
+  const _DonutPainter({required this.segments, required this.total});
+
+  @override
+  void paint(Canvas canvas, Size size) {
+    if (total <= 0) return;
+
+    final cx = size.width / 2;
+    final cy = size.height / 2;
+    final outerR = min(cx, cy) - 4;
+    final innerR = outerR * 0.58;
+
+    final rect = Rect.fromCircle(center: Offset(cx, cy), radius: outerR);
+    double startAngle = -pi / 2;
+    const gap = 0.025; // radians gap between segments
+
+    for (final entry in segments) {
+      final sweep = (entry.value / total) * (2 * pi) - gap;
+      if (sweep <= 0) continue;
+
+      final paint = Paint()
+        ..color = _colorFor(entry.key)
+        ..style = PaintingStyle.stroke
+        ..strokeWidth = outerR - innerR
+        ..strokeCap = StrokeCap.butt;
+
+      final arcRect = Rect.fromCircle(
+        center: Offset(cx, cy),
+        radius: innerR + (outerR - innerR) / 2,
+      );
+      canvas.drawArc(arcRect, startAngle, sweep, false, paint);
+
+      startAngle += sweep + gap;
+    }
+  }
+
+  @override
+  bool shouldRepaint(_DonutPainter old) =>
+      old.segments != segments || old.total != total;
+}
+
+// ── Legend Grid ───────────────────────────────────────────────────────────────
+
+class _LegendGrid extends StatelessWidget {
+  final List<MapEntry<ExpenseCategory, double>> sortedCats;
   final double total;
   final NumberFormat money;
 
-  const _CategoryList({
-    required this.catTotals,
+  const _LegendGrid({
+    required this.sortedCats,
     required this.total,
     required this.money,
   });
 
   @override
   Widget build(BuildContext context) {
-    if (catTotals.isEmpty) return const SizedBox();
+    // Pair items into rows of 2
+    final rows = <List<MapEntry<ExpenseCategory, double>>>[];
+    for (var i = 0; i < sortedCats.length; i += 2) {
+      rows.add(sortedCats.sublist(i, min(i + 2, sortedCats.length)));
+    }
+
     return Column(
-      crossAxisAlignment: CrossAxisAlignment.start,
-      children: [
-        const _SectionLabel('BY CATEGORY'),
-        const SizedBox(height: 12),
-        Container(
-          decoration: BoxDecoration(
-            color: _card,
-            borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _border),
-          ),
-          child: Column(
-            children: catTotals.asMap().entries.map((mapEntry) {
-              final index = mapEntry.key;
-              final entry = mapEntry.value;
+      children: rows.map((row) {
+        return Padding(
+          padding: const EdgeInsets.only(bottom: 14),
+          child: Row(
+            children: row.map((entry) {
               final pct = total <= 0 ? 0.0 : entry.value / total;
-              final isLast = index == catTotals.length - 1;
-              return Column(
-                children: [
-                  Padding(
-                    padding: const EdgeInsets.fromLTRB(16, 14, 16, 12),
-                    child: Column(
-                      children: [
-                        Row(
-                          children: [
-                            CategoryLogo(category: entry.key.value, size: 32),
-                            const SizedBox(width: 12),
-                            Expanded(
-                              child: Text(
-                                entry.key.label,
-                                style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w500, color: _textPrimary),
-                              ),
-                            ),
-                            Text(
-                              money.format(entry.value),
-                              style: const TextStyle(fontSize: 14, fontWeight: FontWeight.w600, color: _textPrimary),
-                            ),
-                            const SizedBox(width: 8),
-                            SizedBox(
-                              width: 34,
-                              child: Text(
-                                '${(pct * 100).toStringAsFixed(0)}%',
-                                textAlign: TextAlign.end,
-                                style: const TextStyle(fontSize: 11, color: _textTertiary),
-                              ),
-                            ),
-                          ],
-                        ),
-                        const SizedBox(height: 8),
-                        ClipRRect(
-                          borderRadius: BorderRadius.circular(4),
-                          child: LinearProgressIndicator(
-                            value: pct,
-                            minHeight: 4,
-                            backgroundColor: const Color(0xFFEDE6DC),
-                            valueColor: const AlwaysStoppedAnimation<Color>(_primary),
-                          ),
-                        ),
-                      ],
+              final pctStr = '${(pct * 100).toStringAsFixed(1)}%';
+              final amtStr = money.format(entry.value);
+              return Expanded(
+                child: Row(
+                  crossAxisAlignment: CrossAxisAlignment.start,
+                  children: [
+                    Container(
+                      width: 12,
+                      height: 12,
+                      margin: const EdgeInsets.only(top: 2),
+                      decoration: BoxDecoration(
+                        color: _colorFor(entry.key),
+                        borderRadius: BorderRadius.circular(3),
+                      ),
                     ),
-                  ),
-                  if (!isLast) Divider(height: 1, thickness: 1, color: _border, indent: 60),
-                ],
+                    const SizedBox(width: 8),
+                    Expanded(
+                      child: Column(
+                        crossAxisAlignment: CrossAxisAlignment.start,
+                        children: [
+                          Text(
+                            entry.key.label,
+                            style: const TextStyle(
+                              fontSize: 13,
+                              fontWeight: FontWeight.w600,
+                              color: _textPrimary,
+                            ),
+                          ),
+                          const SizedBox(height: 1),
+                          Text(
+                            '$pctStr · $amtStr',
+                            style: const TextStyle(fontSize: 11, color: _textSecondary),
+                          ),
+                        ],
+                      ),
+                    ),
+                  ],
+                ),
               );
             }).toList(),
           ),
-        ),
-      ],
-    );
-  }
-}
-
-// ── Section Label ──────────────────────────────────────────────────────────────
-
-class _SectionLabel extends StatelessWidget {
-  final String text;
-  const _SectionLabel(this.text);
-
-  @override
-  Widget build(BuildContext context) {
-    return Text(
-      text,
-      style: const TextStyle(
-        fontSize: 11,
-        fontWeight: FontWeight.w600,
-        color: _textTertiary,
-        letterSpacing: 1.2,
-      ),
+        );
+      }).toList(),
     );
   }
 }
