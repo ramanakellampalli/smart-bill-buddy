@@ -512,18 +512,21 @@ class _StatsSection extends StatelessWidget {
     final thisMonth = DateTime(now.year, now.month, 1);
     final monthExpenses = expensesProvider.forMonth(thisMonth);
     final monthTotal = monthExpenses.fold<double>(0.0, (s, e) => s + e.amount);
+    final daysElapsed = now.day.clamp(1, 31);
+    final avgPerDay = monthTotal / daysElapsed;
 
     final activeDues = duesProvider.dues.where((d) => !d.isSettled).length;
 
     final cards = [
-      (icon: Icons.receipt_long_rounded,    label: 'Total Bills',     value: totalBills.toString(),                            color: _blue),
-      (icon: Icons.check_circle_rounded,    label: 'Paid Bills',      value: paidBills.toString(),                             color: _green),
-      (icon: Icons.trending_up_rounded,     label: 'Completion',      value: '${completionRate.toStringAsFixed(0)}%',           color: _purple),
-      (icon: Icons.currency_rupee_rounded,  label: 'Bills Spent',     value: currency.format(totalSpent),                      color: _primary),
-      (icon: Icons.upcoming_rounded,        label: 'Upcoming',        value: upcomingBills.toString(),                         color: Colors.orange),
-      (icon: Icons.warning_rounded,         label: 'Overdue',         value: overdueBills.toString(),                          color: _red),
-      (icon: Icons.wallet_rounded,          label: 'This Month',      value: currency.format(monthTotal),                      color: const Color(0xFF0EA5E9)),
-      (icon: Icons.people_alt_rounded,      label: 'Active Dues',     value: activeDues.toString(),                            color: const Color(0xFF8B5CF6)),
+      (icon: Icons.receipt_long_rounded,   label: 'Total Bills',  value: totalBills.toString(),                   color: _blue),
+      (icon: Icons.check_circle_rounded,   label: 'Paid Bills',   value: paidBills.toString(),                    color: _green),
+      (icon: Icons.trending_up_rounded,    label: 'Completion',   value: '${completionRate.toStringAsFixed(0)}%', color: _purple),
+      (icon: Icons.currency_rupee_rounded, label: 'Bills Spent',  value: currency.format(totalSpent),             color: _primary),
+      (icon: Icons.upcoming_rounded,       label: 'Upcoming',     value: upcomingBills.toString(),                color: Colors.orange),
+      (icon: Icons.warning_rounded,        label: 'Overdue',      value: overdueBills.toString(),                 color: _red),
+      (icon: Icons.wallet_rounded,         label: 'This Month',   value: currency.format(monthTotal),             color: const Color(0xFF0EA5E9)),
+      (icon: Icons.people_alt_rounded,     label: 'Active Dues',  value: activeDues.toString(),                   color: const Color(0xFF8B5CF6)),
+      (icon: Icons.show_chart_rounded,     label: 'Avg / Day',    value: currency.format(avgPerDay),              color: const Color(0xFF10B981)),
     ];
 
     final rows = <Widget>[
@@ -534,13 +537,20 @@ class _StatsSection extends StatelessWidget {
       const SizedBox(height: 12),
     ];
 
-    for (var i = 0; i < cards.length; i += 2) {
+    for (var i = 0; i < cards.length; i += 3) {
       if (i > 0) rows.add(const SizedBox(height: 10));
+      final rowCards = cards.sublist(i, (i + 3).clamp(0, cards.length));
       rows.add(Row(
         children: [
-          Expanded(child: _StatCard(icon: cards[i].icon, label: cards[i].label, value: cards[i].value, color: cards[i].color)),
-          const SizedBox(width: 10),
-          Expanded(child: _StatCard(icon: cards[i + 1].icon, label: cards[i + 1].label, value: cards[i + 1].value, color: cards[i + 1].color)),
+          for (var j = 0; j < rowCards.length; j++) ...[
+            if (j > 0) const SizedBox(width: 8),
+            Expanded(child: _StatCard(
+              icon: rowCards[j].icon,
+              label: rowCards[j].label,
+              value: rowCards[j].value,
+              color: rowCards[j].color,
+            )),
+          ],
         ],
       ));
     }
