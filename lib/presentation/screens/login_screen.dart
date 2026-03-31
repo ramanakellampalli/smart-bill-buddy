@@ -6,18 +6,18 @@ import '../../services/biometric_service.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 
-const _bgStart      = Color(0xFF667EEA);
-const _bgEnd        = Color(0xFF764BA2);
-const _card         = Color(0x1AFFFFFF);
-const _glassBorder  = Color(0x33FFFFFF);
+const _bgStart      = Color(0xFF111111);
+const _bgEnd        = Color(0xFF1A1A1A);
+const _card         = Color(0x14FFFFFF);
+const _glassBorder  = Color(0x22FFFFFF);
 const _textPrimary  = Colors.white;
 const _textSecondary = Color(0xCCFFFFFF);
 const _textTertiary  = Color(0x99FFFFFF);
 const _red          = Color(0xFFFF6B6B);
-const _btnGradient  = LinearGradient(colors: [Color(0xFF667EEA), Color(0xFF764BA2)]);
+const _btnGradient  = LinearGradient(colors: [Color(0xFFC8FF00), Color(0xFF9ECC00)]);
 const _underline    = Color(0x33FFFFFF);
-const _orange       = Color(0xFFFFB86C);
-const _socialBg     = Color(0x1AFFFFFF);
+const _orange       = Color(0xFFC8FF00);   // lime replaces orange
+const _socialBg     = Color(0x14FFFFFF);
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
