@@ -1,5 +1,7 @@
 import 'package:flutter/material.dart';
+import 'package:google_fonts/google_fonts.dart';
 import 'package:provider/provider.dart';
+import 'core/theme/app_colors.dart';
 
 import 'data/models/bill_model.dart';
 import 'data/repositories/bills_repository.dart';
@@ -54,71 +56,71 @@ class SmartBillApp extends StatelessWidget {
         theme: ThemeData(
           useMaterial3: false,
           brightness: Brightness.light,
-          scaffoldBackgroundColor: const Color(0xFFFAF8F5),
-          primaryColor: const Color(0xFFF97316),
+          scaffoldBackgroundColor: AppColors.bg,
+          primaryColor: AppColors.primary,
           colorScheme: const ColorScheme.light(
-            primary: Color(0xFFF97316),
-            secondary: Color(0xFF16A34A),
-            surface: Colors.white,
-            background: Color(0xFFFAF8F5),
-            error: Color(0xFFDC2626),
-            onPrimary: Colors.white,
+            primary: AppColors.primary,
+            secondary: AppColors.green,
+            surface: AppColors.surface,
+            error: AppColors.red,
+            onPrimary: AppColors.textPrimary,
             onSecondary: Colors.white,
-            onSurface: Color(0xFF1C1917),
-            onBackground: Color(0xFF1C1917),
+            onSurface: AppColors.textPrimary,
             onError: Colors.white,
           ),
-          appBarTheme: const AppBarTheme(
-            backgroundColor: Color(0xFFFAF8F5),
+          textTheme: GoogleFonts.spaceGroteskTextTheme(
+            ThemeData.light().textTheme,
+          ).apply(
+            bodyColor: AppColors.textPrimary,
+            displayColor: AppColors.textPrimary,
+          ),
+          appBarTheme: AppBarTheme(
+            backgroundColor: AppColors.bg,
             elevation: 0,
-            foregroundColor: Color(0xFF1C1917),
-            titleTextStyle: TextStyle(
-              color: Color(0xFF1C1917),
+            foregroundColor: AppColors.textPrimary,
+            titleTextStyle: GoogleFonts.spaceGrotesk(
+              color: AppColors.textPrimary,
               fontSize: 20,
               fontWeight: FontWeight.w700,
             ),
-            iconTheme: IconThemeData(color: Color(0xFF1C1917)),
+            iconTheme: const IconThemeData(color: AppColors.textPrimary),
           ),
           cardTheme: CardThemeData(
-            color: Colors.white,
+            color: AppColors.surface,
             elevation: 0,
             shape: RoundedRectangleBorder(
               borderRadius: BorderRadius.circular(16),
+              side: const BorderSide(color: AppColors.border, width: 2),
             ),
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFFF97316),
-              foregroundColor: Colors.white,
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.textPrimary,
               elevation: 0,
+              shape: RoundedRectangleBorder(
+                borderRadius: BorderRadius.circular(10),
+              ),
             ),
           ),
           floatingActionButtonTheme: const FloatingActionButtonThemeData(
-            backgroundColor: Color(0xFFF97316),
-            foregroundColor: Colors.white,
+            backgroundColor: AppColors.primary,
+            foregroundColor: AppColors.textPrimary,
           ),
           checkboxTheme: CheckboxThemeData(
-            fillColor: MaterialStateProperty.resolveWith((s) =>
-                s.contains(MaterialState.selected)
-                    ? const Color(0xFFF97316)
-                    : null),
+            fillColor: WidgetStateProperty.resolveWith((s) =>
+                s.contains(WidgetState.selected) ? AppColors.primary : null),
+            checkColor: WidgetStateProperty.all(AppColors.textPrimary),
           ),
-          dividerTheme:
-              const DividerThemeData(color: Color(0xFFEDE6DC), thickness: 1),
-          textTheme: const TextTheme(
-            bodyLarge: TextStyle(color: Color(0xFF1C1917)),
-            bodyMedium: TextStyle(color: Color(0xFF1C1917)),
-            bodySmall: TextStyle(color: Color(0xFF78716C)),
-            titleMedium: TextStyle(
-                color: Color(0xFF1C1917), fontWeight: FontWeight.w600),
-            titleLarge: TextStyle(
-                color: Color(0xFF1C1917), fontWeight: FontWeight.w700),
+          dividerTheme: const DividerThemeData(
+            color: AppColors.border,
+            thickness: 2,
           ),
           drawerTheme: const DrawerThemeData(
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.surface,
           ),
           bottomSheetTheme: const BottomSheetThemeData(
-            backgroundColor: Colors.white,
+            backgroundColor: AppColors.surface,
           ),
         ),
         home: AuthWrapper(),
