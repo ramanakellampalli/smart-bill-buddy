@@ -11,19 +11,20 @@ import '../widgets/app_toast.dart';
 import '../widgets/category_logo.dart';
 import '../../data/models/bill_model.dart';
 import '../../data/models/budget_model.dart';
+import '../../core/theme/app_colors.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 
-const _bg = Color(0xFFFAF8F5);
-const _card = Colors.white;
-const _surface2 = Color(0xFFFDF5ED);
-const _border = Color(0xFFEDE6DC);
-const _primary = Color(0xFFF97316);
-const _textPrimary = Color(0xFF1C1917);
-const _textSecondary = Color(0xFF78716C);
-const _textTertiary = Color(0xFFA8A29E);
-const _green = Color(0xFF16A34A);
-const _red = Color(0xFFDC2626);
+const _bg            = AppColors.bg;
+const _card          = AppColors.surface;
+const _surface2      = AppColors.surface2;
+const _border        = AppColors.border;
+const _primary       = AppColors.primary;
+const _textPrimary   = AppColors.textPrimary;
+const _textSecondary = AppColors.textSecondary;
+const _textTertiary  = AppColors.textTertiary;
+const _green         = AppColors.green;
+const _red           = AppColors.red;
 
 
 String _catLabel(String value) {
@@ -108,7 +109,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: _card,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -346,12 +347,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: _primary,
-                foregroundColor: Colors.white,
+                backgroundColor: AppColors.primary,
+                foregroundColor: AppColors.textPrimary,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
             ),
@@ -742,7 +743,7 @@ class _BudgetsSnapshotCard extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: progress,
                         minHeight: 6,
-                        backgroundColor: const Color(0xFFEDE6DC),
+                        backgroundColor: AppColors.border,
                         valueColor:
                             AlwaysStoppedAnimation<Color>(statusColor),
                       ),
@@ -1106,19 +1107,8 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
+        color: AppColors.heroCard,
         borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF292524), Color(0xFF57534E)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0xFF1C1917).withOpacity(0.22),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1127,23 +1117,31 @@ class _SummaryCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Monthly Total',
+              const Text('MONTHLY TOTAL',
                   style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.white70,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.3)),
-              Text('${(progress * 100).toStringAsFixed(0)}% paid',
-                  style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.white54,
-                      fontWeight: FontWeight.w500)),
+                      fontSize: 10,
+                      color: Colors.white38,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text('${(progress * 100).toStringAsFixed(0)}% PAID',
+                    style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5)),
+              ),
             ],
           ),
           const SizedBox(height: 4),
           Text(total,
               style: const TextStyle(
-                  fontSize: 28,
+                  fontSize: 30,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                   letterSpacing: -0.5)),
@@ -1161,9 +1159,8 @@ class _SummaryCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 5,
-              backgroundColor: Colors.white24,
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(Color(0xFFF97316)),
+              backgroundColor: Colors.white12,
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
           ),
           const SizedBox(height: 10),
@@ -1175,11 +1172,11 @@ class _SummaryCard extends StatelessWidget {
                 Text('View Bills',
                     style: TextStyle(
                         fontSize: 11,
-                        color: Colors.white54,
-                        fontWeight: FontWeight.w500)),
+                        color: Colors.white38,
+                        fontWeight: FontWeight.w600)),
                 SizedBox(width: 2),
                 Icon(Icons.chevron_right_rounded,
-                    size: 14, color: Colors.white54),
+                    size: 14, color: Colors.white38),
               ],
             ),
           ),
@@ -1200,15 +1197,16 @@ class _StatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
+        color: Colors.white.withOpacity(0.08),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white24),
+        border: Border.all(color: Colors.white12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style: const TextStyle(fontSize: 10, color: Colors.white70)),
+              style: const TextStyle(fontSize: 10, color: Colors.white38,
+                  fontWeight: FontWeight.w600, letterSpacing: 0.5)),
           const SizedBox(height: 3),
           Text(value,
               style: const TextStyle(
@@ -1301,7 +1299,7 @@ class _BillCalendarCardState extends State<_BillCalendarCard> {
     final money = context.read<AppSettingsProvider>().money;
     showModalBottomSheet(
       context: context,
-      backgroundColor: _card,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1334,19 +1332,8 @@ class _BillCalendarCardState extends State<_BillCalendarCard> {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       decoration: BoxDecoration(
+        color: AppColors.heroCard,
         borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF292524), Color(0xFF57534E)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1C1917).withOpacity(0.22),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,

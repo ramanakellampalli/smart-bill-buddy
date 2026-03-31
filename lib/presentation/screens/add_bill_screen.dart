@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../core/theme/app_colors.dart';
 import 'package:uuid/uuid.dart';
 import '../../data/models/bill_model.dart';
 import '../state/app_settings_provider.dart';
@@ -9,15 +10,16 @@ import '../widgets/auth_guard.dart';
 
 // ── Palette ────────────────────────────────────────────────────────────────────
 
-const _bg = Color(0xFFFAF8F5);
-const _card = Colors.white;
-const _surface2 = Color(0xFFFDF5ED);
-const _border = Color(0xFFEDE6DC);
-const _primary = Color(0xFFF97316);
-const _textPrimary = Color(0xFF1C1917);
-const _textSecondary = Color(0xFF78716C);
-const _textTertiary = Color(0xFFA8A29E);
-const _red = Color(0xFFDC2626);
+const _bg            = AppColors.bg;
+const _card          = AppColors.surface;
+const _surface2      = AppColors.surface2;
+const _border        = AppColors.border;
+const _primary       = AppColors.primary;
+const _textPrimary   = AppColors.textPrimary;
+const _textSecondary = AppColors.textSecondary;
+const _textTertiary  = AppColors.textTertiary;
+const _green         = AppColors.green;
+const _red           = AppColors.red;
 
 IconData _currencyIcon(String code) => switch (code) {
   'USD' || 'AUD' => Icons.attach_money_rounded,
