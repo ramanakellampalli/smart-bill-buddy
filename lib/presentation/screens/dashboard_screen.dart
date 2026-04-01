@@ -225,8 +225,8 @@ class _DashboardScreenState extends State<DashboardScreen> {
           ),
         ),
         actions: [
-          Builder(
-            builder: (ctx) => GestureDetector(
+          Center(
+            child: GestureDetector(
               onTap: () => Navigator.pushNamed(context, '/settings'),
               child: Container(
                 width: 40,
@@ -241,42 +241,44 @@ class _DashboardScreenState extends State<DashboardScreen> {
             ),
           ),
           const SizedBox(width: 8),
-          Builder(
-            builder: (ctx) => GestureDetector(
-              onTap: () => _openNotifications(
-                ctx,
-                overdue: overdue,
-                dueToday: dueToday,
-                money: money,
-              ),
-              child: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  Container(
-                    width: 40,
-                    height: 40,
-                    decoration: BoxDecoration(
-                      color: AppColors.heroCard,
-                      borderRadius: BorderRadius.circular(12),
+          Center(
+            child: Builder(
+              builder: (ctx) => GestureDetector(
+                onTap: () => _openNotifications(
+                  ctx,
+                  overdue: overdue,
+                  dueToday: dueToday,
+                  money: money,
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColors.heroCard,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.notifications_outlined,
+                          color: Colors.white, size: 18),
                     ),
-                    child: const Icon(Icons.notifications_outlined,
-                        color: Colors.white, size: 18),
-                  ),
-                  if (hasAlerts)
-                    Positioned(
-                      top: -2,
-                      right: -2,
-                      child: Container(
-                        width: 9,
-                        height: 9,
-                        decoration: BoxDecoration(
-                          color: _red,
-                          shape: BoxShape.circle,
-                          border: Border.all(color: _bg, width: 1.5),
+                    if (hasAlerts)
+                      Positioned(
+                        top: -2,
+                        right: -2,
+                        child: Container(
+                          width: 9,
+                          height: 9,
+                          decoration: BoxDecoration(
+                            color: _red,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: _bg, width: 1.5),
+                          ),
                         ),
                       ),
-                    ),
-                ],
+                  ],
+                ),
               ),
             ),
           ),
