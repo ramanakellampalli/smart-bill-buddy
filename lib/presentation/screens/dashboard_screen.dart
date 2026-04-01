@@ -213,82 +213,74 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: _bg,
         elevation: 0,
         automaticallyImplyLeading: false,
-        centerTitle: true,
-        leadingWidth: 48,
-        leading: Builder(
-          builder: (ctx) => IconButton(
-            icon: const Icon(Icons.settings_outlined,
-                color: _textSecondary, size: 22),
-            tooltip: 'Settings',
-            onPressed: () => Navigator.pushNamed(context, '/settings'),
+        centerTitle: false,
+        titleSpacing: 16,
+        title: const Text(
+          'Bill Buddy',
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            color: _textPrimary,
+            letterSpacing: -0.5,
           ),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedSize(
-              duration: const Duration(milliseconds: 450),
-              curve: Curves.easeInOut,
-              child: AnimatedOpacity(
-                opacity: _showWelcome ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 500),
-                child: _showWelcome
-                    ? const Text(
-                        'Welcome Back',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: _textPrimary,
-                          height: 1.2,
-                        ),
-                      )
-                    : const SizedBox(width: double.infinity, height: 0),
-              ),
-            ),
-            Text(
-              '$dayLabel, $dateLabel',
-              style: const TextStyle(
-                fontSize: 12,
-                color: _textSecondary,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ],
         ),
         actions: [
           Builder(
-            builder: (ctx) => IconButton(
-              icon: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const Icon(Icons.notifications_outlined,
-                      color: _textSecondary, size: 22),
-                  if (hasAlerts)
-                    Positioned(
-                      top: -1,
-                      right: -1,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: _red,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                ],
+            builder: (ctx) => GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/settings'),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.heroCard,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.settings_outlined,
+                    color: Colors.white, size: 18),
               ),
-              tooltip: 'Notifications',
-              onPressed: () => _openNotifications(
+            ),
+          ),
+          const SizedBox(width: 8),
+          Builder(
+            builder: (ctx) => GestureDetector(
+              onTap: () => _openNotifications(
                 ctx,
                 overdue: overdue,
                 dueToday: dueToday,
                 money: money,
               ),
+              child: Stack(
+                clipBehavior: Clip.none,
+                children: [
+                  Container(
+                    width: 40,
+                    height: 40,
+                    decoration: BoxDecoration(
+                      color: AppColors.heroCard,
+                      borderRadius: BorderRadius.circular(12),
+                    ),
+                    child: const Icon(Icons.notifications_outlined,
+                        color: Colors.white, size: 18),
+                  ),
+                  if (hasAlerts)
+                    Positioned(
+                      top: -2,
+                      right: -2,
+                      child: Container(
+                        width: 9,
+                        height: 9,
+                        decoration: BoxDecoration(
+                          color: _red,
+                          shape: BoxShape.circle,
+                          border: Border.all(color: _bg, width: 1.5),
+                        ),
+                      ),
+                    ),
+                ],
+              ),
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 16),
         ],
       ),
       body: SelectionArea(child: ListView(
