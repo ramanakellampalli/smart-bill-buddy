@@ -705,10 +705,10 @@ class _AnalyticsTile extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: _primary.withOpacity(0.10),
+                color: _surface2,
                 borderRadius: BorderRadius.circular(10),
               ),
-              child: Icon(icon, color: _primary, size: 20),
+              child: Icon(icon, color: _textSecondary, size: 20),
             ),
             const SizedBox(width: 14),
             Expanded(

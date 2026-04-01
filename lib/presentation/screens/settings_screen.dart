@@ -245,10 +245,10 @@ class _SettingsTile extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _primary.withOpacity(0.10),
+                  color: _surface2,
                   borderRadius: BorderRadius.circular(12),
                 ),
-                child: Icon(icon, color: _primary, size: 20),
+                child: Icon(icon, color: _textSecondary, size: 20),
               ),
               const SizedBox(width: 16),
               Expanded(
@@ -314,11 +314,11 @@ class _BiometricToggleTile extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: _primary.withOpacity(0.10),
+                color: _surface2,
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Icon(Icons.fingerprint_rounded,
-                  color: _primary, size: 20),
+                  color: _textSecondary, size: 20),
             ),
             const SizedBox(width: 16),
             Expanded(
@@ -474,11 +474,11 @@ class _NotificationsSheet extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: _primary.withOpacity(0.10),
+                  color: _surface2,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.notifications_rounded,
-                    color: _primary, size: 22),
+                    color: _textSecondary, size: 22),
               ),
               const SizedBox(width: 14),
               const Text(
@@ -616,11 +616,11 @@ class _RemindersSheet extends StatelessWidget {
                 width: 44,
                 height: 44,
                 decoration: BoxDecoration(
-                  color: _primary.withOpacity(0.10),
+                  color: _surface2,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.alarm_rounded,
-                    color: _primary, size: 22),
+                    color: _textSecondary, size: 22),
               ),
               const SizedBox(width: 14),
               const Text(
@@ -651,10 +651,10 @@ class _RemindersSheet extends StatelessWidget {
                     width: 40,
                     height: 40,
                     decoration: BoxDecoration(
-                      color: _primary.withOpacity(0.08),
+                      color: _surface2,
                       borderRadius: BorderRadius.circular(10),
                     ),
-                    child: Icon(icon, color: _primary, size: 20),
+                    child: Icon(icon, color: _textSecondary, size: 20),
                   ),
                   const SizedBox(width: 14),
                   Expanded(

@@ -244,7 +244,7 @@ class _AppInfoCard extends StatelessWidget {
             decoration: BoxDecoration(
               color: _primary.withOpacity(0.10),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: _primary.withOpacity(0.20)),
+              border: Border.all(color: _border),
             ),
             child: Icon(icon, color: _primary, size: 32),
           ),
@@ -338,10 +338,10 @@ class _FeatureItem extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: _primary.withOpacity(0.10),
+            color: _surface2,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: _primary, size: 20),
+          child: Icon(icon, color: _textSecondary, size: 20),
         ),
         const SizedBox(width: 16),
         Expanded(

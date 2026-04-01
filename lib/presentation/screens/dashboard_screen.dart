@@ -1710,10 +1710,10 @@ class _ExpensesSnapshotCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: _primary.withOpacity(0.10),
+                color: _surface2,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.wallet_rounded, color: _primary, size: 20),
+              child: const Icon(Icons.wallet_rounded, color: _textSecondary, size: 20),
             ),
             const SizedBox(width: 14),
             Expanded(

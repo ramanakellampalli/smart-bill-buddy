@@ -422,12 +422,12 @@ class _SummaryCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: _primary.withOpacity(0.22),
+                          color: _surface2,
                           borderRadius: BorderRadius.circular(9),
                         ),
                         child: const Icon(
                           Icons.account_balance_wallet_rounded,
-                          color: _primary,
+                          color: _textSecondary,
                           size: 14,
                         ),
                       ),
@@ -937,10 +937,10 @@ class _EmptyState extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: _primary.withOpacity(0.08),
+              color: _surface2,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 36, color: _primary),
+            child: Icon(icon, size: 36, color: _textSecondary),
           ),
           const SizedBox(height: 16),
           Text(
