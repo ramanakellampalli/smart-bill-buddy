@@ -29,6 +29,9 @@ const _textSecondary = AppColors.textSecondary;
 const _textTertiary  = AppColors.textTertiary;
 const _green         = AppColors.green;
 const _red           = AppColors.red;
+const _amber         = AppColors.amber;
+const _blue          = Color(0xFF2563EB);
+const _purple        = AppColors.primaryDark;
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 

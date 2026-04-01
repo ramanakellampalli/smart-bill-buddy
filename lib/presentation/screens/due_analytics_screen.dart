@@ -22,6 +22,7 @@ const _textSecondary = AppColors.textSecondary;
 const _textTertiary  = AppColors.textTertiary;
 const _green         = AppColors.green;
 const _red           = AppColors.red;
+const _amber         = AppColors.amber;
 
 // ── Aging thresholds (days) ────────────────────────────────────────────────────
 
