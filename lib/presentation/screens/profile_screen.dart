@@ -332,7 +332,7 @@ class _ProfileHeader extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -439,9 +439,9 @@ class _ProfileHeader extends StatelessWidget {
                     Container(
                       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 4),
                       decoration: BoxDecoration(
-                        color: _green.withOpacity(0.1),
+                        color: _green.withValues(alpha: 0.1),
                         borderRadius: BorderRadius.circular(12),
-                        border: Border.all(color: _green.withOpacity(0.3)),
+                        border: Border.all(color: _green.withValues(alpha: 0.3)),
                       ),
                       child: Text(
                         'Active User',
@@ -694,7 +694,7 @@ class _AnalyticsTile extends StatelessWidget {
           border: Border.all(color: _border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha: 0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -768,7 +768,7 @@ class _PreferencesSection extends StatelessWidget {
             border: Border.all(color: _border),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -848,8 +848,8 @@ class _PreferenceTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      splashColor: _primary.withOpacity(0.06),
-      highlightColor: _primary.withOpacity(0.04),
+      splashColor: _primary.withValues(alpha: 0.06),
+      highlightColor: _primary.withValues(alpha: 0.04),
       child: Padding(
         padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 10),
         child: Row(
@@ -989,7 +989,7 @@ class _AccountSection extends StatelessWidget {
             border: Border.all(color: _border),
             boxShadow: [
               BoxShadow(
-                color: Colors.black.withOpacity(0.04),
+                color: Colors.black.withValues(alpha: 0.04),
                 blurRadius: 8,
                 offset: const Offset(0, 2),
               ),
@@ -1092,9 +1092,9 @@ class _DangerSection extends StatelessWidget {
         const SizedBox(height: 12),
         Container(
           decoration: BoxDecoration(
-            color: _red.withOpacity(0.05),
+            color: _red.withValues(alpha: 0.05),
             borderRadius: BorderRadius.circular(16),
-            border: Border.all(color: _red.withOpacity(0.2)),
+            border: Border.all(color: _red.withValues(alpha: 0.2)),
           ),
           child: Column(
             children: [
@@ -1136,8 +1136,8 @@ class _DangerTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      splashColor: _red.withOpacity(0.06),
-      highlightColor: _red.withOpacity(0.04),
+      splashColor: _red.withValues(alpha: 0.06),
+      highlightColor: _red.withValues(alpha: 0.04),
       child: Padding(
         padding: const EdgeInsets.all(16),
         child: Row(
@@ -1161,7 +1161,7 @@ class _DangerTile extends StatelessWidget {
                     subtitle,
                     style: TextStyle(
                       fontSize: 12,
-                      color: _red.withOpacity(0.8),
+                      color: _red.withValues(alpha: 0.8),
                     ),
                   ),
                 ],
@@ -1312,7 +1312,7 @@ class _DeleteAccountDialogState extends State<_DeleteAccountDialog> {
             Container(
               padding: const EdgeInsets.all(8),
               decoration: BoxDecoration(
-                color: _red.withOpacity(0.10),
+                color: _red.withValues(alpha: 0.10),
                 shape: BoxShape.circle,
               ),
               child:
@@ -1478,7 +1478,7 @@ class _PhotoOption extends StatelessWidget {
               width: 40,
               height: 40,
               decoration: BoxDecoration(
-                color: c.withOpacity(0.08),
+                color: c.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(icon, color: c, size: 20),
