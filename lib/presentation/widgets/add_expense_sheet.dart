@@ -206,9 +206,9 @@ class _SheetTitleRow extends StatelessWidget {
             child: Container(
               padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 6),
               decoration: BoxDecoration(
-                color: _red.withOpacity(0.08),
+                color: _red.withValues(alpha: 0.08),
                 borderRadius: BorderRadius.circular(10),
-                border: Border.all(color: _red.withOpacity(0.2)),
+                border: Border.all(color: _red.withValues(alpha: 0.2)),
               ),
               child: const Text(
                 'Delete',
@@ -298,7 +298,7 @@ class _CategoryPicker extends StatelessWidget {
               duration: const Duration(milliseconds: 150),
               padding: const EdgeInsets.symmetric(horizontal: 9, vertical: 5),
               decoration: BoxDecoration(
-                color: isSel ? _primary.withOpacity(0.12) : const Color(0xFFF5F0EA),
+                color: isSel ? _primary.withValues(alpha: 0.12) : const Color(0xFFF5F0EA),
                 borderRadius: BorderRadius.circular(8),
               ),
               child: Row(
