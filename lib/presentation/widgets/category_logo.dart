@@ -126,7 +126,7 @@ class CategoryLogo extends StatelessWidget {
               ? null
               : [
                   BoxShadow(
-                    color: color.withOpacity(0.35),
+                    color: color.withValues(alpha:0.35),
                     blurRadius: 10,
                     offset: const Offset(0, 4),
                   ),
@@ -195,7 +195,7 @@ class _GradientIcon extends StatelessWidget {
         borderRadius: radius,
         boxShadow: [
           BoxShadow(
-            color: grad2.withOpacity(0.38),
+            color: grad2.withValues(alpha:0.38),
             blurRadius: 12,
             offset: const Offset(0, 5),
           ),

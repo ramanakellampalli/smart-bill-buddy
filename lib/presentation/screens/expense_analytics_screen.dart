@@ -266,7 +266,7 @@ class _BreakdownCard extends StatelessWidget {
         border: Border.all(color: _border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha:0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -462,7 +462,7 @@ class _TopExpensesCard extends StatelessWidget {
         border: Border.all(color: _border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha:0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -496,7 +496,7 @@ class _TopExpensesCard extends StatelessWidget {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: _colorFor(e.category).withOpacity(0.12),
+                        color: _colorFor(e.category).withValues(alpha:0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Center(

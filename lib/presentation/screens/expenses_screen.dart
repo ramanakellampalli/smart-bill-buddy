@@ -265,7 +265,7 @@ class ExpenseSummaryCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1C1917).withOpacity(0.22),
+            color: const Color(0xFF1C1917).withValues(alpha:0.22),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -368,7 +368,7 @@ class _ExpenseCategoryRowState extends State<ExpenseCategoryRow>
         border: Border.all(color: _border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha:0.03),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),

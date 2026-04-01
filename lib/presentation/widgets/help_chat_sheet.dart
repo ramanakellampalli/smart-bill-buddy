@@ -47,7 +47,7 @@ class HelpFloatingButton extends StatelessWidget {
           shape: BoxShape.circle,
           boxShadow: [
             BoxShadow(
-              color: _primary.withOpacity(0.35),
+              color: _primary.withValues(alpha:0.35),
               blurRadius: 14,
               offset: const Offset(0, 4),
             ),
@@ -223,7 +223,7 @@ class _SheetHeader extends StatelessWidget {
             width: 34,
             height: 34,
             decoration: BoxDecoration(
-              color: _primary.withOpacity(0.12),
+              color: _primary.withValues(alpha:0.12),
               shape: BoxShape.circle,
             ),
             child: const Icon(Icons.chat_bubble_outline_rounded,
@@ -410,7 +410,7 @@ class _TypingIndicatorState extends State<_TypingIndicator>
                   width: 7,
                   height: 7,
                   decoration: BoxDecoration(
-                    color: _textTertiary.withOpacity(opacity),
+                    color: _textTertiary.withValues(alpha:opacity),
                     shape: BoxShape.circle,
                   ),
                 );
