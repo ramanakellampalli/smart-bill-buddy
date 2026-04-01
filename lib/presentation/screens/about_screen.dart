@@ -232,7 +232,7 @@ class _AppInfoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha: 0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -244,7 +244,7 @@ class _AppInfoCard extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: _primary.withOpacity(0.10),
+              color: _primary.withValues(alpha: 0.10),
               borderRadius: BorderRadius.circular(20),
               border: Border.all(color: _border),
             ),
@@ -391,8 +391,8 @@ class _InfoItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      splashColor: _primary.withOpacity(0.06),
-      highlightColor: _primary.withOpacity(0.04),
+      splashColor: _primary.withValues(alpha: 0.06),
+      highlightColor: _primary.withValues(alpha: 0.04),
       borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.all(8),
@@ -441,8 +441,8 @@ class _LinkItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      splashColor: _primary.withOpacity(0.06),
-      highlightColor: _primary.withOpacity(0.04),
+      splashColor: _primary.withValues(alpha: 0.06),
+      highlightColor: _primary.withValues(alpha: 0.04),
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.all(8),
