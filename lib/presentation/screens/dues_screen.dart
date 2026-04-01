@@ -151,7 +151,7 @@ class _DuesScreenState extends State<DuesScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle_outline_rounded,
-                color: _primary, size: 24),
+                color: _textPrimary, size: 24),
             tooltip: 'Add Due',
             onPressed: () => _openAddSheet(context),
           ),

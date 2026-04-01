@@ -141,12 +141,12 @@ class _ExpensesScreenState extends State<ExpensesScreen> {
             )
           else
             IconButton(
-              icon: const Icon(Icons.document_scanner_outlined, color: _primary, size: 22),
+              icon: const Icon(Icons.document_scanner_outlined, color: _textPrimary, size: 22),
               tooltip: 'Scan Receipt',
               onPressed: _scanReceipt,
             ),
           IconButton(
-            icon: const Icon(Icons.add_circle_outline_rounded, color: _primary, size: 24),
+            icon: const Icon(Icons.add_circle_outline_rounded, color: _textPrimary, size: 24),
             tooltip: 'Add Expense',
             onPressed: () => _openSheet(),
           ),

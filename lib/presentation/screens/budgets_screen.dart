@@ -123,7 +123,7 @@ class BudgetsScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle_outline_rounded,
-                color: _primary, size: 24),
+                color: _textPrimary, size: 24),
             tooltip: 'Add Budget',
             onPressed: bp.isLoading || bp.budgets.length >= _allCats.length
                 ? null
