@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/auth_guard.dart';
+import '../../core/theme/app_colors.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 
-const _bg = Color(0xFFFAF8F5);
-const _card = Colors.white;
-const _border = Color(0xFFEDE6DC);
-const _primary = Color(0xFFF97316);
-const _textPrimary = Color(0xFF1C1917);
-const _textSecondary = Color(0xFF78716C);
-const _textTertiary = Color(0xFFA8A29E);
+const _bg            = AppColors.bg;
+const _card          = AppColors.surface;
+const _surface2      = AppColors.surface2;
+const _border        = AppColors.border;
+const _primary       = AppColors.primary;
+const _textPrimary   = AppColors.textPrimary;
+const _textSecondary = AppColors.textSecondary;
+const _textTertiary  = AppColors.textTertiary;
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
