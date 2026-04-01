@@ -305,8 +305,8 @@ class _AddBillScreenState extends State<AddBillScreen> {
                 child: ElevatedButton(
                   onPressed: saving ? null : _save,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _primary,
-                    disabledBackgroundColor: _primary.withOpacity(0.45),
+                    backgroundColor: AppColors.heroCard,
+                    disabledBackgroundColor: AppColors.border,
                     padding: const EdgeInsets.symmetric(vertical: 16),
                     elevation: 0,
                     shape: RoundedRectangleBorder(

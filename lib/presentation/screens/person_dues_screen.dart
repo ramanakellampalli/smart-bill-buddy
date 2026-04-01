@@ -426,7 +426,7 @@ class PersonDuesScreen extends StatelessWidget {
           label: Text('Add transaction with $personName',
               overflow: TextOverflow.ellipsis),
           style: ElevatedButton.styleFrom(
-            backgroundColor: _primary,
+            backgroundColor: AppColors.heroCard,
             foregroundColor: Colors.white,
             padding: const EdgeInsets.symmetric(vertical: 14),
             elevation: 0,
@@ -1323,7 +1323,7 @@ class _PersonPaymentSheetState extends State<_PersonPaymentSheet> {
                 child: ElevatedButton(
                   onPressed: _save,
                   style: ElevatedButton.styleFrom(
-                    backgroundColor: _primary,
+                    backgroundColor: AppColors.heroCard,
                     foregroundColor: Colors.white,
                     padding: const EdgeInsets.symmetric(vertical: 15),
                     elevation: 0,

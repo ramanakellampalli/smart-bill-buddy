@@ -323,8 +323,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                       child: ElevatedButton(
                         onPressed: _loading ? null : _register,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _primary,
-                          disabledBackgroundColor: _primary.withOpacity(0.45),
+                          backgroundColor: AppColors.heroCard,
+                          disabledBackgroundColor: AppColors.border,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           elevation: 0,
                           shape: RoundedRectangleBorder(

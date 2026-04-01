@@ -210,8 +210,8 @@ class _LoginScreenState extends State<LoginScreen>
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: AppColors.primary,
-                  foregroundColor: AppColors.textPrimary,
+                  backgroundColor: AppColors.heroCard,
+                  foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
@@ -930,7 +930,7 @@ class _DarkButton extends StatelessWidget {
           ),
           child: Ink(
             decoration: BoxDecoration(
-              color: loading ? AppColors.border : _lime,
+              color: loading ? AppColors.border : AppColors.heroCard,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Container(
@@ -941,7 +941,7 @@ class _DarkButton extends StatelessWidget {
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
-                        color: AppColors.textSecondary,
+                        color: Colors.white54,
                         strokeWidth: 3,
                       ),
                     )
@@ -950,7 +950,7 @@ class _DarkButton extends StatelessWidget {
                       style: const TextStyle(
                         fontSize: 17,
                         fontWeight: FontWeight.w800,
-                        color: _formPrimary,
+                        color: Colors.white,
                         letterSpacing: 0.5,
                       ),
                     ),
@@ -1421,9 +1421,9 @@ class _FormView extends StatelessWidget {
           child: ElevatedButton(
             onPressed: loading ? null : onSend,
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
+              backgroundColor: AppColors.heroCard,
               disabledBackgroundColor: AppColors.border,
-              foregroundColor: AppColors.textPrimary,
+              foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 15),
               elevation: 0,
               shape: RoundedRectangleBorder(

@@ -872,7 +872,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
               child: ElevatedButton(
                 onPressed: saving ? null : _save,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _primary,
+                  backgroundColor: AppColors.heroCard,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   elevation: 0,

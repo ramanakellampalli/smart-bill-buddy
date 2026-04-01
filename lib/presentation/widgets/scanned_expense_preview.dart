@@ -193,7 +193,7 @@ class _ActionRow extends StatelessWidget {
           child: ElevatedButton(
             onPressed: onSave,
             style: ElevatedButton.styleFrom(
-              backgroundColor: _primary,
+              backgroundColor: AppColors.heroCard,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               elevation: 0,

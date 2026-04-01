@@ -407,7 +407,7 @@ class _SaveButton extends StatelessWidget {
       child: ElevatedButton(
         onPressed: saving ? null : onSave,
         style: ElevatedButton.styleFrom(
-          backgroundColor: _primary,
+          backgroundColor: AppColors.heroCard,
           foregroundColor: Colors.white,
           padding: const EdgeInsets.symmetric(vertical: 15),
           elevation: 0,

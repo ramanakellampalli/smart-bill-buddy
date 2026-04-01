@@ -95,8 +95,8 @@ class SmartBillApp extends StatelessWidget {
           ),
           elevatedButtonTheme: ElevatedButtonThemeData(
             style: ElevatedButton.styleFrom(
-              backgroundColor: AppColors.primary,
-              foregroundColor: AppColors.textPrimary,
+              backgroundColor: AppColors.heroCard,
+              foregroundColor: Colors.white,
               elevation: 0,
               shape: RoundedRectangleBorder(
                 borderRadius: BorderRadius.circular(10),
@@ -104,8 +104,8 @@ class SmartBillApp extends StatelessWidget {
             ),
           ),
           floatingActionButtonTheme: const FloatingActionButtonThemeData(
-            backgroundColor: AppColors.primary,
-            foregroundColor: AppColors.textPrimary,
+            backgroundColor: AppColors.heroCard,
+            foregroundColor: Colors.white,
           ),
           checkboxTheme: CheckboxThemeData(
             fillColor: WidgetStateProperty.resolveWith((s) =>
