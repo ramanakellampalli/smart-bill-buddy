@@ -20,6 +20,7 @@ const _card          = AppColors.surface;
 const _surface2      = AppColors.surface2;
 const _border        = AppColors.border;
 const _primary       = AppColors.primary;
+const _primaryDark   = AppColors.primaryDark;
 const _textPrimary   = AppColors.textPrimary;
 const _textSecondary = AppColors.textSecondary;
 const _textTertiary  = AppColors.textTertiary;
@@ -500,12 +501,12 @@ class _DuesSnapshotCard extends StatelessWidget {
                       'View all',
                       style: TextStyle(
                           fontSize: 12,
-                          color: _primary,
+                          color: _textPrimary,
                           fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(width: 2),
                     const Icon(Icons.chevron_right_rounded,
-                        size: 16, color: _primary),
+                        size: 16, color: _textPrimary),
                   ],
                 ),
               ],
@@ -708,12 +709,12 @@ class _BudgetsSnapshotCard extends StatelessWidget {
                       'View all',
                       style: TextStyle(
                           fontSize: 12,
-                          color: _primary,
+                          color: _textPrimary,
                           fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(width: 2),
                     const Icon(Icons.chevron_right_rounded,
-                        size: 16, color: _primary),
+                        size: 16, color: _textPrimary),
                   ],
                 ),
               ],
