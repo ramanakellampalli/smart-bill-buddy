@@ -6,7 +6,6 @@ import 'package:uuid/uuid.dart';
 import '../../data/models/bill_model.dart';
 import '../state/app_settings_provider.dart';
 import '../state/bills_provider.dart';
-import '../widgets/auth_guard.dart';
 
 // ── Palette ────────────────────────────────────────────────────────────────────
 

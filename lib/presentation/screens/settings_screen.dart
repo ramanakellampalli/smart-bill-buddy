@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../state/app_settings_provider.dart';
-import '../state/user_provider.dart';
 import '../widgets/auth_guard.dart';
 import '../../services/notification_service.dart';
 import '../../services/biometric_service.dart';
