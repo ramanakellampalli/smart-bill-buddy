@@ -15,7 +15,6 @@ import '../state/dues_provider.dart';
 const _bg            = AppColors.bg;
 const _card          = AppColors.surface;
 const _border        = AppColors.border;
-const _primary       = AppColors.primary;
 const _textPrimary   = AppColors.textPrimary;
 const _textSecondary = AppColors.textSecondary;
 const _textTertiary  = AppColors.textTertiary;
