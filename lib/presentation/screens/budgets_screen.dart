@@ -217,9 +217,9 @@ class _ErrorBanner extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: _red.withOpacity(0.06),
+        color: _red.withValues(alpha:0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _red.withOpacity(0.2)),
+        border: Border.all(color: _red.withValues(alpha:0.2)),
       ),
       child: Row(
         children: [
@@ -263,7 +263,7 @@ class _SummaryCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1C1917).withOpacity(0.22),
+            color: const Color(0xFF1C1917).withValues(alpha:0.22),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -342,7 +342,7 @@ class _StatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
+        color: Colors.white.withValues(alpha:0.18),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white24),
       ),
@@ -401,11 +401,11 @@ class _BudgetCard extends StatelessWidget {
           color: _card,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isOver ? _red.withOpacity(0.3) : _border,
+            color: isOver ? _red.withValues(alpha:0.3) : _border,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha:0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -458,7 +458,7 @@ class _BudgetCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: _red.withOpacity(0.10),
+                          color: _red.withValues(alpha:0.10),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Text(
@@ -708,10 +708,10 @@ class _BudgetSheetState extends State<_BudgetSheet> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: _red.withOpacity(0.08),
+                        color: _red.withValues(alpha:0.08),
                         borderRadius: BorderRadius.circular(10),
                         border:
-                            Border.all(color: _red.withOpacity(0.2)),
+                            Border.all(color: _red.withValues(alpha:0.2)),
                       ),
                       child: const Text(
                         'Delete',
@@ -782,7 +782,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
                           horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: sel
-                            ? _primary.withOpacity(0.10)
+                            ? _primary.withValues(alpha:0.10)
                             : _card,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(

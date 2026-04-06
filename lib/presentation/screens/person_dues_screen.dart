@@ -14,7 +14,6 @@ import '../state/dues_provider.dart';
 
 const _bg            = AppColors.bg;
 const _card          = AppColors.surface;
-const _surface2      = AppColors.surface2;
 const _border        = AppColors.border;
 const _primary       = AppColors.primary;
 const _textPrimary   = AppColors.textPrimary;
@@ -256,7 +255,7 @@ class PersonDuesScreen extends StatelessWidget {
               width: 34,
               height: 34,
               decoration: BoxDecoration(
-                color: avatarColor.withOpacity(0.18),
+                color: avatarColor.withValues(alpha:0.18),
                 shape: BoxShape.circle,
               ),
               child: Center(
@@ -363,7 +362,7 @@ class PersonDuesScreen extends StatelessWidget {
                               padding: const EdgeInsets.only(right: 20),
                               margin: const EdgeInsets.only(bottom: 10),
                               decoration: BoxDecoration(
-                                color: _red.withOpacity(0.12),
+                                color: _red.withValues(alpha:0.12),
                                 borderRadius: BorderRadius.circular(16),
                               ),
                               child: const Icon(Icons.delete_outline_rounded,
@@ -414,7 +413,7 @@ class PersonDuesScreen extends StatelessWidget {
           border: const Border(top: BorderSide(color: _border)),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha:0.04),
               blurRadius: 10,
               offset: const Offset(0, -2),
             ),
@@ -474,9 +473,9 @@ class _NetHeader extends StatelessWidget {
       margin: const EdgeInsets.fromLTRB(16, 8, 16, 4),
       padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.07),
+        color: color.withValues(alpha:0.07),
         borderRadius: BorderRadius.circular(14),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha:0.2)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -579,9 +578,9 @@ class _HeaderButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 9),
         decoration: BoxDecoration(
-          color: color.withOpacity(0.10),
+          color: color.withValues(alpha:0.10),
           borderRadius: BorderRadius.circular(10),
-          border: Border.all(color: color.withOpacity(0.25)),
+          border: Border.all(color: color.withValues(alpha:0.25)),
         ),
         child: Row(
           mainAxisAlignment: MainAxisAlignment.center,
@@ -643,13 +642,13 @@ class _TransactionCardState extends State<_TransactionCard> {
         color: due.isSettled ? const Color(0xFFFAFAFA) : _card,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isOverdue ? _red.withOpacity(0.3) : _border,
+          color: isOverdue ? _red.withValues(alpha:0.3) : _border,
         ),
         boxShadow: due.isSettled
             ? null
             : [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
+                  color: Colors.black.withValues(alpha:0.03),
                   blurRadius: 6,
                   offset: const Offset(0, 2),
                 ),
@@ -666,7 +665,7 @@ class _TransactionCardState extends State<_TransactionCard> {
                 Container(
                   padding: const EdgeInsets.all(7),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.10),
+                    color: color.withValues(alpha:0.10),
                     borderRadius: BorderRadius.circular(8),
                   ),
                   child: Icon(
@@ -720,7 +719,7 @@ class _TransactionCardState extends State<_TransactionCard> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 7, vertical: 2),
                       decoration: BoxDecoration(
-                        color: color.withOpacity(0.10),
+                        color: color.withValues(alpha:0.10),
                         borderRadius: BorderRadius.circular(5),
                       ),
                       child: Text(
@@ -855,7 +854,7 @@ class _PaymentProgressBar extends StatelessWidget {
                 Container(
                   height: 5,
                   width: c.maxWidth,
-                  color: color.withOpacity(0.12),
+                  color: color.withValues(alpha:0.12),
                 ),
                 Container(
                   height: 5,
@@ -1216,12 +1215,12 @@ class _PersonPaymentSheetState extends State<_PersonPaymentSheet> {
                         padding: const EdgeInsets.symmetric(vertical: 9),
                         decoration: BoxDecoration(
                           color: selected
-                              ? _primary.withOpacity(0.10)
+                              ? _primary.withValues(alpha:0.10)
                               : _bg,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: selected
-                                ? _primary.withOpacity(0.4)
+                                ? _primary.withValues(alpha:0.4)
                                 : _border,
                           ),
                         ),

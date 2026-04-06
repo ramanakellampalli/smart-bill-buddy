@@ -170,7 +170,7 @@ class DuesProvider extends ChangeNotifier {
         try {
           await NotificationService.scheduleDue(due);
         } catch (e) {
-          print('Error scheduling notification for due ${due.id}: $e');
+          debugPrint('Error scheduling notification for due ${due.id}: $e');
         }
       }
     }

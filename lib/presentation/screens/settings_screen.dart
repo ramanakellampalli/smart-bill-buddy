@@ -5,7 +5,6 @@ import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../state/app_settings_provider.dart';
-import '../state/user_provider.dart';
 import '../widgets/auth_guard.dart';
 import '../../services/notification_service.dart';
 import '../../services/biometric_service.dart';
@@ -20,7 +19,6 @@ const _primary       = AppColors.primary;
 const _textPrimary   = AppColors.textPrimary;
 const _textSecondary = AppColors.textSecondary;
 const _textTertiary  = AppColors.textTertiary;
-const _green         = AppColors.green;
 const _red           = AppColors.red;
 
 // ── Screen ────────────────────────────────────────────────────────────────────
@@ -38,7 +36,7 @@ class SettingsScreen extends StatelessWidget {
 }
 
 class _SettingsScreenContent extends StatefulWidget {
-  const _SettingsScreenContent({super.key});
+  const _SettingsScreenContent();
 
   @override
   State<_SettingsScreenContent> createState() => _SettingsScreenContentState();
@@ -233,8 +231,8 @@ class _SettingsTile extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      splashColor: _primary.withOpacity(0.06),
-      highlightColor: _primary.withOpacity(0.04),
+      splashColor: _primary.withValues(alpha:0.06),
+      highlightColor: _primary.withValues(alpha:0.04),
       child: Container(
         padding: const EdgeInsets.symmetric(horizontal: 4, vertical: 4),
         child: Padding(
@@ -357,7 +355,7 @@ class _BiometricToggleTile extends StatelessWidget {
                 : Switch(
                     value: enabled,
                     onChanged: onChanged,
-                    activeColor: _primary,
+                    activeThumbColor: _primary,
                   ),
           ],
         ),
@@ -367,20 +365,20 @@ class _BiometricToggleTile extends StatelessWidget {
 }
 
 class _SignOutTile extends StatelessWidget {
-  const _SignOutTile({super.key});
+  const _SignOutTile();
 
   @override
   Widget build(BuildContext context) {
     return Container(
       decoration: BoxDecoration(
-        color: _red.withOpacity(0.05),
+        color: _red.withValues(alpha:0.05),
         borderRadius: BorderRadius.circular(16),
-        border: Border.all(color: _red.withOpacity(0.15)),
+        border: Border.all(color: _red.withValues(alpha:0.15)),
       ),
       child: InkWell(
         onTap: () => _showSignOutDialog(context),
-        splashColor: _red.withOpacity(0.06),
-        highlightColor: _red.withOpacity(0.04),
+        splashColor: _red.withValues(alpha:0.06),
+        highlightColor: _red.withValues(alpha:0.04),
         borderRadius: BorderRadius.circular(16),
         child: Padding(
           padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 18),
@@ -390,7 +388,7 @@ class _SignOutTile extends StatelessWidget {
                 width: 40,
                 height: 40,
                 decoration: BoxDecoration(
-                  color: _red.withOpacity(0.10),
+                  color: _red.withValues(alpha:0.10),
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: const Icon(Icons.logout_rounded, color: _red, size: 20),
@@ -496,7 +494,7 @@ class _NotificationsSheet extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(14),
               decoration: BoxDecoration(
-                color: _border.withOpacity(0.5),
+                color: _border.withValues(alpha:0.5),
                 borderRadius: BorderRadius.circular(12),
               ),
               child: const Row(
@@ -769,10 +767,10 @@ class _CurrencyPickerSheet extends StatelessWidget {
               child: Container(
                 padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
                 decoration: BoxDecoration(
-                  color: selected ? _primary.withOpacity(0.08) : Colors.transparent,
+                  color: selected ? _primary.withValues(alpha:0.08) : Colors.transparent,
                   borderRadius: BorderRadius.circular(12),
                   border: selected
-                      ? Border.all(color: _primary.withOpacity(0.3))
+                      ? Border.all(color: _primary.withValues(alpha:0.3))
                       : null,
                 ),
                 child: Row(
@@ -782,8 +780,8 @@ class _CurrencyPickerSheet extends StatelessWidget {
                       height: 40,
                       decoration: BoxDecoration(
                         color: selected
-                            ? _primary.withOpacity(0.15)
-                            : _border.withOpacity(0.5),
+                            ? _primary.withValues(alpha:0.15)
+                            : _border.withValues(alpha:0.5),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Center(

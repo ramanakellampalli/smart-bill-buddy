@@ -184,7 +184,7 @@ class _LoginScreenState extends State<LoginScreen>
             Container(
               width: 60, height: 60,
               decoration: BoxDecoration(
-                color: AppColors.primary.withOpacity(0.15),
+                color: AppColors.primary.withValues(alpha:0.15),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.fingerprint_rounded,
@@ -269,10 +269,13 @@ class _LoginScreenState extends State<LoginScreen>
       if (_signupNameCtrl.text.trim().isNotEmpty) {
         await cred.user?.updateDisplayName(_signupNameCtrl.text.trim());
       }
-      if (mounted) {
-        await context.read<UserProvider>().loadUserProfile(cred.user!.uid);
-        Navigator.pushReplacementNamed(context, '/home');
-      }
+      if (!context.mounted) return;
+      // ignore: use_build_context_synchronously
+      final userProvider = context.read<UserProvider>();
+      await userProvider.loadUserProfile(cred.user!.uid);
+      if (!context.mounted) return;
+      // ignore: use_build_context_synchronously
+      Navigator.pushReplacementNamed(context, '/home');
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       setState(() { _signupLoading = false; _signupError = _authMsg(e.code); });
@@ -322,7 +325,7 @@ class _LoginScreenState extends State<LoginScreen>
                 // Floating particles
                 AnimatedBuilder(
                   animation: _particleCtrl,
-                  builder: (_, __) => Stack(
+                  builder: (_, _) => Stack(
                     children: [
                       Positioned(
                         top: 20 + _particleCtrl.value * 30,
@@ -350,7 +353,7 @@ class _LoginScreenState extends State<LoginScreen>
                 // Floating orbs
                 AnimatedBuilder(
                   animation: _orbCtrl,
-                  builder: (_, __) => Stack(
+                  builder: (_, _) => Stack(
                     children: [
                       Positioned(
                         top: 10 + _orbCtrl.value * 18,
@@ -914,7 +917,7 @@ class _DarkButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: _lime.withOpacity(0.25),
+              color: _lime.withValues(alpha:0.25),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -971,9 +974,9 @@ class _ErrorBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
-        color: _red.withOpacity(0.06),
+        color: _red.withValues(alpha:0.06),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _red.withOpacity(0.2)),
+        border: Border.all(color: _red.withValues(alpha:0.2)),
       ),
       child: Row(
         children: [
@@ -1003,10 +1006,10 @@ class _Particle extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withOpacity(opacity),
+        color: Colors.white.withValues(alpha:opacity),
         boxShadow: [
           BoxShadow(
-            color: Colors.white.withOpacity(opacity * 0.5),
+            color: Colors.white.withValues(alpha:opacity * 0.5),
             blurRadius: size * 2,
             spreadRadius: size * 0.5,
           ),
@@ -1032,13 +1035,13 @@ class _Orb extends StatelessWidget {
         shape: BoxShape.circle,
         gradient: RadialGradient(
           colors: [
-            _lime.withOpacity(opacity),
-            _lime.withOpacity(opacity * 0.3),
+            _lime.withValues(alpha:opacity),
+            _lime.withValues(alpha:opacity * 0.3),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: _lime.withOpacity(opacity * 0.3),
+            color: _lime.withValues(alpha:opacity * 0.3),
             blurRadius: size * 0.8,
             spreadRadius: size * 0.2,
           ),
@@ -1207,7 +1210,7 @@ class _FeatureRowState extends State<_FeatureRow> with TickerProviderStateMixin 
 
   @override
   void dispose() {
-    for (final c in _ctls) c.dispose();
+    for (final c in _ctls) { c.dispose(); }
     super.dispose();
   }
 
@@ -1348,7 +1351,7 @@ class _FormView extends StatelessWidget {
         Container(
           width: 52, height: 52,
           decoration: BoxDecoration(
-            color: AppColors.primary.withOpacity(0.15),
+            color: AppColors.primary.withValues(alpha:0.15),
             shape: BoxShape.circle,
           ),
           child: const Icon(Icons.lock_reset_rounded,
@@ -1483,7 +1486,7 @@ class _SuccessView extends StatelessWidget {
         Container(
           width: 64, height: 64,
           decoration: BoxDecoration(
-            color: AppColors.green.withOpacity(0.10),
+            color: AppColors.green.withValues(alpha:0.10),
             shape: BoxShape.circle,
           ),
           child: const Icon(Icons.mark_email_read_outlined,
@@ -1547,10 +1550,10 @@ class _FeatureChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: _lime.withOpacity(0.12),
+        color: _lime.withValues(alpha:0.12),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: _lime.withOpacity(0.4),
+          color: _lime.withValues(alpha:0.4),
           width: 1,
         ),
       ),

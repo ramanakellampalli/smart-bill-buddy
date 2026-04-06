@@ -6,8 +6,6 @@ import 'package:uuid/uuid.dart';
 import '../../data/models/bill_model.dart';
 import '../state/app_settings_provider.dart';
 import '../state/bills_provider.dart';
-import '../widgets/auth_guard.dart';
-
 // ── Palette ────────────────────────────────────────────────────────────────────
 
 const _bg            = AppColors.bg;
@@ -18,7 +16,6 @@ const _primary       = AppColors.primary;
 const _textPrimary   = AppColors.textPrimary;
 const _textSecondary = AppColors.textSecondary;
 const _textTertiary  = AppColors.textTertiary;
-const _green         = AppColors.green;
 const _red           = AppColors.red;
 
 IconData _currencyIcon(String code) => switch (code) {
@@ -193,10 +190,12 @@ class _AddBillScreenState extends State<AddBillScreen> {
                     validator: (v) {
                       final t = (v ?? '').trim();
                       if (t.isEmpty) return null;
-                      if (double.tryParse(t) == null)
+                      if (double.tryParse(t) == null) {
                         return 'Enter a valid number';
-                      if (double.parse(t) < 0)
+                      }
+                      if (double.parse(t) < 0) {
                         return 'Amount cannot be negative';
+                      }
                       return null;
                     },
                   ),
@@ -219,7 +218,7 @@ class _AddBillScreenState extends State<AddBillScreen> {
                           Container(
                             padding: const EdgeInsets.all(10),
                             decoration: BoxDecoration(
-                              color: _primary.withOpacity(0.10),
+                              color: _primary.withValues(alpha:0.10),
                               borderRadius: BorderRadius.circular(10),
                             ),
                             child: const Icon(Icons.calendar_today_rounded,
@@ -368,7 +367,7 @@ class _SectionCard extends StatelessWidget {
         border: Border.all(color: _border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha:0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -492,7 +491,7 @@ class _CategoryGrid extends StatelessWidget {
             padding:
                 const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
             decoration: BoxDecoration(
-              color: isSel ? cat.color.withOpacity(0.12) : _card,
+              color: isSel ? cat.color.withValues(alpha:0.12) : _card,
               borderRadius: BorderRadius.circular(12),
               border: Border.all(
                 color: isSel ? cat.color : _border,
@@ -500,7 +499,7 @@ class _CategoryGrid extends StatelessWidget {
               ),
               boxShadow: [
                 BoxShadow(
-                  color: Colors.black.withOpacity(0.03),
+                  color: Colors.black.withValues(alpha:0.03),
                   blurRadius: 4,
                   offset: const Offset(0, 1),
                 ),
@@ -560,7 +559,7 @@ class _FrequencySelector extends StatelessWidget {
         border: Border.all(color: _border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha:0.04),
             blurRadius: 8,
             offset: const Offset(0, 2),
           ),
@@ -644,7 +643,7 @@ class _ReminderTile extends StatelessWidget {
               Switch.adaptive(
                 value: value,
                 onChanged: onChanged,
-                activeColor: _primary,
+                activeThumbColor: _primary,
               ),
             ],
           ),

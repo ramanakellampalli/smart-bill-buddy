@@ -1,4 +1,3 @@
-import 'dart:io';
 import 'dart:ui' show Color;
 import 'package:flutter/foundation.dart' show kIsWeb;
 import 'package:flutter_local_notifications/flutter_local_notifications.dart';
@@ -9,7 +8,6 @@ import 'package:timezone/timezone.dart' as tz;
 import '../data/models/bill_model.dart';
 import '../data/models/due_model.dart';
 import '../presentation/state/app_settings_provider.dart';
-import '../presentation/state/user_provider.dart';
 
 class NotificationService {
   static final _plugin = FlutterLocalNotificationsPlugin();
@@ -69,11 +67,6 @@ class NotificationService {
   static Future<bool> _areDueRemindersEnabled() async {
     final prefs = await SharedPreferences.getInstance();
     return prefs.getBool('due_reminders_enabled') ?? true;
-  }
-
-  static Future<void> _setDueRemindersEnabled(bool enabled) async {
-    final prefs = await SharedPreferences.getInstance();
-    await prefs.setBool('due_reminders_enabled', enabled);
   }
 
   static Future<void> scheduleBill(BillModel bill) async {

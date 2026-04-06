@@ -152,10 +152,10 @@ class _LockScreen extends StatelessWidget {
                     width: 80,
                     height: 80,
                     decoration: BoxDecoration(
-                      color: const Color(0xFFF97316).withOpacity(0.10),
+                      color: const Color(0xFFF97316).withValues(alpha:0.10),
                       shape: BoxShape.circle,
                       border: Border.all(
-                        color: const Color(0xFFF97316).withOpacity(0.30),
+                        color: const Color(0xFFF97316).withValues(alpha:0.30),
                         width: 2,
                       ),
                     ),

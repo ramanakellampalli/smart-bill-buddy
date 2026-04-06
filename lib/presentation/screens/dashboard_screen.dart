@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -20,7 +19,6 @@ const _card          = AppColors.surface;
 const _surface2      = AppColors.surface2;
 const _border        = AppColors.border;
 const _primary       = AppColors.primary;
-const _primaryDark   = AppColors.primaryDark;
 const _textPrimary   = AppColors.textPrimary;
 const _textSecondary = AppColors.textSecondary;
 const _textTertiary  = AppColors.textTertiary;
@@ -81,8 +79,6 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  bool _showWelcome = true;
-  Timer? _timer;
   late final PageController _summaryPageCtrl;
   int _summaryPage = 0;
 
@@ -90,14 +86,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _summaryPageCtrl = PageController();
-    _timer = Timer(const Duration(seconds: 10), () {
-      if (mounted) setState(() => _showWelcome = false);
-    });
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     _summaryPageCtrl.dispose();
     super.dispose();
   }
@@ -204,8 +196,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final money = context.watch<AppSettingsProvider>().money;
     final df = DateFormat('EEE, dd MMM');
-    final dayLabel = DateFormat('EEEE').format(now);
-    final dateLabel = DateFormat('d MMM').format(now);
     final monthLabel = DateFormat('MMMM yyyy').format(now);
 
     return Scaffold(
@@ -407,7 +397,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _red.withOpacity(0.08),
+                    color: _red.withValues(alpha:0.08),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -475,7 +465,7 @@ class _DuesSnapshotCard extends StatelessWidget {
           border: Border.all(color: _border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha:0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -597,9 +587,9 @@ class _DuesChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.07),
+        color: color.withValues(alpha:0.07),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha:0.2)),
       ),
       child: Row(
         children: [
@@ -680,10 +670,10 @@ class _BudgetsSnapshotCard extends StatelessWidget {
           color: _card,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: isOver ? _red.withOpacity(0.3) : _border),
+              color: isOver ? _red.withValues(alpha:0.3) : _border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha:0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -918,7 +908,7 @@ class _NotificationsSheet extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: _red.withOpacity(0.10),
+                    color: _red.withValues(alpha:0.10),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -963,7 +953,7 @@ class _NotificationsSheet extends StatelessWidget {
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: items.length,
-                separatorBuilder: (_, __) =>
+                separatorBuilder: (_, _) =>
                     const Divider(color: _border, height: 1),
                 itemBuilder: (ctx, i) {
                   final (bill, label, color) = items[i];
@@ -1018,7 +1008,7 @@ class _NotifItem extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(9),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.10),
+                color: color.withValues(alpha:0.10),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(Icons.receipt_long_rounded, color: color, size: 18),
@@ -1060,7 +1050,7 @@ class _NotifItem extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.10),
+                    color: color.withValues(alpha:0.10),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -1192,7 +1182,7 @@ class _StatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.08),
+        color: Colors.white.withValues(alpha:0.08),
         borderRadius: BorderRadius.circular(10),
         border: Border.all(color: Colors.white12),
       ),
@@ -1316,7 +1306,7 @@ class _BillCalendarCardState extends State<_BillCalendarCard> {
       ...List.filled(startOffset, null),
       ...List.generate(daysInMonth, (i) => i + 1),
     ];
-    while (cells.length % 7 != 0) cells.add(null);
+    while (cells.length % 7 != 0) { cells.add(null); }
 
     // Split into rows of 7
     final rows = <List<int?>>[];
@@ -1526,8 +1516,8 @@ class _DayBillsSheet extends StatelessWidget {
                         horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: isPaid
-                          ? _green.withOpacity(0.1)
-                          : _primary.withOpacity(0.1),
+                          ? _green.withValues(alpha:0.1)
+                          : _primary.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -1581,10 +1571,10 @@ class _BillCard extends StatelessWidget {
         color: _card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: (isToday || isOverdue) ? _red.withOpacity(0.3) : _border),
+            color: (isToday || isOverdue) ? _red.withValues(alpha:0.3) : _border),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha:0.04),
               blurRadius: 8,
               offset: const Offset(0, 2)),
         ],
@@ -1612,7 +1602,7 @@ class _BillCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: _red.withOpacity(0.10),
+                          color: _red.withValues(alpha:0.10),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(isOverdue ? 'Overdue' : 'Due Today',
@@ -1650,9 +1640,9 @@ class _BillCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _green.withOpacity(0.08),
+                    color: _green.withValues(alpha:0.08),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: _green.withOpacity(0.3)),
+                    border: Border.all(color: _green.withValues(alpha:0.3)),
                   ),
                   child: const Text('Mark Paid',
                       style: TextStyle(
@@ -1700,7 +1690,7 @@ class _ExpensesSnapshotCard extends StatelessWidget {
           border: Border.all(color: _border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha:0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),

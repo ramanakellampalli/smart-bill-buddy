@@ -276,7 +276,7 @@ class _SummaryCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1C1917).withOpacity(0.22),
+            color: const Color(0xFF1C1917).withValues(alpha:0.22),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -375,7 +375,7 @@ class _StatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
+        color: Colors.white.withValues(alpha:0.18),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white24),
       ),
@@ -428,7 +428,7 @@ class _CategoryBar extends StatelessWidget {
         border: Border.all(color: _border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha:0.03),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -551,8 +551,8 @@ class _BillRow extends StatelessWidget {
             padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
             decoration: BoxDecoration(
               color: bill.isPaid
-                  ? _green.withOpacity(0.08)
-                  : _red.withOpacity(0.07),
+                  ? _green.withValues(alpha:0.08)
+                  : _red.withValues(alpha:0.07),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Text(

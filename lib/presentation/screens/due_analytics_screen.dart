@@ -271,7 +271,7 @@ class _BalanceSummaryCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1C1917).withOpacity(0.22),
+            color: const Color(0xFF1C1917).withValues(alpha:0.22),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -325,9 +325,9 @@ class _BalanceSummaryCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _red.withOpacity(0.1),
+                color: _red.withValues(alpha:0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _red.withOpacity(0.3)),
+                border: Border.all(color: _red.withValues(alpha:0.3)),
               ),
               child: Row(
                 children: [
@@ -366,7 +366,7 @@ class _StatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
+        color: Colors.white.withValues(alpha:0.18),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white24),
       ),
@@ -481,7 +481,7 @@ class _AgingBucket extends StatelessWidget {
         color: _card,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: count > 0 ? color.withOpacity(0.35) : _border,
+          color: count > 0 ? color.withValues(alpha:0.35) : _border,
         ),
       ),
       child: Column(
@@ -490,7 +490,7 @@ class _AgingBucket extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha:0.12),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
@@ -541,9 +541,9 @@ class _OverdueBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: _red.withOpacity(0.07),
+        color: _red.withValues(alpha:0.07),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _red.withOpacity(0.25)),
+        border: Border.all(color: _red.withValues(alpha:0.25)),
       ),
       child: Row(
         children: [
@@ -665,7 +665,7 @@ class _DueRow extends StatelessWidget {
         color: _card,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isOverdue ? _red.withOpacity(0.4) : _border,
+          color: isOverdue ? _red.withValues(alpha:0.4) : _border,
         ),
       ),
       child: Row(
@@ -673,7 +673,7 @@ class _DueRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.10),
+              color: color.withValues(alpha:0.10),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -748,7 +748,7 @@ class _DueRow extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.10),
+                      color: color.withValues(alpha:0.10),
                       borderRadius: BorderRadius.circular(5),
                     ),
                     child: Text(
@@ -811,11 +811,11 @@ class _PersonCard extends StatelessWidget {
         color: _card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: overdueCount > 0 ? _red.withOpacity(0.3) : _border,
+          color: overdueCount > 0 ? _red.withValues(alpha:0.3) : _border,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha:0.03),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -827,7 +827,7 @@ class _PersonCard extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withValues(alpha:0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
@@ -867,7 +867,7 @@ class _PersonCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
-                          color: _red.withOpacity(0.10),
+                          color: _red.withValues(alpha:0.10),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -900,7 +900,7 @@ class _PersonCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.10),
+                  color: color.withValues(alpha:0.10),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
