@@ -253,9 +253,9 @@ class ExpenseSummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         gradient: const LinearGradient(
           colors: [Color(0xFF292524), Color(0xFF57534E)],
           begin: Alignment.topLeft,
@@ -263,42 +263,48 @@ class ExpenseSummaryCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1C1917).withValues(alpha:0.22),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF1C1917).withValues(alpha:0.18),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
+      child: Row(
+        mainAxisAlignment: MainAxisAlignment.spaceBetween,
+        crossAxisAlignment: CrossAxisAlignment.center,
         children: [
-          Row(
-            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
               const Text(
                 'Total Spent',
-                style: TextStyle(fontSize: 12, color: Colors.white70, fontWeight: FontWeight.w500, letterSpacing: 0.3),
+                style: TextStyle(fontSize: 11, color: Colors.white60),
               ),
+              const SizedBox(height: 2),
               Text(
-                DateFormat('MMMM yyyy').format(DateTime.now()),
-                style: const TextStyle(fontSize: 11, color: Colors.white54, fontWeight: FontWeight.w400),
+                money.format(total),
+                style: const TextStyle(
+                  fontSize: 22,
+                  fontWeight: FontWeight.w700,
+                  color: Colors.white,
+                  letterSpacing: -0.5,
+                ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
-          Text(
-            money.format(total),
-            style: const TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: -1,
-            ),
-          ),
-          const SizedBox(height: 4),
-          Text(
-            '$count ${count == 1 ? 'expense' : 'expenses'} this month',
-            style: const TextStyle(fontSize: 13, color: Colors.white70, fontWeight: FontWeight.w500),
+          Column(
+            crossAxisAlignment: CrossAxisAlignment.end,
+            children: [
+              Text(
+                DateFormat('MMMM yyyy').format(DateTime.now()),
+                style: const TextStyle(fontSize: 10, color: Colors.white60),
+              ),
+              const SizedBox(height: 2),
+              Text(
+                '$count ${count == 1 ? 'expense' : 'expenses'}',
+                style: const TextStyle(fontSize: 13, fontWeight: FontWeight.w600, color: Colors.white),
+              ),
+            ],
           ),
         ],
       ),
