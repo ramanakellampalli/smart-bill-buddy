@@ -1285,6 +1285,7 @@ class _BillCalendarCardState extends State<_BillCalendarCard> {
     showModalBottomSheet(
       context: context,
       backgroundColor: AppColors.surface,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1381,6 +1382,7 @@ class _BillCalendarCardState extends State<_BillCalendarCard> {
                   child: GestureDetector(
                     onTap: dayEntries.isEmpty ? null
                         : () => _showDaySheet(context, date, dayEntries),
+                    behavior: HitTestBehavior.opaque,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -1414,7 +1416,7 @@ class _BillCalendarCardState extends State<_BillCalendarCard> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                if (hasUnpaid) _dot(_primary),
+                                if (hasUnpaid) _dot(_red),
                                 if (hasUnpaid && hasPaid)
                                   const SizedBox(width: 2),
                                 if (hasPaid) _dot(_green),
@@ -1517,7 +1519,7 @@ class _DayBillsSheet extends StatelessWidget {
                     decoration: BoxDecoration(
                       color: isPaid
                           ? _green.withValues(alpha:0.1)
-                          : _primary.withValues(alpha:0.1),
+                          : _red.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -1525,7 +1527,7 @@ class _DayBillsSheet extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: isPaid ? _green : _primary,
+                        color: isPaid ? _green : _red,
                       ),
                     ),
                   ),
