@@ -592,7 +592,7 @@ class _FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = color ?? _primary;
+    final accent = color ?? _textPrimary;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(

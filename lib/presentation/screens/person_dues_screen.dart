@@ -293,7 +293,7 @@ class PersonDuesScreen extends StatelessWidget {
             ),
           IconButton(
             icon: const Icon(Icons.add_circle_outline_rounded,
-                color: _primary, size: 22),
+                color: _textPrimary, size: 22),
             tooltip: 'Add transaction',
             onPressed: onAddTap,
           ),
@@ -534,7 +534,7 @@ class _NetHeader extends StatelessWidget {
                   child: _HeaderButton(
                     label: 'Record Payment',
                     icon: Icons.payments_outlined,
-                    color: _primary,
+                    color: _textPrimary,
                     onTap: onRecordPayment!,
                   ),
                 ),
@@ -932,7 +932,7 @@ class _PaymentTimeline extends StatelessWidget {
                         height: 8,
                         margin: const EdgeInsets.only(top: 4),
                         decoration: const BoxDecoration(
-                          color: _primary,
+                          color: _textSecondary,
                           shape: BoxShape.circle,
                         ),
                       ),
@@ -1215,12 +1215,12 @@ class _PersonPaymentSheetState extends State<_PersonPaymentSheet> {
                         padding: const EdgeInsets.symmetric(vertical: 9),
                         decoration: BoxDecoration(
                           color: selected
-                              ? _primary.withValues(alpha:0.10)
+                              ? _textPrimary.withValues(alpha:0.08)
                               : _bg,
                           borderRadius: BorderRadius.circular(10),
                           border: Border.all(
                             color: selected
-                                ? _primary.withValues(alpha:0.4)
+                                ? _textPrimary.withValues(alpha:0.4)
                                 : _border,
                           ),
                         ),
@@ -1229,7 +1229,7 @@ class _PersonPaymentSheetState extends State<_PersonPaymentSheet> {
                             Icon(
                               _methodIcon(m),
                               size: 16,
-                              color: selected ? _primary : _textSecondary,
+                              color: selected ? _textPrimary : _textSecondary,
                             ),
                             const SizedBox(height: 3),
                             Text(
@@ -1237,7 +1237,7 @@ class _PersonPaymentSheetState extends State<_PersonPaymentSheet> {
                               style: TextStyle(
                                 fontSize: 10,
                                 fontWeight: FontWeight.w600,
-                                color: selected ? _primary : _textSecondary,
+                                color: selected ? _textPrimary : _textSecondary,
                               ),
                               textAlign: TextAlign.center,
                             ),
