@@ -1,6 +1,7 @@
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart' show DateFormat, NumberFormat;
 import 'package:provider/provider.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/models/expense_model.dart';
 import '../../services/receipt_scanner_service.dart';
 import '../state/app_settings_provider.dart';
@@ -193,7 +194,7 @@ class _ActionRow extends StatelessWidget {
           child: ElevatedButton(
             onPressed: onSave,
             style: ElevatedButton.styleFrom(
-              backgroundColor: _primary,
+              backgroundColor: AppColors.heroCard,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 14),
               elevation: 0,

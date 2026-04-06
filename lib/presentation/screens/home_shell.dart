@@ -1,5 +1,6 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import '../../core/theme/app_colors.dart';
 import 'dashboard_screen.dart';
 import 'bills_screen.dart';
 import 'dues_screen.dart';
@@ -7,11 +8,6 @@ import 'expenses_screen.dart';
 import 'budgets_screen.dart';
 import 'profile_screen.dart';
 import '../widgets/help_chat_sheet.dart';
-
-const _navBg = Colors.white;
-const _navBorder = Color(0xFFEDE6DC);
-const _navSelected = Color(0xFFF97316);
-const _navUnselected = Color(0xFFA8A29E);
 
 class HomeShell extends StatefulWidget {
   const HomeShell({super.key});
@@ -80,22 +76,16 @@ class _BottomNav extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      decoration: const BoxDecoration(
-        color: _navBg,
-        border: Border(top: BorderSide(color: _navBorder, width: 1)),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0x0A000000),
-            blurRadius: 8,
-            offset: Offset(0, -2),
+    return SafeArea(
+      top: false,
+      child: Padding(
+        padding: const EdgeInsets.fromLTRB(12, 8, 12, 12),
+        child: Container(
+          height: 62,
+          decoration: BoxDecoration(
+            color: AppColors.navBg,
+            borderRadius: BorderRadius.circular(20),
           ),
-        ],
-      ),
-      child: SafeArea(
-        top: false,
-        child: SizedBox(
-          height: 64,
           child: Row(
             children: List.generate(_items.length, (i) {
               final item = _items[i];
@@ -104,40 +94,38 @@ class _BottomNav extends StatelessWidget {
                 child: GestureDetector(
                   behavior: HitTestBehavior.opaque,
                   onTap: () => onTap(i),
-                  child: Column(
-                    crossAxisAlignment: CrossAxisAlignment.center,
-                    children: [
-                      // Orange top indicator
-                      AnimatedContainer(
-                        duration: const Duration(milliseconds: 200),
-                        height: 2.5,
-                        width: selected ? 24 : 0,
-                        decoration: BoxDecoration(
-                          color: _navSelected,
-                          borderRadius: const BorderRadius.vertical(
-                            bottom: Radius.circular(2),
+                  child: AnimatedContainer(
+                    duration: const Duration(milliseconds: 180),
+                    margin: const EdgeInsets.all(5),
+                    decoration: BoxDecoration(
+                      color: selected ? AppColors.navActive : Colors.transparent,
+                      borderRadius: BorderRadius.circular(14),
+                    ),
+                    child: Column(
+                      mainAxisAlignment: MainAxisAlignment.center,
+                      children: [
+                        FaIcon(
+                          item.icon,
+                          size: 18,
+                          color: selected
+                              ? AppColors.navBg
+                              : AppColors.navInactive,
+                        ),
+                        const SizedBox(height: 2),
+                        Text(
+                          item.label,
+                          style: TextStyle(
+                            fontSize: 9,
+                            fontWeight: selected
+                                ? FontWeight.w700
+                                : FontWeight.w500,
+                            color: selected
+                                ? AppColors.navBg
+                                : AppColors.navInactive,
                           ),
                         ),
-                      ),
-                      const Spacer(),
-                      FaIcon(
-                        item.icon,
-                        size: 20,
-                        color: selected ? _navSelected : _navUnselected,
-                      ),
-                      const SizedBox(height: 3),
-                      Text(
-                        item.label,
-                        style: TextStyle(
-                          fontSize: 10,
-                          fontWeight: selected
-                              ? FontWeight.w600
-                              : FontWeight.w400,
-                          color: selected ? _navSelected : _navUnselected,
-                        ),
-                      ),
-                      const Spacer(),
-                    ],
+                      ],
+                    ),
                   ),
                 ),
               );

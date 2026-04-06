@@ -9,19 +9,20 @@ import '../../data/models/due_model.dart';
 import '../state/app_settings_provider.dart';
 import '../state/dues_provider.dart';
 import 'person_dues_screen.dart';
+import '../../core/theme/app_colors.dart';
 
 // ── Palette ────────────────────────────────────────────────────────────────────
 
-const _bg = Color(0xFFFAF8F5);
-const _card = Colors.white;
-const _surface2 = Color(0xFFFDF5ED);
-const _border = Color(0xFFEDE6DC);
-const _primary = Color(0xFFF97316);
-const _textPrimary = Color(0xFF1C1917);
-const _textSecondary = Color(0xFF78716C);
-const _textTertiary = Color(0xFFA8A29E);
-const _green = Color(0xFF16A34A);
-const _red = Color(0xFFDC2626);
+const _bg            = AppColors.bg;
+const _card          = AppColors.surface;
+const _surface2      = AppColors.surface2;
+const _border        = AppColors.border;
+const _primary       = AppColors.primary;
+const _textPrimary   = AppColors.textPrimary;
+const _textSecondary = AppColors.textSecondary;
+const _textTertiary  = AppColors.textTertiary;
+const _green         = AppColors.green;
+const _red           = AppColors.red;
 
 // ── Avatar helpers ─────────────────────────────────────────────────────────────
 
@@ -39,8 +40,6 @@ const _avatarGradients = [
 
 List<Color> _avatarGradient(String name) =>
     _avatarGradients[name.hashCode.abs() % _avatarGradients.length];
-
-Color _avatarColor(String name) => _avatarGradient(name)[0];
 
 String _initials(String name) {
   final parts = name.trim().split(RegExp(r'\s+'));
@@ -150,7 +149,7 @@ class _DuesScreenState extends State<DuesScreen> {
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle_outline_rounded,
-                color: _primary, size: 24),
+                color: _textPrimary, size: 24),
             tooltip: 'Add Due',
             onPressed: () => _openAddSheet(context),
           ),
@@ -387,7 +386,7 @@ class _SummaryCard extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF0F172A).withOpacity(0.55),
+              color: const Color(0xFF0F172A).withValues(alpha:0.55),
               blurRadius: 22,
               offset: const Offset(0, 8),
             ),
@@ -404,7 +403,7 @@ class _SummaryCard extends StatelessWidget {
                 height: 160,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: netColor.withOpacity(0.07),
+                  color: netColor.withValues(alpha:0.07),
                 ),
               ),
             ),
@@ -421,12 +420,12 @@ class _SummaryCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: _primary.withOpacity(0.22),
+                          color: _surface2,
                           borderRadius: BorderRadius.circular(9),
                         ),
                         child: const Icon(
                           Icons.account_balance_wallet_rounded,
-                          color: _primary,
+                          color: _textSecondary,
                           size: 14,
                         ),
                       ),
@@ -445,10 +444,10 @@ class _SummaryCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: netColor.withOpacity(0.16),
+                          color: netColor.withValues(alpha:0.16),
                           borderRadius: BorderRadius.circular(20),
                           border: Border.all(
-                              color: netColor.withOpacity(0.35), width: 1),
+                              color: netColor.withValues(alpha:0.35), width: 1),
                         ),
                         child: Text(
                           isPositive ? '▲ ahead' : '▼ behind',
@@ -593,14 +592,14 @@ class _FilterPill extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
-    final accent = color ?? _primary;
+    final accent = color ?? _textPrimary;
     return GestureDetector(
       onTap: onTap,
       child: AnimatedContainer(
         duration: const Duration(milliseconds: 180),
         padding: const EdgeInsets.symmetric(horizontal: 10, vertical: 6),
         decoration: BoxDecoration(
-          color: selected ? accent.withOpacity(0.10) : _card,
+          color: selected ? accent.withValues(alpha:0.10) : _card,
           borderRadius: BorderRadius.circular(20),
           border: Border.all(
             color: selected ? accent : _border,
@@ -625,7 +624,7 @@ class _FilterPill extends StatelessWidget {
                   const EdgeInsets.symmetric(horizontal: 6, vertical: 1),
               decoration: BoxDecoration(
                 color: selected
-                    ? accent.withOpacity(0.15)
+                    ? accent.withValues(alpha:0.15)
                     : const Color(0xFFF0EDE9),
                 borderRadius: BorderRadius.circular(10),
               ),
@@ -669,7 +668,6 @@ class _PersonCard extends StatelessWidget {
     final isPositiveNet = net >= 0;
     final accentColor =
         isSettled ? _textTertiary : (isPositiveNet ? _green : _red);
-    final avatarColor = isSettled ? _textTertiary : _avatarColor(name);
     final gradient = _avatarGradient(name);
 
     // Last transaction description
@@ -704,7 +702,7 @@ class _PersonCard extends StatelessWidget {
               ? null
               : [
                   BoxShadow(
-                    color: Colors.black.withOpacity(0.04),
+                    color: Colors.black.withValues(alpha:0.04),
                     blurRadius: 8,
                     offset: const Offset(0, 2),
                   ),
@@ -738,7 +736,7 @@ class _PersonCard extends StatelessWidget {
                           begin: Alignment.topLeft,
                           end: Alignment.bottomRight,
                         ),
-                  color: isSettled ? _textTertiary.withOpacity(0.15) : null,
+                  color: isSettled ? _textTertiary.withValues(alpha:0.15) : null,
                   borderRadius: BorderRadius.circular(12),
                 ),
                 child: Center(
@@ -802,7 +800,7 @@ class _PersonCard extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 6, vertical: 2),
                     decoration: BoxDecoration(
-                      color: accentColor.withOpacity(0.10),
+                      color: accentColor.withValues(alpha:0.10),
                       borderRadius: BorderRadius.circular(6),
                     ),
                     child: Text(
@@ -936,10 +934,10 @@ class _EmptyState extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(20),
             decoration: BoxDecoration(
-              color: _primary.withOpacity(0.08),
+              color: _surface2,
               shape: BoxShape.circle,
             ),
-            child: Icon(icon, size: 36, color: _primary),
+            child: Icon(icon, size: 36, color: _textSecondary),
           ),
           const SizedBox(height: 16),
           Text(
@@ -1195,7 +1193,7 @@ class _AddDueSheetState extends State<_AddDueSheet> {
                 style: ElevatedButton.styleFrom(
                   backgroundColor: _type == 'lent' ? _green : _red,
                   disabledBackgroundColor:
-                      (_type == 'lent' ? _green : _red).withOpacity(0.45),
+                      (_type == 'lent' ? _green : _red).withValues(alpha:0.45),
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   elevation: 0,
                   shape: RoundedRectangleBorder(
@@ -1279,10 +1277,10 @@ class _TypeToggleBtn extends StatelessWidget {
           duration: const Duration(milliseconds: 180),
           padding: const EdgeInsets.symmetric(vertical: 10),
           decoration: BoxDecoration(
-            color: selected ? color.withOpacity(0.12) : Colors.transparent,
+            color: selected ? color.withValues(alpha:0.12) : Colors.transparent,
             borderRadius: BorderRadius.circular(9),
             border: selected
-                ? Border.all(color: color.withOpacity(0.4))
+                ? Border.all(color: color.withValues(alpha:0.4))
                 : null,
           ),
           child: Row(
@@ -1457,7 +1455,7 @@ class _PeopleAnalyticsCard extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF7C2D12).withOpacity(0.55),
+              color: const Color(0xFF7C2D12).withValues(alpha:0.55),
               blurRadius: 22,
               offset: const Offset(0, 8),
             ),
@@ -1474,7 +1472,7 @@ class _PeopleAnalyticsCard extends StatelessWidget {
                 height: 130,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.05),
+                  color: Colors.white.withValues(alpha:0.05),
                 ),
               ),
             ),
@@ -1490,7 +1488,7 @@ class _PeopleAnalyticsCard extends StatelessWidget {
                       Container(
                         padding: const EdgeInsets.all(6),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.18),
+                          color: Colors.white.withValues(alpha:0.18),
                           borderRadius: BorderRadius.circular(9),
                         ),
                         child: const Icon(Icons.people_rounded,
@@ -1511,7 +1509,7 @@ class _PeopleAnalyticsCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 3),
                         decoration: BoxDecoration(
-                          color: Colors.white.withOpacity(0.18),
+                          color: Colors.white.withValues(alpha:0.18),
                           borderRadius: BorderRadius.circular(20),
                         ),
                         child: Text(
@@ -1607,7 +1605,7 @@ class _DuesAnalyticsCard extends StatelessWidget {
           ),
           boxShadow: [
             BoxShadow(
-              color: const Color(0xFF312E81).withOpacity(0.55),
+              color: const Color(0xFF312E81).withValues(alpha:0.55),
               blurRadius: 22,
               offset: const Offset(0, 8),
             ),
@@ -1624,7 +1622,7 @@ class _DuesAnalyticsCard extends StatelessWidget {
                 height: 110,
                 decoration: BoxDecoration(
                   shape: BoxShape.circle,
-                  color: Colors.white.withOpacity(0.06),
+                  color: Colors.white.withValues(alpha:0.06),
                 ),
               ),
             ),
@@ -1640,7 +1638,7 @@ class _DuesAnalyticsCard extends StatelessWidget {
                         Container(
                           padding: const EdgeInsets.all(6),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.18),
+                            color: Colors.white.withValues(alpha:0.18),
                             borderRadius: BorderRadius.circular(9),
                           ),
                           child: const Icon(Icons.bar_chart_rounded,
@@ -1661,7 +1659,7 @@ class _DuesAnalyticsCard extends StatelessWidget {
                           padding: const EdgeInsets.symmetric(
                               horizontal: 8, vertical: 3),
                           decoration: BoxDecoration(
-                            color: Colors.white.withOpacity(0.14),
+                            color: Colors.white.withValues(alpha:0.14),
                             borderRadius: BorderRadius.circular(20),
                           ),
                           child: Text(
@@ -1735,7 +1733,7 @@ class _DuesAnalyticsCard extends StatelessWidget {
                                   fontSize: 11,
                                   color: overdueCount > 0
                                       ? const Color(0xFFFCA5A5)
-                                          .withOpacity(0.7)
+                                          .withValues(alpha:0.7)
                                       : Colors.white38,
                                 ),
                               ),
@@ -1813,9 +1811,9 @@ class _PersonHighlight extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.all(8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.10),
+        color: Colors.white.withValues(alpha:0.10),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white.withOpacity(0.15)),
+        border: Border.all(color: Colors.white.withValues(alpha:0.15)),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1829,7 +1827,7 @@ class _PersonHighlight extends StatelessWidget {
               gradient: isEmpty
                   ? null
                   : LinearGradient(
-                      colors: [color.withOpacity(0.75), color],
+                      colors: [color.withValues(alpha:0.75), color],
                       begin: Alignment.topLeft,
                       end: Alignment.bottomRight,
                     ),
@@ -1859,7 +1857,7 @@ class _PersonHighlight extends StatelessWidget {
           const SizedBox(height: 2),
           Text(
             label,
-            style: TextStyle(fontSize: 9, color: color.withOpacity(0.85)),
+            style: TextStyle(fontSize: 9, color: color.withValues(alpha:0.85)),
             maxLines: 1,
           ),
         ],

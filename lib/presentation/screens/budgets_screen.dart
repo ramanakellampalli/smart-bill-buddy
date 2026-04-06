@@ -7,18 +7,20 @@ import '../state/app_settings_provider.dart';
 import '../state/bills_provider.dart';
 import '../state/budgets_provider.dart';
 import '../widgets/category_logo.dart';
+import '../../core/theme/app_colors.dart';
 
 // ── Palette ────────────────────────────────────────────────────────────────────
 
-const _bg = Color(0xFFFAF8F5);
-const _card = Colors.white;
-const _border = Color(0xFFEDE6DC);
-const _primary = Color(0xFFF97316);
-const _textPrimary = Color(0xFF1C1917);
-const _textSecondary = Color(0xFF78716C);
-const _textTertiary = Color(0xFFA8A29E);
-const _green = Color(0xFF16A34A);
-const _red = Color(0xFFDC2626);
+const _bg            = AppColors.bg;
+const _card          = AppColors.surface;
+const _surface2      = AppColors.surface2;
+const _border        = AppColors.border;
+const _primary       = AppColors.primary;
+const _textPrimary   = AppColors.textPrimary;
+const _textSecondary = AppColors.textSecondary;
+const _textTertiary  = AppColors.textTertiary;
+const _green         = AppColors.green;
+const _red           = AppColors.red;
 
 // ── Category metadata ─────────────────────────────────────────────────────────
 
@@ -121,7 +123,7 @@ class BudgetsScreen extends StatelessWidget {
         actions: [
           IconButton(
             icon: const Icon(Icons.add_circle_outline_rounded,
-                color: _primary, size: 24),
+                color: _textPrimary, size: 24),
             tooltip: 'Add Budget',
             onPressed: bp.isLoading || bp.budgets.length >= _allCats.length
                 ? null
@@ -215,9 +217,9 @@ class _ErrorBanner extends StatelessWidget {
       margin: const EdgeInsets.only(bottom: 12),
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: _red.withOpacity(0.06),
+        color: _red.withValues(alpha:0.06),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _red.withOpacity(0.2)),
+        border: Border.all(color: _red.withValues(alpha:0.2)),
       ),
       child: Row(
         children: [
@@ -251,9 +253,9 @@ class _SummaryCard extends StatelessWidget {
   @override
   Widget build(BuildContext context) {
     return Container(
-      padding: const EdgeInsets.all(22),
+      padding: const EdgeInsets.symmetric(horizontal: 16, vertical: 14),
       decoration: BoxDecoration(
-        borderRadius: BorderRadius.circular(20),
+        borderRadius: BorderRadius.circular(16),
         gradient: const LinearGradient(
           colors: [Color(0xFF292524), Color(0xFF57534E)],
           begin: Alignment.topLeft,
@@ -261,64 +263,69 @@ class _SummaryCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1C1917).withOpacity(0.22),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
+            color: const Color(0xFF1C1917).withValues(alpha:0.18),
+            blurRadius: 12,
+            offset: const Offset(0, 4),
           ),
         ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
-          const Text(
-            'Total Budget',
-            style: TextStyle(
-              fontSize: 12,
-              color: Colors.white70,
-              fontWeight: FontWeight.w500,
-              letterSpacing: 0.3,
-            ),
-          ),
-          const SizedBox(height: 6),
-          Text(
-            budgeted,
-            style: const TextStyle(
-              fontSize: 34,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: -1,
-            ),
-          ),
-          const SizedBox(height: 20),
           Row(
+            mainAxisAlignment: MainAxisAlignment.spaceBetween,
+            crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              Expanded(child: _StatChip(label: 'Spent', value: spent)),
-              const SizedBox(width: 10),
-              Expanded(child: _StatChip(label: 'Remaining', value: remaining)),
+              Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  const Text(
+                    'Total Budget',
+                    style: TextStyle(fontSize: 11, color: Colors.white60),
+                  ),
+                  const SizedBox(height: 2),
+                  Text(
+                    budgeted,
+                    style: const TextStyle(
+                      fontSize: 22,
+                      fontWeight: FontWeight.w700,
+                      color: Colors.white,
+                      letterSpacing: -0.5,
+                    ),
+                  ),
+                ],
+              ),
+              Row(
+                children: [
+                  _InlineChip(label: 'Spent', value: spent),
+                  const SizedBox(width: 8),
+                  _InlineChip(label: 'Left', value: remaining),
+                ],
+              ),
             ],
           ),
-          const SizedBox(height: 18),
+          const SizedBox(height: 12),
           Row(
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             children: [
               const Text('Spent so far',
-                  style: TextStyle(fontSize: 11, color: Colors.white60)),
+                  style: TextStyle(fontSize: 10, color: Colors.white60)),
               Text(
                 '${(progress * 100).toStringAsFixed(0)}%',
                 style: const TextStyle(
-                  fontSize: 11,
+                  fontSize: 10,
                   color: Colors.white,
                   fontWeight: FontWeight.w700,
                 ),
               ),
             ],
           ),
-          const SizedBox(height: 6),
+          const SizedBox(height: 5),
           ClipRRect(
-            borderRadius: BorderRadius.circular(6),
+            borderRadius: BorderRadius.circular(4),
             child: LinearProgressIndicator(
               value: progress,
-              minHeight: 7,
+              minHeight: 5,
               backgroundColor: Colors.white24,
               valueColor:
                   const AlwaysStoppedAnimation<Color>(Color(0xFFF97316)),
@@ -330,33 +337,25 @@ class _SummaryCard extends StatelessWidget {
   }
 }
 
-class _StatChip extends StatelessWidget {
+class _InlineChip extends StatelessWidget {
   final String label;
   final String value;
-  const _StatChip({required this.label, required this.value});
+  const _InlineChip({required this.label, required this.value});
 
   @override
   Widget build(BuildContext context) {
-    return Container(
-      padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
-      decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
-        borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: Colors.white24),
-      ),
-      child: Column(
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          Text(label,
-              style: const TextStyle(fontSize: 11, color: Colors.white70)),
-          const SizedBox(height: 5),
-          Text(value,
-              style: const TextStyle(
-                  fontSize: 15,
-                  fontWeight: FontWeight.w700,
-                  color: Colors.white)),
-        ],
-      ),
+    return Column(
+      crossAxisAlignment: CrossAxisAlignment.end,
+      children: [
+        Text(label,
+            style: const TextStyle(fontSize: 10, color: Colors.white60)),
+        const SizedBox(height: 2),
+        Text(value,
+            style: const TextStyle(
+                fontSize: 13,
+                fontWeight: FontWeight.w700,
+                color: Colors.white)),
+      ],
     );
   }
 }
@@ -399,11 +398,11 @@ class _BudgetCard extends StatelessWidget {
           color: _card,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-            color: isOver ? _red.withOpacity(0.3) : _border,
+            color: isOver ? _red.withValues(alpha:0.3) : _border,
           ),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha:0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -456,7 +455,7 @@ class _BudgetCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 8, vertical: 2),
                         decoration: BoxDecoration(
-                          color: _red.withOpacity(0.10),
+                          color: _red.withValues(alpha:0.10),
                           borderRadius: BorderRadius.circular(6),
                         ),
                         child: const Text(
@@ -530,13 +529,13 @@ class _EmptyState extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: _primary.withOpacity(0.08),
+                color: _surface2,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.account_balance_wallet_rounded,
                 size: 36,
-                color: _primary,
+                color: _textSecondary,
               ),
             ),
             const SizedBox(height: 16),
@@ -706,10 +705,10 @@ class _BudgetSheetState extends State<_BudgetSheet> {
                       padding: const EdgeInsets.symmetric(
                           horizontal: 12, vertical: 6),
                       decoration: BoxDecoration(
-                        color: _red.withOpacity(0.08),
+                        color: _red.withValues(alpha:0.08),
                         borderRadius: BorderRadius.circular(10),
                         border:
-                            Border.all(color: _red.withOpacity(0.2)),
+                            Border.all(color: _red.withValues(alpha:0.2)),
                       ),
                       child: const Text(
                         'Delete',
@@ -780,7 +779,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
                           horizontal: 12, vertical: 8),
                       decoration: BoxDecoration(
                         color: sel
-                            ? _primary.withOpacity(0.10)
+                            ? _primary.withValues(alpha:0.10)
                             : _card,
                         borderRadius: BorderRadius.circular(12),
                         border: Border.all(
@@ -870,7 +869,7 @@ class _BudgetSheetState extends State<_BudgetSheet> {
               child: ElevatedButton(
                 onPressed: saving ? null : _save,
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: _primary,
+                  backgroundColor: AppColors.heroCard,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   elevation: 0,

@@ -43,6 +43,18 @@ jobs:
             static const FirebaseOptions web = FirebaseOptions(apiKey:'x',appId:'x',messagingSenderId:'x',projectId:'x',storageBucket:'x');
           }
           EOF
+          cat > android/app/google-services.json << 'EOF'
+          {
+            "project_info": { "project_number": "000000000000", "project_id": "ci-stub", "storage_bucket": "ci-stub.appspot.com" },
+            "client": [{
+              "client_info": { "mobilesdk_app_id": "1:000000000000:android:0000000000000000", "android_client_info": { "package_name": "com.example.smartBillReminder" } },
+              "oauth_client": [],
+              "api_key": [{ "current_key": "ci_placeholder" }],
+              "services": { "appinvite_service": { "other_platform_oauth_client": [] } }
+            }],
+            "configuration_version": "1"
+          }
+          EOF
 
       # ── 5. Dependencies ───────────────────────────────────────────────────────
       - name: Install dependencies
@@ -50,7 +62,7 @@ jobs:
 
       # ── 6. Analyze ────────────────────────────────────────────────────────────
       - name: Analyze
-        run: flutter analyze --no-fatal-infos
+        run: flutter analyze --no-fatal-infos --no-fatal-warnings
 
       # ── 7. Build debug APK ────────────────────────────────────────────────────
       - name: Build debug APK

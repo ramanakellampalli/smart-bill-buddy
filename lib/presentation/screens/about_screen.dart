@@ -2,16 +2,18 @@ import 'package:flutter/material.dart';
 import 'package:package_info_plus/package_info_plus.dart';
 import 'package:url_launcher/url_launcher.dart';
 import '../widgets/auth_guard.dart';
+import '../../core/theme/app_colors.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 
-const _bg = Color(0xFFFAF8F5);
-const _card = Colors.white;
-const _border = Color(0xFFEDE6DC);
-const _primary = Color(0xFFF97316);
-const _textPrimary = Color(0xFF1C1917);
-const _textSecondary = Color(0xFF78716C);
-const _textTertiary = Color(0xFFA8A29E);
+const _bg            = AppColors.bg;
+const _card          = AppColors.surface;
+const _surface2      = AppColors.surface2;
+const _border        = AppColors.border;
+const _primary       = AppColors.primary;
+const _textPrimary   = AppColors.textPrimary;
+const _textSecondary = AppColors.textSecondary;
+const _textTertiary  = AppColors.textTertiary;
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -230,7 +232,7 @@ class _AppInfoCard extends StatelessWidget {
         borderRadius: BorderRadius.circular(20),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha:0.04),
             blurRadius: 10,
             offset: const Offset(0, 2),
           ),
@@ -242,9 +244,9 @@ class _AppInfoCard extends StatelessWidget {
             width: 64,
             height: 64,
             decoration: BoxDecoration(
-              color: _primary.withOpacity(0.10),
+              color: _primary.withValues(alpha:0.10),
               borderRadius: BorderRadius.circular(20),
-              border: Border.all(color: _primary.withOpacity(0.20)),
+              border: Border.all(color: _border),
             ),
             child: Icon(icon, color: _primary, size: 32),
           ),
@@ -338,10 +340,10 @@ class _FeatureItem extends StatelessWidget {
           width: 40,
           height: 40,
           decoration: BoxDecoration(
-            color: _primary.withOpacity(0.10),
+            color: _surface2,
             borderRadius: BorderRadius.circular(12),
           ),
-          child: Icon(icon, color: _primary, size: 20),
+          child: Icon(icon, color: _textSecondary, size: 20),
         ),
         const SizedBox(width: 16),
         Expanded(
@@ -389,8 +391,8 @@ class _InfoItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      splashColor: _primary.withOpacity(0.06),
-      highlightColor: _primary.withOpacity(0.04),
+      splashColor: _primary.withValues(alpha:0.06),
+      highlightColor: _primary.withValues(alpha:0.04),
       borderRadius: BorderRadius.circular(8),
       child: Padding(
         padding: const EdgeInsets.all(8),
@@ -439,8 +441,8 @@ class _LinkItem extends StatelessWidget {
   Widget build(BuildContext context) {
     return InkWell(
       onTap: onTap,
-      splashColor: _primary.withOpacity(0.06),
-      highlightColor: _primary.withOpacity(0.04),
+      splashColor: _primary.withValues(alpha:0.06),
+      highlightColor: _primary.withValues(alpha:0.04),
       borderRadius: BorderRadius.circular(12),
       child: Padding(
         padding: const EdgeInsets.all(8),

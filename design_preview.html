@@ -1,0 +1,1105 @@
+<!DOCTYPE html>
+<html lang="en">
+<head>
+<meta charset="UTF-8"/>
+<meta name="viewport" content="width=device-width,initial-scale=1.0"/>
+<title>Bill Buddy — Design Directions</title>
+<link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;500;600;700;800;900&family=DM+Sans:wght@400;500;600;700&family=Space+Grotesk:wght@400;500;600;700&display=swap" rel="stylesheet"/>
+<style>
+*,*::before,*::after{box-sizing:border-box;margin:0;padding:0}
+body{background:#080C14;font-family:'Inter',sans-serif;color:#fff;padding:40px 16px 80px;min-height:100vh}
+
+h1{text-align:center;font-size:22px;font-weight:800;margin-bottom:6px;letter-spacing:-.3px}
+.sub{text-align:center;color:#4A5568;font-size:13px;margin-bottom:32px}
+
+.tabs{display:flex;gap:8px;justify-content:center;flex-wrap:wrap;margin-bottom:40px}
+.tab{padding:8px 18px;border-radius:100px;border:1.5px solid #1A2035;background:transparent;
+  color:#4A5568;font-family:'Inter',sans-serif;font-size:12px;font-weight:600;cursor:pointer;transition:.15s}
+.tab.active,.tab:hover{background:#fff;border-color:#fff;color:#000}
+
+.grid{display:flex;gap:28px;justify-content:center;flex-wrap:wrap;align-items:flex-start}
+
+/* phone */
+.pw{display:flex;flex-direction:column;align-items:center;gap:10px}
+.ptag{font-size:10px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;padding:3px 10px;border-radius:100px}
+.phone{width:290px;background:#0E1420;border-radius:42px;padding:11px;
+  box-shadow:0 24px 60px rgba(0,0,0,.7),inset 0 0 0 1px #1E2A3A}
+.screen{border-radius:32px;overflow:hidden;height:600px;display:flex;flex-direction:column;position:relative}
+.plbl{font-size:10px;font-weight:600;color:#2D3748;text-transform:uppercase;letter-spacing:.8px;text-align:center}
+
+.page{display:none}
+.page.show{display:flex;justify-content:center;gap:28px;flex-wrap:wrap;align-items:flex-start}
+
+/* hidden svg icons */
+svg.ic{width:16px;height:16px;display:block;flex-shrink:0}
+svg.ic-sm{width:14px;height:14px;display:block;flex-shrink:0}
+svg.ic-lg{width:20px;height:20px;display:block;flex-shrink:0}
+
+/* ═══════════════════════════════════════════════
+   THEME 1: GLASSMORPHISM
+   Frosted cards over deep gradient bg, vibrant purple
+═══════════════════════════════════════════════ */
+.glass .screen{background:linear-gradient(145deg,#1A0533 0%,#0D1B4B 50%,#06193A 100%)}
+.glass .sbar{height:38px;display:flex;align-items:center;justify-content:space-between;padding:8px 18px 0;flex-shrink:0}
+.glass .sbar-t{font-size:12px;font-weight:700;color:rgba(255,255,255,.9)}
+.glass .sbar-r{font-size:11px;color:rgba(255,255,255,.5)}
+.glass .abar{padding:4px 18px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0}
+.glass .abar-title{font-size:18px;font-weight:700;color:#fff}
+.glass .abar-btn{width:32px;height:32px;border-radius:50%;
+  background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.2);
+  display:flex;align-items:center;justify-content:center;backdrop-filter:blur(10px)}
+.glass .abar-btn svg{fill:rgba(255,255,255,.8)}
+.glass .body{flex:1;overflow:hidden;padding:0 14px;display:flex;flex-direction:column;gap:10px}
+
+.glass .hero{
+  background:rgba(255,255,255,.08);
+  border:1px solid rgba(255,255,255,.15);
+  border-radius:20px;padding:18px;
+  backdrop-filter:blur(20px);flex-shrink:0
+}
+.glass .h-eye{font-size:10px;font-weight:600;color:rgba(255,255,255,.5);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px}
+.glass .h-amt{font-size:32px;font-weight:800;color:#fff;letter-spacing:-1px;margin-bottom:2px}
+.glass .h-sub{font-size:11px;color:rgba(255,255,255,.45);margin-bottom:12px}
+.glass .h-bar{height:4px;background:rgba(255,255,255,.12);border-radius:100px;margin-bottom:5px;position:relative}
+.glass .h-fill{position:absolute;left:0;top:0;bottom:0;width:64%;
+  background:linear-gradient(90deg,#A78BFA,#C4B5FD);border-radius:100px}
+.glass .h-meta{display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,.4)}
+.glass .h-chips{display:flex;gap:6px;margin-top:10px}
+.glass .h-chip{background:rgba(255,255,255,.1);border:1px solid rgba(255,255,255,.15);
+  border-radius:100px;padding:3px 10px;font-size:10px;font-weight:600;color:rgba(255,255,255,.8)}
+
+.glass .snap-row{display:flex;gap:8px}
+.glass .snap{flex:1;background:rgba(255,255,255,.07);border:1px solid rgba(255,255,255,.12);
+  border-radius:16px;padding:12px;backdrop-filter:blur(10px)}
+.glass .sn-l{font-size:10px;color:rgba(255,255,255,.4);margin-bottom:3px}
+.glass .sn-v{font-size:15px;font-weight:700;color:#fff}
+
+.glass .sec{font-size:10px;font-weight:700;color:rgba(255,255,255,.35);text-transform:uppercase;letter-spacing:.8px}
+.glass .card{background:rgba(255,255,255,.06);border:1px solid rgba(255,255,255,.1);
+  border-radius:18px;padding:0 14px;backdrop-filter:blur(10px)}
+.glass .crow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid rgba(255,255,255,.07)}
+.glass .crow:last-child{border-bottom:none}
+.glass .cico{width:32px;height:32px;border-radius:10px;background:rgba(167,139,250,.2);
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.glass .cico svg{fill:#A78BFA}
+.glass .cico.g{background:rgba(52,211,153,.15)}
+.glass .cico.g svg{fill:#34D399}
+.glass .cico.r{background:rgba(248,113,113,.15)}
+.glass .cico.r svg{fill:#F87171}
+.glass .ct{font-size:12px;font-weight:600;color:rgba(255,255,255,.9)}
+.glass .cs{font-size:10px;color:rgba(255,255,255,.35);margin-top:1px}
+.glass .cr{margin-left:auto;text-align:right}
+.glass .ca{font-size:12px;font-weight:700;color:#fff}
+
+.glass .bdg{display:inline-flex;padding:2px 7px;border-radius:100px;font-size:9px;font-weight:700;margin-top:2px}
+.glass .bdg-r{background:rgba(248,113,113,.15);color:#F87171}
+.glass .bdg-g{background:rgba(52,211,153,.15);color:#34D399}
+.glass .bdg-a{background:rgba(251,191,36,.15);color:#FBBF24}
+.glass .bdg-p{background:rgba(167,139,250,.15);color:#A78BFA}
+
+.glass .nav{padding:8px 12px 14px;flex-shrink:0}
+.glass .nav-inner{background:rgba(255,255,255,.08);border:1px solid rgba(255,255,255,.12);
+  border-radius:22px;height:54px;display:flex;align-items:center;
+  backdrop-filter:blur(20px)}
+.glass .ni{display:flex;flex-direction:column;align-items:center;gap:2px;
+  flex:1;padding:6px 4px;border-radius:16px}
+.glass .ni.act{background:rgba(167,139,250,.25)}
+.glass .ni svg{fill:rgba(255,255,255,.3)}
+.glass .ni.act svg{fill:#C4B5FD}
+.glass .ni span{font-size:8px;font-weight:600;color:rgba(255,255,255,.3)}
+.glass .ni.act span{color:#C4B5FD}
+
+/* ═══════════════════════════════════════════════
+   THEME 2: BOLD EDITORIAL
+   Black & white base, single electric accent, huge type
+═══════════════════════════════════════════════ */
+.bold .screen{background:#F5F5F0;font-family:'Space Grotesk',sans-serif}
+.bold .sbar{height:38px;display:flex;align-items:center;justify-content:space-between;padding:8px 18px 0;flex-shrink:0;background:#F5F5F0}
+.bold .sbar-t{font-size:12px;font-weight:700;color:#111;font-family:'Space Grotesk',sans-serif}
+.bold .sbar-r{font-size:11px;color:#999}
+.bold .abar{padding:4px 18px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:#F5F5F0}
+.bold .abar-title{font-size:22px;font-weight:700;color:#111;font-family:'Space Grotesk',sans-serif}
+.bold .abar-btn{width:32px;height:32px;border-radius:8px;background:#111;
+  display:flex;align-items:center;justify-content:center}
+.bold .abar-btn svg{fill:#fff}
+.bold .body{flex:1;overflow:hidden;padding:0 14px;display:flex;flex-direction:column;gap:8px}
+
+/* Big black hero — no gradient, just bold numbers */
+.bold .hero{background:#111;border-radius:20px;padding:20px;flex-shrink:0;position:relative;overflow:hidden}
+.bold .hero::after{content:'';position:absolute;right:-20px;top:-20px;
+  width:100px;height:100px;border-radius:50%;background:#C8FF00;opacity:.15}
+.bold .h-eye{font-size:9px;font-weight:700;color:rgba(255,255,255,.4);text-transform:uppercase;letter-spacing:1px;margin-bottom:4px;font-family:'Space Grotesk',sans-serif}
+.bold .h-amt{font-size:36px;font-weight:700;color:#fff;letter-spacing:-1.5px;line-height:1;margin-bottom:4px;font-family:'Space Grotesk',sans-serif}
+.bold .h-sub{font-size:11px;color:rgba(255,255,255,.4);margin-bottom:14px;font-family:'Space Grotesk',sans-serif}
+.bold .h-bar{height:3px;background:rgba(255,255,255,.1);border-radius:100px;margin-bottom:5px;position:relative}
+.bold .h-fill{position:absolute;left:0;top:0;bottom:0;width:64%;background:#C8FF00;border-radius:100px}
+.bold .h-meta{display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,.35);font-family:'Space Grotesk',sans-serif}
+.bold .h-chips{display:flex;gap:6px;margin-top:12px}
+.bold .h-chip{background:rgba(255,255,255,.1);border-radius:6px;padding:4px 10px;
+  font-size:10px;font-weight:700;color:rgba(255,255,255,.7);font-family:'Space Grotesk',sans-serif}
+.bold .h-chip.warn{background:rgba(200,255,0,.15);color:#C8FF00}
+
+.bold .snap-row{display:flex;gap:6px}
+.bold .snap{flex:1;background:#fff;border-radius:14px;padding:12px;
+  border:2px solid #E8E8E0}
+.bold .sn-l{font-size:9px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.6px;margin-bottom:4px;font-family:'Space Grotesk',sans-serif}
+.bold .sn-v{font-size:16px;font-weight:700;color:#111;font-family:'Space Grotesk',sans-serif}
+
+.bold .sec{font-size:9px;font-weight:700;color:#999;text-transform:uppercase;letter-spacing:.8px;font-family:'Space Grotesk',sans-serif}
+.bold .card{background:#fff;border-radius:16px;padding:0 14px;border:2px solid #E8E8E0}
+.bold .crow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:2px solid #F0F0E8}
+.bold .crow:last-child{border-bottom:none}
+.bold .cico{width:32px;height:32px;border-radius:8px;background:#F0F0E8;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.bold .cico svg{fill:#555}
+.bold .cico.g{background:#EFFFEE}
+.bold .cico.g svg{fill:#15803D}
+.bold .cico.r{background:#FFF0F0}
+.bold .cico.r svg{fill:#DC2626}
+.bold .ct{font-size:12px;font-weight:600;color:#111;font-family:'Space Grotesk',sans-serif}
+.bold .cs{font-size:10px;color:#AAA;margin-top:1px;font-family:'Space Grotesk',sans-serif}
+.bold .cr{margin-left:auto;text-align:right}
+.bold .ca{font-size:12px;font-weight:700;color:#111;font-family:'Space Grotesk',sans-serif}
+.bold .bdg{display:inline-flex;padding:2px 7px;border-radius:5px;font-size:9px;font-weight:700;margin-top:2px;font-family:'Space Grotesk',sans-serif}
+.bold .bdg-r{background:#FFF0F0;color:#DC2626}
+.bold .bdg-g{background:#F0FFF0;color:#15803D}
+.bold .bdg-a{background:#FFFCE0;color:#92400E;background:#C8FF00;color:#000}
+.bold .bdg-b{background:#F0F0E8;color:#555}
+
+.bold .nav{padding:8px 12px 14px;flex-shrink:0;background:#F5F5F0}
+.bold .nav-inner{background:#111;border-radius:18px;height:54px;display:flex;align-items:center}
+.bold .ni{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;padding:6px 4px;border-radius:12px}
+.bold .ni.act{background:#C8FF00}
+.bold .ni svg{fill:rgba(255,255,255,.35)}
+.bold .ni.act svg{fill:#000}
+.bold .ni span{font-size:8px;font-weight:600;color:rgba(255,255,255,.35);font-family:'Space Grotesk',sans-serif}
+.bold .ni.act span{color:#000}
+
+/* ═══════════════════════════════════════════════
+   THEME 3: SOFT CARD (Monzo/Revolut 2025 light)
+   Pure white surfaces, heavy type, soft pastels, no hard borders
+═══════════════════════════════════════════════ */
+.soft .screen{background:#FAFAFA;font-family:'DM Sans',sans-serif}
+.soft .sbar{height:38px;display:flex;align-items:center;justify-content:space-between;padding:8px 18px 0;flex-shrink:0;background:#FAFAFA}
+.soft .sbar-t{font-size:12px;font-weight:700;color:#1A1A2E;font-family:'DM Sans',sans-serif}
+.soft .sbar-r{font-size:11px;color:#C4C4D4}
+.soft .abar{padding:4px 18px 10px;display:flex;align-items:flex-end;justify-content:space-between;flex-shrink:0;background:#FAFAFA}
+.soft .abar-title{font-size:13px;font-weight:500;color:#8888A4;font-family:'DM Sans',sans-serif}
+.soft .abar-big{font-size:22px;font-weight:700;color:#1A1A2E;font-family:'DM Sans',sans-serif;line-height:1}
+.soft .abar-btn{width:32px;height:32px;border-radius:50%;background:#F0F0F8;
+  display:flex;align-items:center;justify-content:center}
+.soft .abar-btn svg{fill:#8888A4}
+.soft .body{flex:1;overflow:hidden;padding:0 14px;display:flex;flex-direction:column;gap:10px}
+
+/* Hero: big colourful pill/card, no gradient, solid pastel */
+.soft .hero{background:#5B4FEF;border-radius:22px;padding:20px;flex-shrink:0}
+.soft .h-eye{font-size:9px;font-weight:600;color:rgba(255,255,255,.55);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px;font-family:'DM Sans',sans-serif}
+.soft .h-amt{font-size:30px;font-weight:700;color:#fff;letter-spacing:-.8px;margin-bottom:2px;font-family:'DM Sans',sans-serif}
+.soft .h-sub{font-size:11px;color:rgba(255,255,255,.5);margin-bottom:12px;font-family:'DM Sans',sans-serif}
+.soft .h-bar{height:5px;background:rgba(255,255,255,.18);border-radius:100px;margin-bottom:6px;position:relative}
+.soft .h-fill{position:absolute;left:0;top:0;bottom:0;width:64%;background:#fff;border-radius:100px;opacity:.9}
+.soft .h-meta{display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,.45);font-family:'DM Sans',sans-serif}
+.soft .h-chips{display:flex;gap:6px;margin-top:10px}
+.soft .h-chip{background:rgba(255,255,255,.15);border-radius:100px;padding:4px 10px;
+  font-size:10px;font-weight:600;color:rgba(255,255,255,.9);font-family:'DM Sans',sans-serif}
+
+/* Quick stat pills — horizontal row not snap cards */
+.soft .stat-row{display:flex;gap:6px}
+.soft .stat{flex:1;background:#fff;border-radius:16px;padding:12px;
+  box-shadow:0 2px 12px rgba(91,79,239,.06)}
+.soft .st-l{font-size:9px;font-weight:500;color:#B0B0C8;margin-bottom:4px;font-family:'DM Sans',sans-serif}
+.soft .st-v{font-size:15px;font-weight:700;color:#1A1A2E;font-family:'DM Sans',sans-serif}
+.soft .st-badge{display:inline-block;padding:2px 7px;border-radius:100px;font-size:9px;font-weight:600;margin-top:3px}
+.soft .red{background:#FFF0F6;color:#E11D68}
+.soft .grn{background:#F0FFF8;color:#059669}
+
+.soft .sec{font-size:11px;font-weight:600;color:#B0B0C8;font-family:'DM Sans',sans-serif}
+.soft .card{background:#fff;border-radius:18px;padding:0 14px;
+  box-shadow:0 2px 16px rgba(91,79,239,.05)}
+.soft .crow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #F4F4F8}
+.soft .crow:last-child{border-bottom:none}
+.soft .cico{width:34px;height:34px;border-radius:12px;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.soft .cico.p{background:#EEF2FF}
+.soft .cico.p svg{fill:#5B4FEF}
+.soft .cico.g{background:#F0FFF8}
+.soft .cico.g svg{fill:#059669}
+.soft .cico.r{background:#FFF0F6}
+.soft .cico.r svg{fill:#E11D68}
+.soft .ct{font-size:13px;font-weight:600;color:#1A1A2E;font-family:'DM Sans',sans-serif}
+.soft .cs{font-size:10px;color:#C4C4D4;margin-top:1px;font-family:'DM Sans',sans-serif}
+.soft .cr{margin-left:auto;text-align:right}
+.soft .ca{font-size:13px;font-weight:700;color:#1A1A2E;font-family:'DM Sans',sans-serif}
+.soft .bdg{display:inline-flex;padding:2px 7px;border-radius:100px;font-size:9px;font-weight:600;margin-top:2px;font-family:'DM Sans',sans-serif}
+.soft .bdg-r{background:#FFF0F6;color:#E11D68}
+.soft .bdg-g{background:#F0FFF8;color:#059669}
+.soft .bdg-a{background:#FFFBEB;color:#D97706}
+.soft .bdg-p{background:#EEF2FF;color:#5B4FEF}
+
+.soft .nav{padding:8px 12px 14px;flex-shrink:0;background:#FAFAFA}
+.soft .nav-inner{background:#fff;border-radius:22px;height:54px;display:flex;align-items:center;
+  box-shadow:0 4px 20px rgba(91,79,239,.12)}
+.soft .ni{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;padding:6px 4px;border-radius:16px}
+.soft .ni.act{background:#EEF2FF}
+.soft .ni svg{fill:#C4C4D4}
+.soft .ni.act svg{fill:#5B4FEF}
+.soft .ni span{font-size:8px;font-weight:600;color:#C4C4D4;font-family:'DM Sans',sans-serif}
+.soft .ni.act span{color:#5B4FEF;font-weight:700}
+
+/* ═══════════════════════════════════════════════
+   THEME 4: DARK NEON (Coinbase/Phantom vibes)
+   Near-black, electric green accent, tight & dense
+═══════════════════════════════════════════════ */
+.neon .screen{background:#080B0F}
+.neon .sbar{height:38px;display:flex;align-items:center;justify-content:space-between;padding:8px 18px 0;flex-shrink:0;background:#080B0F}
+.neon .sbar-t{font-size:12px;font-weight:700;color:rgba(255,255,255,.8)}
+.neon .sbar-r{font-size:11px;color:#2A3040}
+.neon .abar{padding:4px 18px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:#080B0F}
+.neon .abar-title{font-size:18px;font-weight:700;color:#fff}
+.neon .abar-btn{width:32px;height:32px;border-radius:10px;background:#0E1420;border:1px solid #1A2035;
+  display:flex;align-items:center;justify-content:center}
+.neon .abar-btn svg{fill:#3A4A5A}
+.neon .body{flex:1;overflow:hidden;padding:0 14px;display:flex;flex-direction:column;gap:8px}
+
+/* Hero: full-bleed neon glow card */
+.neon .hero{background:#0E1420;border:1px solid #1A2A40;border-radius:18px;padding:18px;flex-shrink:0;position:relative;overflow:hidden}
+.neon .hero::before{content:'';position:absolute;bottom:-30px;right:-20px;
+  width:120px;height:120px;border-radius:50%;
+  background:radial-gradient(circle,rgba(0,255,136,.15),transparent 70%)}
+.neon .h-eye{font-size:9px;font-weight:600;color:#2A3A50;text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px}
+.neon .h-amt{font-size:30px;font-weight:800;color:#fff;letter-spacing:-1px;margin-bottom:2px}
+.neon .h-sub{font-size:11px;color:#2A3A50;margin-bottom:12px}
+.neon .h-bar{height:3px;background:#0E1A28;border-radius:100px;margin-bottom:5px;position:relative}
+.neon .h-fill{position:absolute;left:0;top:0;bottom:0;width:64%;
+  background:#00FF88;border-radius:100px;
+  box-shadow:0 0 8px rgba(0,255,136,.5)}
+.neon .h-meta{display:flex;justify-content:space-between;font-size:10px;color:#2A3A50}
+.neon .h-chips{display:flex;gap:6px;margin-top:10px}
+.neon .h-chip{background:#0E1A28;border:1px solid #1A2A40;border-radius:8px;
+  padding:3px 10px;font-size:10px;font-weight:600;color:#4A5A70}
+.neon .h-chip.hot{border-color:rgba(0,255,136,.3);color:#00FF88;background:rgba(0,255,136,.05)}
+
+.neon .snap-row{display:flex;gap:6px}
+.neon .snap{flex:1;background:#0E1420;border:1px solid #1A2A40;border-radius:14px;padding:11px}
+.neon .sn-l{font-size:9px;color:#2A3A50;font-weight:600;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.neon .sn-v{font-size:15px;font-weight:700;color:#fff}
+.neon .snap.owe .sn-v{color:#FF5577}
+.neon .snap.earn .sn-v{color:#00FF88}
+
+.neon .sec{font-size:9px;font-weight:600;color:#2A3A50;text-transform:uppercase;letter-spacing:.8px}
+.neon .card{background:#0E1420;border:1px solid #1A2A40;border-radius:16px;padding:0 14px}
+.neon .crow{display:flex;align-items:center;gap:10px;padding:10px 0;border-bottom:1px solid #0D1520}
+.neon .crow:last-child{border-bottom:none}
+.neon .cico{width:32px;height:32px;border-radius:9px;background:#080B0F;border:1px solid #1A2A40;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.neon .cico svg{fill:#3A4A5A}
+.neon .cico.g{border-color:rgba(0,255,136,.2)}
+.neon .cico.g svg{fill:#00CC6E}
+.neon .cico.r{border-color:rgba(255,85,119,.2)}
+.neon .cico.r svg{fill:#FF5577}
+.neon .ct{font-size:12px;font-weight:600;color:rgba(255,255,255,.85)}
+.neon .cs{font-size:10px;color:#2A3A50;margin-top:1px}
+.neon .cr{margin-left:auto;text-align:right}
+.neon .ca{font-size:12px;font-weight:700;color:#fff}
+.neon .bdg{display:inline-flex;padding:2px 7px;border-radius:6px;font-size:9px;font-weight:700;margin-top:2px}
+.neon .bdg-r{background:rgba(255,85,119,.1);color:#FF5577}
+.neon .bdg-g{background:rgba(0,255,136,.08);color:#00FF88}
+.neon .bdg-a{background:rgba(255,200,0,.08);color:#FFC800}
+.neon .bdg-b{background:rgba(80,120,255,.1);color:#5078FF}
+
+.neon .nav{padding:8px 12px 14px;flex-shrink:0;background:#080B0F}
+.neon .nav-inner{background:#0E1420;border:1px solid #1A2A40;border-radius:20px;height:54px;display:flex;align-items:center}
+.neon .ni{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;padding:6px 4px;border-radius:14px}
+.neon .ni.act{background:rgba(0,255,136,.08)}
+.neon .ni svg{fill:#2A3A50}
+.neon .ni.act svg{fill:#00FF88}
+.neon .ni span{font-size:8px;font-weight:600;color:#2A3A50}
+.neon .ni.act span{color:#00FF88}
+
+/* ═══════════════════════════════════════════════
+   THEME 5: CORAL / WARM PREMIUM
+   Off-white, coral-pink accent, very card-heavy, Monzo card feel
+═══════════════════════════════════════════════ */
+.coral .screen{background:#F7F3EF}
+.coral .sbar{height:38px;display:flex;align-items:center;justify-content:space-between;padding:8px 18px 0;flex-shrink:0;background:#F7F3EF}
+.coral .sbar-t{font-size:12px;font-weight:700;color:#1A1210}
+.coral .sbar-r{font-size:11px;color:#C4B8B0}
+.coral .abar{padding:4px 18px 10px;display:flex;align-items:center;justify-content:space-between;flex-shrink:0;background:#F7F3EF}
+.coral .abar-title{font-size:19px;font-weight:700;color:#1A1210}
+.coral .abar-btn{width:32px;height:32px;border-radius:10px;background:#EDE8E3;
+  display:flex;align-items:center;justify-content:center}
+.coral .abar-btn svg{fill:#FF6B4A}
+.coral .body{flex:1;overflow:hidden;padding:0 14px;display:flex;flex-direction:column;gap:10px}
+
+.coral .hero{background:linear-gradient(135deg,#FF6B4A 0%,#FF4079 100%);
+  border-radius:22px;padding:18px;flex-shrink:0;
+  box-shadow:0 12px 32px rgba(255,107,74,.3)}
+.coral .h-eye{font-size:9px;font-weight:600;color:rgba(255,255,255,.6);text-transform:uppercase;letter-spacing:.8px;margin-bottom:3px}
+.coral .h-amt{font-size:30px;font-weight:700;color:#fff;letter-spacing:-.8px;margin-bottom:2px}
+.coral .h-sub{font-size:11px;color:rgba(255,255,255,.55);margin-bottom:12px}
+.coral .h-bar{height:4px;background:rgba(255,255,255,.2);border-radius:100px;margin-bottom:5px;position:relative}
+.coral .h-fill{position:absolute;left:0;top:0;bottom:0;width:64%;background:#fff;border-radius:100px}
+.coral .h-meta{display:flex;justify-content:space-between;font-size:10px;color:rgba(255,255,255,.5)}
+.coral .h-chips{display:flex;gap:6px;margin-top:10px}
+.coral .h-chip{background:rgba(255,255,255,.15);border-radius:100px;padding:4px 10px;
+  font-size:10px;font-weight:600;color:rgba(255,255,255,.9)}
+
+.coral .snap-row{display:flex;gap:8px}
+.coral .snap{flex:1;background:#fff;border-radius:16px;padding:12px;
+  box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.coral .sn-l{font-size:9px;font-weight:600;color:#C4B8B0;text-transform:uppercase;letter-spacing:.5px;margin-bottom:3px}
+.coral .sn-v{font-size:15px;font-weight:700;color:#1A1210}
+
+.coral .sec{font-size:10px;font-weight:700;color:#C4B8B0;text-transform:uppercase;letter-spacing:.8px}
+.coral .card{background:#fff;border-radius:18px;padding:0 14px;box-shadow:0 2px 8px rgba(0,0,0,.04)}
+.coral .crow{display:flex;align-items:center;gap:10px;padding:11px 0;border-bottom:1px solid #F0EAE5}
+.coral .crow:last-child{border-bottom:none}
+.coral .cico{width:32px;height:32px;border-radius:10px;background:#FFF0EC;
+  display:flex;align-items:center;justify-content:center;flex-shrink:0}
+.coral .cico svg{fill:#FF6B4A}
+.coral .cico.g{background:#EDFFF6}
+.coral .cico.g svg{fill:#059669}
+.coral .cico.r{background:#FFF0F3}
+.coral .cico.r svg{fill:#E11D48}
+.coral .ct{font-size:12px;font-weight:600;color:#1A1210}
+.coral .cs{font-size:10px;color:#C4B8B0;margin-top:1px}
+.coral .cr{margin-left:auto;text-align:right}
+.coral .ca{font-size:12px;font-weight:700;color:#1A1210}
+.coral .bdg{display:inline-flex;padding:2px 7px;border-radius:100px;font-size:9px;font-weight:700;margin-top:2px}
+.coral .bdg-r{background:#FFF0F3;color:#E11D48}
+.coral .bdg-g{background:#EDFFF6;color:#059669}
+.coral .bdg-a{background:#FFF9F0;color:#D97706}
+.coral .bdg-c{background:#FFF0EC;color:#FF6B4A}
+
+.coral .nav{padding:8px 12px 14px;flex-shrink:0;background:#F7F3EF}
+.coral .nav-inner{background:#fff;border-radius:22px;height:54px;display:flex;align-items:center;
+  box-shadow:0 4px 20px rgba(255,107,74,.1)}
+.coral .ni{display:flex;flex-direction:column;align-items:center;gap:2px;flex:1;padding:6px 4px;border-radius:16px}
+.coral .ni.act{background:#FFF0EC}
+.coral .ni svg{fill:#D4C8C0}
+.coral .ni.act svg{fill:#FF6B4A}
+.coral .ni span{font-size:8px;font-weight:600;color:#D4C8C0}
+.coral .ni.act span{color:#FF6B4A;font-weight:700}
+
+/* tags */
+.t1{background:#7C3AED;color:#fff}
+.t2{background:#C8FF00;color:#000}
+.t3{background:#5B4FEF;color:#fff}
+.t4{background:#00FF88;color:#000}
+.t5{background:#FF6B4A;color:#fff}
+.told{background:#F97316;color:#fff}
+</style>
+</head>
+<body>
+
+<h1>Bill Buddy — 5 Design Directions</h1>
+<p class="sub">Genuinely different aesthetics — not just palette swaps</p>
+
+<div class="tabs">
+  <button class="tab active" onclick="show('dash',this)">Dashboard</button>
+  <button class="tab" onclick="show('bills',this)">Bills</button>
+  <button class="tab" onclick="show('dues',this)">Dues</button>
+  <button class="tab" onclick="show('nav',this)">Nav Bar</button>
+</div>
+
+<!-- SVG sprites -->
+<svg style="display:none">
+  <symbol id="i-home" viewBox="0 0 20 20"><path d="M10 2L2 8.5V18h5v-5h6v5h5V8.5L10 2z"/></symbol>
+  <symbol id="i-bill" viewBox="0 0 20 20"><path d="M13 2H5a2 2 0 00-2 2v12a2 2 0 002 2h10a2 2 0 002-2V6l-4-4zm0 1.5L15.5 6H13V3.5zM7 10h6v1H7v-1zm0 3h4v1H7v-1zm0-6h2v1H7V7z"/></symbol>
+  <symbol id="i-dues" viewBox="0 0 20 20"><path d="M10 10a4 4 0 100-8 4 4 0 000 8zm-7 8a7 7 0 0114 0H3z"/></symbol>
+  <symbol id="i-wallet" viewBox="0 0 20 20"><path d="M18 6H2a1 1 0 00-1 1v9a2 2 0 002 2h14a2 2 0 002-2V7a1 1 0 00-1-1zM2 4h13L13 2H5a3 3 0 00-3 2zm13 8a1.5 1.5 0 110-3 1.5 1.5 0 010 3z"/></symbol>
+  <symbol id="i-pig" viewBox="0 0 20 20"><path d="M16 9c0-3.3-2.7-6-6-6S4 5.7 4 9c0 1.8.8 3.4 2 4.5V16h1l.5-1h5l.5 1h1v-2.5c1.2-1.1 2-2.7 2-4.5zM9 8H7V6h2v2zm4 0h-2V6h2v2z"/></symbol>
+  <symbol id="i-user" viewBox="0 0 20 20"><path d="M10 10a4 4 0 100-8 4 4 0 000 8zm-7 8a7 7 0 0114 0H3z"/></symbol>
+  <symbol id="i-bell" viewBox="0 0 20 20"><path d="M10 2a6 6 0 00-6 6v3.5L2 14v1h16v-1l-2-2.5V8a6 6 0 00-6-6zm0 16a2 2 0 002-2H8a2 2 0 002 2z"/></symbol>
+  <symbol id="i-plus" viewBox="0 0 20 20"><path fill="none" stroke="currentColor" stroke-width="2.5" stroke-linecap="round" d="M10 4v12M4 10h12"/></symbol>
+  <symbol id="i-warn" viewBox="0 0 20 20"><path d="M10 2L1 18h18L10 2zm0 3.5l7 13H3l7-13zM9 9v4h2V9H9zm0 5v2h2v-2H9z"/></symbol>
+</svg>
+
+<!-- ══════════════════ DASHBOARD ══════════════════ -->
+<div id="page-dash" class="page show">
+
+  <!-- 1: GLASSMORPHISM -->
+  <div class="pw">
+    <span class="ptag t1">1 — Glassmorphism</span>
+    <div class="phone"><div class="screen glass">
+      <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-r">●●◌</span></div>
+      <div class="abar">
+        <span class="abar-title">Bill Buddy</span>
+        <div class="abar-btn"><svg class="ic"><use href="#i-bell"/></svg></div>
+      </div>
+      <div class="body">
+        <div class="hero">
+          <div class="h-eye">March 2025</div>
+          <div class="h-amt">₹12,450</div>
+          <div class="h-sub">Bills this month</div>
+          <div class="h-bar"><div class="h-fill"></div></div>
+          <div class="h-meta"><span>7 of 11 paid</span><span>₹7,720</span></div>
+          <div class="h-chips">
+            <div class="h-chip">⚡ 2 Overdue</div>
+            <div class="h-chip">● 1 Due Today</div>
+          </div>
+        </div>
+        <div class="snap-row">
+          <div class="snap"><div class="sn-l">Dues Owed</div><div class="sn-v">₹8,200</div></div>
+          <div class="snap"><div class="sn-l">Spending</div><div class="sn-v">₹5,340</div></div>
+        </div>
+        <div class="sec">Upcoming Bills</div>
+        <div class="card">
+          <div class="crow">
+            <div class="cico"><svg class="ic"><use href="#i-home"/></svg></div>
+            <div><div class="ct">House Rent</div><div class="cs">Apr 1 · Housing</div></div>
+            <div class="cr"><div class="ca">₹15,000</div><div class="bdg bdg-a">Due Today</div></div>
+          </div>
+          <div class="crow">
+            <div class="cico r"><svg class="ic"><use href="#i-wallet"/></svg></div>
+            <div><div class="ct">HDFC Credit</div><div class="cs">Mar 28 · Finance</div></div>
+            <div class="cr"><div class="ca">₹8,200</div><div class="bdg bdg-r">Overdue</div></div>
+          </div>
+          <div class="crow">
+            <div class="cico g"><svg class="ic"><use href="#i-bill"/></svg></div>
+            <div><div class="ct">Netflix</div><div class="cs">Apr 10 · Subs</div></div>
+            <div class="cr"><div class="ca">₹649</div><div class="bdg bdg-g">Paid</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav"><div class="nav-inner">
+        <div class="ni act"><svg class="ic-sm"><use href="#i-home"/></svg><span>Home</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-bill"/></svg><span>Bills</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-dues"/></svg><span>Dues</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-wallet"/></svg><span>Expenses</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-pig"/></svg><span>Budgets</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-user"/></svg><span>Profile</span></div>
+      </div></div>
+    </div></div>
+    <span class="plbl">Frosted glass · Deep violet bg · Blur</span>
+  </div>
+
+  <!-- 2: BOLD EDITORIAL -->
+  <div class="pw">
+    <span class="ptag t2">2 — Bold Editorial</span>
+    <div class="phone"><div class="screen bold">
+      <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-r">●●◌</span></div>
+      <div class="abar">
+        <span class="abar-title">Bill Buddy</span>
+        <div class="abar-btn"><svg class="ic"><use href="#i-bell"/></svg></div>
+      </div>
+      <div class="body">
+        <div class="hero">
+          <div class="h-eye">March 2025</div>
+          <div class="h-amt">₹12,450</div>
+          <div class="h-sub">Bills this month</div>
+          <div class="h-bar"><div class="h-fill"></div></div>
+          <div class="h-meta"><span>7 of 11 paid</span><span>₹7,720</span></div>
+          <div class="h-chips">
+            <div class="h-chip warn">2 Overdue</div>
+            <div class="h-chip">1 Due Today</div>
+          </div>
+        </div>
+        <div class="snap-row">
+          <div class="snap"><div class="sn-l">Dues Owed</div><div class="sn-v">₹8,200</div></div>
+          <div class="snap"><div class="sn-l">Spending</div><div class="sn-v">₹5,340</div></div>
+        </div>
+        <div class="sec">Upcoming</div>
+        <div class="card">
+          <div class="crow">
+            <div class="cico"><svg class="ic"><use href="#i-home"/></svg></div>
+            <div><div class="ct">House Rent</div><div class="cs">Apr 1 · Housing</div></div>
+            <div class="cr"><div class="ca">₹15,000</div><div class="bdg bdg-a">Due Today</div></div>
+          </div>
+          <div class="crow">
+            <div class="cico r"><svg class="ic"><use href="#i-wallet"/></svg></div>
+            <div><div class="ct">HDFC Credit</div><div class="cs">Mar 28</div></div>
+            <div class="cr"><div class="ca">₹8,200</div><div class="bdg bdg-r">Overdue</div></div>
+          </div>
+          <div class="crow">
+            <div class="cico g"><svg class="ic"><use href="#i-bill"/></svg></div>
+            <div><div class="ct">Netflix</div><div class="cs">Apr 10</div></div>
+            <div class="cr"><div class="ca">₹649</div><div class="bdg bdg-g">Paid</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav"><div class="nav-inner">
+        <div class="ni act"><svg class="ic-sm"><use href="#i-home"/></svg><span>Home</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-bill"/></svg><span>Bills</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-dues"/></svg><span>Dues</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-wallet"/></svg><span>Expenses</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-pig"/></svg><span>Budgets</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-user"/></svg><span>Profile</span></div>
+      </div></div>
+    </div></div>
+    <span class="plbl">Black hero · Lime accent · Space Grotesk</span>
+  </div>
+
+  <!-- 3: SOFT -->
+  <div class="pw">
+    <span class="ptag t3">3 — Soft Premium</span>
+    <div class="phone"><div class="screen soft">
+      <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-r">●●◌</span></div>
+      <div class="abar">
+        <div>
+          <div class="abar-title">Good morning 👋</div>
+          <div class="abar-big">Bill Buddy</div>
+        </div>
+        <div class="abar-btn"><svg class="ic"><use href="#i-bell"/></svg></div>
+      </div>
+      <div class="body">
+        <div class="hero">
+          <div class="h-eye">March 2025</div>
+          <div class="h-amt">₹12,450</div>
+          <div class="h-sub">Bills this month</div>
+          <div class="h-bar"><div class="h-fill"></div></div>
+          <div class="h-meta"><span>7 of 11 paid</span><span>₹7,720</span></div>
+          <div class="h-chips">
+            <div class="h-chip">2 Overdue</div>
+            <div class="h-chip">1 Due Today</div>
+          </div>
+        </div>
+        <div class="stat-row">
+          <div class="stat"><div class="st-l">Dues Owed</div><div class="st-v">₹8,200</div><span class="st-badge red">3 people</span></div>
+          <div class="stat"><div class="st-l">Spending</div><div class="st-v">₹5,340</div><span class="st-badge grn">Mar</span></div>
+        </div>
+        <div class="sec">Upcoming</div>
+        <div class="card">
+          <div class="crow">
+            <div class="cico p"><svg class="ic"><use href="#i-home"/></svg></div>
+            <div><div class="ct">House Rent</div><div class="cs">Apr 1 · Housing</div></div>
+            <div class="cr"><div class="ca">₹15,000</div><div class="bdg bdg-a">Due Today</div></div>
+          </div>
+          <div class="crow">
+            <div class="cico r"><svg class="ic"><use href="#i-wallet"/></svg></div>
+            <div><div class="ct">HDFC Credit</div><div class="cs">Mar 28</div></div>
+            <div class="cr"><div class="ca">₹8,200</div><div class="bdg bdg-r">Overdue</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav"><div class="nav-inner">
+        <div class="ni act"><svg class="ic-sm"><use href="#i-home"/></svg><span>Home</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-bill"/></svg><span>Bills</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-dues"/></svg><span>Dues</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-wallet"/></svg><span>Expenses</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-pig"/></svg><span>Budgets</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-user"/></svg><span>Profile</span></div>
+      </div></div>
+    </div></div>
+    <span class="plbl">Solid purple hero · White cards · DM Sans · Shadow nav</span>
+  </div>
+
+  <!-- 4: NEON DARK -->
+  <div class="pw">
+    <span class="ptag t4">4 — Dark Neon</span>
+    <div class="phone"><div class="screen neon">
+      <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-r">●●◌</span></div>
+      <div class="abar">
+        <span class="abar-title">Bill Buddy</span>
+        <div class="abar-btn"><svg class="ic"><use href="#i-bell"/></svg></div>
+      </div>
+      <div class="body">
+        <div class="hero">
+          <div class="h-eye">March 2025</div>
+          <div class="h-amt">₹12,450</div>
+          <div class="h-sub">Bills this month</div>
+          <div class="h-bar"><div class="h-fill"></div></div>
+          <div class="h-meta"><span>7 of 11 paid</span><span>₹7,720</span></div>
+          <div class="h-chips">
+            <div class="h-chip hot">2 Overdue</div>
+            <div class="h-chip">1 Due Today</div>
+          </div>
+        </div>
+        <div class="snap-row">
+          <div class="snap owe"><div class="sn-l">Dues Owed</div><div class="sn-v">₹8,200</div></div>
+          <div class="snap earn"><div class="sn-l">Spending</div><div class="sn-v">₹5,340</div></div>
+        </div>
+        <div class="sec">Upcoming</div>
+        <div class="card">
+          <div class="crow">
+            <div class="cico"><svg class="ic"><use href="#i-home"/></svg></div>
+            <div><div class="ct">House Rent</div><div class="cs">Apr 1 · Housing</div></div>
+            <div class="cr"><div class="ca">₹15,000</div><div class="bdg bdg-a">Due Today</div></div>
+          </div>
+          <div class="crow">
+            <div class="cico r"><svg class="ic"><use href="#i-wallet"/></svg></div>
+            <div><div class="ct">HDFC Credit</div><div class="cs">Mar 28</div></div>
+            <div class="cr"><div class="ca">₹8,200</div><div class="bdg bdg-r">Overdue</div></div>
+          </div>
+          <div class="crow">
+            <div class="cico g"><svg class="ic"><use href="#i-bill"/></svg></div>
+            <div><div class="ct">Netflix</div><div class="cs">Apr 10</div></div>
+            <div class="cr"><div class="ca">₹649</div><div class="bdg bdg-g">Paid</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav"><div class="nav-inner">
+        <div class="ni act"><svg class="ic-sm"><use href="#i-home"/></svg><span>Home</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-bill"/></svg><span>Bills</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-dues"/></svg><span>Dues</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-wallet"/></svg><span>Expenses</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-pig"/></svg><span>Budgets</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-user"/></svg><span>Profile</span></div>
+      </div></div>
+    </div></div>
+    <span class="plbl">Near-black · Electric green · Glow fills</span>
+  </div>
+
+  <!-- 5: CORAL -->
+  <div class="pw">
+    <span class="ptag t5">5 — Coral Warm</span>
+    <div class="phone"><div class="screen coral">
+      <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-r">●●◌</span></div>
+      <div class="abar">
+        <span class="abar-title">Bill Buddy</span>
+        <div class="abar-btn"><svg class="ic"><use href="#i-bell"/></svg></div>
+      </div>
+      <div class="body">
+        <div class="hero">
+          <div class="h-eye">March 2025</div>
+          <div class="h-amt">₹12,450</div>
+          <div class="h-sub">Bills this month</div>
+          <div class="h-bar"><div class="h-fill"></div></div>
+          <div class="h-meta"><span>7 of 11 paid</span><span>₹7,720</span></div>
+          <div class="h-chips">
+            <div class="h-chip">2 Overdue</div>
+            <div class="h-chip">1 Due Today</div>
+          </div>
+        </div>
+        <div class="snap-row">
+          <div class="snap"><div class="sn-l">Dues Owed</div><div class="sn-v">₹8,200</div></div>
+          <div class="snap"><div class="sn-l">Spending</div><div class="sn-v">₹5,340</div></div>
+        </div>
+        <div class="sec">Upcoming</div>
+        <div class="card">
+          <div class="crow">
+            <div class="cico"><svg class="ic"><use href="#i-home"/></svg></div>
+            <div><div class="ct">House Rent</div><div class="cs">Apr 1 · Housing</div></div>
+            <div class="cr"><div class="ca">₹15,000</div><div class="bdg bdg-a">Due Today</div></div>
+          </div>
+          <div class="crow">
+            <div class="cico r"><svg class="ic"><use href="#i-wallet"/></svg></div>
+            <div><div class="ct">HDFC Credit</div><div class="cs">Mar 28</div></div>
+            <div class="cr"><div class="ca">₹8,200</div><div class="bdg bdg-r">Overdue</div></div>
+          </div>
+          <div class="crow">
+            <div class="cico g"><svg class="ic"><use href="#i-bill"/></svg></div>
+            <div><div class="ct">Netflix</div><div class="cs">Apr 10</div></div>
+            <div class="cr"><div class="ca">₹649</div><div class="bdg bdg-g">Paid</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav"><div class="nav-inner">
+        <div class="ni act"><svg class="ic-sm"><use href="#i-home"/></svg><span>Home</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-bill"/></svg><span>Bills</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-dues"/></svg><span>Dues</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-wallet"/></svg><span>Expenses</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-pig"/></svg><span>Budgets</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-user"/></svg><span>Profile</span></div>
+      </div></div>
+    </div></div>
+    <span class="plbl">Coral-pink gradient · Off-white bg · Warm shadows</span>
+  </div>
+
+</div>
+
+<!-- ══════════════════ BILLS ══════════════════ -->
+<div id="page-bills" class="page">
+
+  <div class="pw">
+    <span class="ptag t1">1 — Glassmorphism</span>
+    <div class="phone"><div class="screen glass">
+      <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-r">●●◌</span></div>
+      <div class="abar"><span class="abar-title">Bills</span><div class="abar-btn"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+      <div class="body">
+        <div style="background:rgba(248,113,113,.12);border:1px solid rgba(248,113,113,.25);border-radius:12px;padding:9px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <svg class="ic-sm" style="fill:#F87171;flex-shrink:0"><use href="#i-warn"/></svg>
+          <span style="font-size:11px;font-weight:600;color:#F87171">2 bills are overdue</span>
+        </div>
+        <div class="sec">Housing</div>
+        <div class="card">
+          <div class="crow"><div class="cico"><svg class="ic"><use href="#i-home"/></svg></div><div><div class="ct">House Rent</div><div class="cs">Apr 1</div></div><div class="cr"><div class="ca">₹15,000</div><div class="bdg bdg-a">Due Today</div></div></div>
+          <div class="crow"><div class="cico g"><svg class="ic"><use href="#i-bill"/></svg></div><div><div class="ct">Water Bill</div><div class="cs">Apr 10</div></div><div class="cr"><div class="ca">₹450</div><div class="bdg bdg-g">Paid</div></div></div>
+        </div>
+        <div class="sec">Finance</div>
+        <div class="card">
+          <div class="crow"><div class="cico r"><svg class="ic"><use href="#i-wallet"/></svg></div><div><div class="ct">HDFC Credit Card</div><div class="cs">Mar 28 — Overdue</div></div><div class="cr"><div class="ca">₹8,200</div><div class="bdg bdg-r">Overdue</div></div></div>
+          <div class="crow"><div class="cico"><svg class="ic"><use href="#i-bill"/></svg></div><div><div class="ct">Car EMI</div><div class="cs">Apr 5</div></div><div class="cr"><div class="ca">₹6,500</div><div class="bdg bdg-p">In 5 days</div></div></div>
+        </div>
+      </div>
+      <div class="nav"><div class="nav-inner">
+        <div class="ni"><svg class="ic-sm"><use href="#i-home"/></svg><span>Home</span></div>
+        <div class="ni act"><svg class="ic-sm"><use href="#i-bill"/></svg><span>Bills</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-dues"/></svg><span>Dues</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-wallet"/></svg><span>Expenses</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-pig"/></svg><span>Budgets</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-user"/></svg><span>Profile</span></div>
+      </div></div>
+    </div></div>
+    <span class="plbl">Glass cards · Blur · Violet</span>
+  </div>
+
+  <div class="pw">
+    <span class="ptag t2">2 — Bold Editorial</span>
+    <div class="phone"><div class="screen bold">
+      <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-r">●●◌</span></div>
+      <div class="abar"><span class="abar-title">Bills</span><div class="abar-btn"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+      <div class="body">
+        <div style="background:#FFF0F0;border:2px solid #FFCCCC;border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <svg class="ic-sm" style="fill:#DC2626;flex-shrink:0"><use href="#i-warn"/></svg>
+          <span style="font-size:11px;font-weight:700;color:#DC2626;font-family:Space Grotesk,sans-serif">2 bills overdue</span>
+        </div>
+        <div class="sec">Housing</div>
+        <div class="card">
+          <div class="crow"><div class="cico"><svg class="ic"><use href="#i-home"/></svg></div><div><div class="ct">House Rent</div><div class="cs">Apr 1</div></div><div class="cr"><div class="ca">₹15,000</div><div class="bdg bdg-a">Due Today</div></div></div>
+          <div class="crow"><div class="cico g"><svg class="ic"><use href="#i-bill"/></svg></div><div><div class="ct">Water Bill</div><div class="cs">Apr 10</div></div><div class="cr"><div class="ca">₹450</div><div class="bdg bdg-g">Paid</div></div></div>
+        </div>
+        <div class="sec">Finance</div>
+        <div class="card">
+          <div class="crow"><div class="cico r"><svg class="ic"><use href="#i-wallet"/></svg></div><div><div class="ct">HDFC Credit Card</div><div class="cs">Mar 28 — Overdue</div></div><div class="cr"><div class="ca">₹8,200</div><div class="bdg bdg-r">Overdue</div></div></div>
+          <div class="crow"><div class="cico"><svg class="ic"><use href="#i-bill"/></svg></div><div><div class="ct">Car EMI</div><div class="cs">Apr 5</div></div><div class="cr"><div class="ca">₹6,500</div><div class="bdg bdg-b">In 5 days</div></div></div>
+        </div>
+      </div>
+      <div class="nav"><div class="nav-inner">
+        <div class="ni"><svg class="ic-sm"><use href="#i-home"/></svg><span>Home</span></div>
+        <div class="ni act"><svg class="ic-sm"><use href="#i-bill"/></svg><span>Bills</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-dues"/></svg><span>Dues</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-wallet"/></svg><span>Expenses</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-pig"/></svg><span>Budgets</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-user"/></svg><span>Profile</span></div>
+      </div></div>
+    </div></div>
+    <span class="plbl">Bold type · Lime pill nav · B&W cards</span>
+  </div>
+
+  <div class="pw">
+    <span class="ptag t3">3 — Soft Premium</span>
+    <div class="phone"><div class="screen soft">
+      <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-r">●●◌</span></div>
+      <div class="abar"><span class="abar-title">Bills</span><div class="abar-btn"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+      <div class="body">
+        <div style="background:#FFF0F6;border:1px solid #FECDD3;border-radius:14px;padding:9px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <svg class="ic-sm" style="fill:#E11D68;flex-shrink:0"><use href="#i-warn"/></svg>
+          <span style="font-size:11px;font-weight:600;color:#E11D68;font-family:DM Sans,sans-serif">2 bills overdue</span>
+        </div>
+        <div class="sec">Housing</div>
+        <div class="card">
+          <div class="crow"><div class="cico p"><svg class="ic"><use href="#i-home"/></svg></div><div><div class="ct">House Rent</div><div class="cs">Apr 1</div></div><div class="cr"><div class="ca">₹15,000</div><div class="bdg bdg-a">Due Today</div></div></div>
+          <div class="crow"><div class="cico g"><svg class="ic"><use href="#i-bill"/></svg></div><div><div class="ct">Water Bill</div><div class="cs">Apr 10</div></div><div class="cr"><div class="ca">₹450</div><div class="bdg bdg-g">Paid</div></div></div>
+        </div>
+        <div class="sec">Finance</div>
+        <div class="card">
+          <div class="crow"><div class="cico r"><svg class="ic"><use href="#i-wallet"/></svg></div><div><div class="ct">HDFC Credit Card</div><div class="cs">Mar 28 — Overdue</div></div><div class="cr"><div class="ca">₹8,200</div><div class="bdg bdg-r">Overdue</div></div></div>
+          <div class="crow"><div class="cico p"><svg class="ic"><use href="#i-bill"/></svg></div><div><div class="ct">Car EMI</div><div class="cs">Apr 5</div></div><div class="cr"><div class="ca">₹6,500</div><div class="bdg bdg-p">In 5 days</div></div></div>
+        </div>
+      </div>
+      <div class="nav"><div class="nav-inner">
+        <div class="ni"><svg class="ic-sm"><use href="#i-home"/></svg><span>Home</span></div>
+        <div class="ni act"><svg class="ic-sm"><use href="#i-bill"/></svg><span>Bills</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-dues"/></svg><span>Dues</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-wallet"/></svg><span>Expenses</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-pig"/></svg><span>Budgets</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-user"/></svg><span>Profile</span></div>
+      </div></div>
+    </div></div>
+    <span class="plbl">DM Sans · Soft shadows · Pastel icons</span>
+  </div>
+
+  <div class="pw">
+    <span class="ptag t4">4 — Dark Neon</span>
+    <div class="phone"><div class="screen neon">
+      <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-r">●●◌</span></div>
+      <div class="abar"><span class="abar-title">Bills</span><div class="abar-btn"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+      <div class="body">
+        <div style="background:rgba(255,85,119,.08);border:1px solid rgba(255,85,119,.2);border-radius:10px;padding:9px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <svg class="ic-sm" style="fill:#FF5577;flex-shrink:0"><use href="#i-warn"/></svg>
+          <span style="font-size:11px;font-weight:600;color:#FF5577">2 bills overdue</span>
+        </div>
+        <div class="sec">Housing</div>
+        <div class="card">
+          <div class="crow"><div class="cico"><svg class="ic"><use href="#i-home"/></svg></div><div><div class="ct">House Rent</div><div class="cs">Apr 1</div></div><div class="cr"><div class="ca">₹15,000</div><div class="bdg bdg-a">Due Today</div></div></div>
+          <div class="crow"><div class="cico g"><svg class="ic"><use href="#i-bill"/></svg></div><div><div class="ct">Water Bill</div><div class="cs">Apr 10</div></div><div class="cr"><div class="ca">₹450</div><div class="bdg bdg-g">Paid</div></div></div>
+        </div>
+        <div class="sec">Finance</div>
+        <div class="card">
+          <div class="crow"><div class="cico r"><svg class="ic"><use href="#i-wallet"/></svg></div><div><div class="ct">HDFC Credit Card</div><div class="cs">Mar 28 — Overdue</div></div><div class="cr"><div class="ca">₹8,200</div><div class="bdg bdg-r">Overdue</div></div></div>
+          <div class="crow"><div class="cico"><svg class="ic"><use href="#i-bill"/></svg></div><div><div class="ct">Car EMI</div><div class="cs">Apr 5</div></div><div class="cr"><div class="ca">₹6,500</div><div class="bdg bdg-b">In 5 days</div></div></div>
+        </div>
+      </div>
+      <div class="nav"><div class="nav-inner">
+        <div class="ni"><svg class="ic-sm"><use href="#i-home"/></svg><span>Home</span></div>
+        <div class="ni act"><svg class="ic-sm"><use href="#i-bill"/></svg><span>Bills</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-dues"/></svg><span>Dues</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-wallet"/></svg><span>Expenses</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-pig"/></svg><span>Budgets</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-user"/></svg><span>Profile</span></div>
+      </div></div>
+    </div></div>
+    <span class="plbl">Dark bg · Neon green paid indicator</span>
+  </div>
+
+  <div class="pw">
+    <span class="ptag t5">5 — Coral Warm</span>
+    <div class="phone"><div class="screen coral">
+      <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-r">●●◌</span></div>
+      <div class="abar"><span class="abar-title">Bills</span><div class="abar-btn"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+      <div class="body">
+        <div style="background:#FFF0EC;border:1px solid rgba(255,107,74,.2);border-radius:12px;padding:9px 12px;display:flex;align-items:center;gap:8px;flex-shrink:0">
+          <svg class="ic-sm" style="fill:#FF6B4A;flex-shrink:0"><use href="#i-warn"/></svg>
+          <span style="font-size:11px;font-weight:600;color:#FF6B4A">2 bills overdue</span>
+        </div>
+        <div class="sec">Housing</div>
+        <div class="card">
+          <div class="crow"><div class="cico"><svg class="ic"><use href="#i-home"/></svg></div><div><div class="ct">House Rent</div><div class="cs">Apr 1</div></div><div class="cr"><div class="ca">₹15,000</div><div class="bdg bdg-a">Due Today</div></div></div>
+          <div class="crow"><div class="cico g"><svg class="ic"><use href="#i-bill"/></svg></div><div><div class="ct">Water Bill</div><div class="cs">Apr 10</div></div><div class="cr"><div class="ca">₹450</div><div class="bdg bdg-g">Paid</div></div></div>
+        </div>
+        <div class="sec">Finance</div>
+        <div class="card">
+          <div class="crow"><div class="cico r"><svg class="ic"><use href="#i-wallet"/></svg></div><div><div class="ct">HDFC Credit Card</div><div class="cs">Mar 28 — Overdue</div></div><div class="cr"><div class="ca">₹8,200</div><div class="bdg bdg-r">Overdue</div></div></div>
+          <div class="crow"><div class="cico"><svg class="ic"><use href="#i-bill"/></svg></div><div><div class="ct">Car EMI</div><div class="cs">Apr 5</div></div><div class="cr"><div class="ca">₹6,500</div><div class="bdg bdg-c">In 5 days</div></div></div>
+        </div>
+      </div>
+      <div class="nav"><div class="nav-inner">
+        <div class="ni"><svg class="ic-sm"><use href="#i-home"/></svg><span>Home</span></div>
+        <div class="ni act"><svg class="ic-sm"><use href="#i-bill"/></svg><span>Bills</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-dues"/></svg><span>Dues</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-wallet"/></svg><span>Expenses</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-pig"/></svg><span>Budgets</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-user"/></svg><span>Profile</span></div>
+      </div></div>
+    </div></div>
+    <span class="plbl">Warm off-white · Coral icons · Soft shadows</span>
+  </div>
+</div>
+
+<!-- ══════════════════ DUES ══════════════════ -->
+<div id="page-dues" class="page">
+
+  <div class="pw">
+    <span class="ptag t1">1 — Glassmorphism</span>
+    <div class="phone"><div class="screen glass">
+      <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-r">●●◌</span></div>
+      <div class="abar"><span class="abar-title">Dues</span><div class="abar-btn"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+      <div class="body">
+        <div class="snap-row">
+          <div class="snap"><div class="sn-l">You Owe</div><div class="sn-v" style="color:#F87171">₹8,200</div></div>
+          <div class="snap"><div class="sn-l">Owed to You</div><div class="sn-v" style="color:#34D399">₹3,500</div></div>
+        </div>
+        <div class="sec">You Owe</div>
+        <div class="card">
+          <div class="crow">
+            <div style="width:32px;height:32px;border-radius:50%;background:#7C3AED;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#fff">R</div>
+            <div><div class="ct">Rahul</div><div class="cs">Since Jan 12</div></div>
+            <div class="cr"><div class="ca" style="color:#F87171">₹5,200</div><div class="bdg bdg-r">Borrowed</div></div>
+          </div>
+          <div class="crow">
+            <div style="width:32px;height:32px;border-radius:50%;background:#0891B2;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#fff">P</div>
+            <div><div class="ct">Priya</div><div class="cs">Since Feb 3</div></div>
+            <div class="cr"><div class="ca" style="color:#F87171">₹3,000</div><div class="bdg bdg-r">Borrowed</div></div>
+          </div>
+        </div>
+        <div class="sec">Owed to You</div>
+        <div class="card">
+          <div class="crow">
+            <div style="width:32px;height:32px;border-radius:50%;background:#059669;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#fff">A</div>
+            <div><div class="ct">Arjun</div><div class="cs">Since Mar 1</div></div>
+            <div class="cr"><div class="ca" style="color:#34D399">₹3,500</div><div class="bdg bdg-g">Lent</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav"><div class="nav-inner">
+        <div class="ni"><svg class="ic-sm"><use href="#i-home"/></svg><span>Home</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-bill"/></svg><span>Bills</span></div>
+        <div class="ni act"><svg class="ic-sm"><use href="#i-dues"/></svg><span>Dues</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-wallet"/></svg><span>Expenses</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-pig"/></svg><span>Budgets</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-user"/></svg><span>Profile</span></div>
+      </div></div>
+    </div></div>
+    <span class="plbl">Glass · Blur · Colored amounts</span>
+  </div>
+
+  <div class="pw">
+    <span class="ptag t3">3 — Soft Premium</span>
+    <div class="phone"><div class="screen soft">
+      <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-r">●●◌</span></div>
+      <div class="abar"><span class="abar-title">Dues</span><div class="abar-btn"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+      <div class="body">
+        <div class="stat-row">
+          <div class="stat"><div class="st-l">You Owe</div><div class="st-v" style="color:#E11D68">₹8,200</div></div>
+          <div class="stat"><div class="st-l">Owed to You</div><div class="st-v" style="color:#059669">₹3,500</div></div>
+        </div>
+        <div class="sec">You Owe</div>
+        <div class="card">
+          <div class="crow">
+            <div style="width:34px;height:34px;border-radius:50%;background:#7C3AED;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#fff">R</div>
+            <div><div class="ct">Rahul</div><div class="cs">Since Jan 12</div></div>
+            <div class="cr"><div class="ca" style="color:#E11D68">₹5,200</div><div class="bdg bdg-r">Borrowed</div></div>
+          </div>
+          <div class="crow">
+            <div style="width:34px;height:34px;border-radius:50%;background:#0891B2;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#fff">P</div>
+            <div><div class="ct">Priya</div><div class="cs">Since Feb 3</div></div>
+            <div class="cr"><div class="ca" style="color:#E11D68">₹3,000</div><div class="bdg bdg-r">Borrowed</div></div>
+          </div>
+        </div>
+        <div class="sec">Owed to You</div>
+        <div class="card">
+          <div class="crow">
+            <div style="width:34px;height:34px;border-radius:50%;background:#059669;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#fff">A</div>
+            <div><div class="ct">Arjun</div><div class="cs">Since Mar 1</div></div>
+            <div class="cr"><div class="ca" style="color:#059669">₹3,500</div><div class="bdg bdg-g">Lent</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav"><div class="nav-inner">
+        <div class="ni"><svg class="ic-sm"><use href="#i-home"/></svg><span>Home</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-bill"/></svg><span>Bills</span></div>
+        <div class="ni act"><svg class="ic-sm"><use href="#i-dues"/></svg><span>Dues</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-wallet"/></svg><span>Expenses</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-pig"/></svg><span>Budgets</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-user"/></svg><span>Profile</span></div>
+      </div></div>
+    </div></div>
+    <span class="plbl">Soft · Avatar initials · Clean amounts</span>
+  </div>
+
+  <div class="pw">
+    <span class="ptag t4">4 — Dark Neon</span>
+    <div class="phone"><div class="screen neon">
+      <div class="sbar"><span class="sbar-t">9:41</span><span class="sbar-r">●●◌</span></div>
+      <div class="abar"><span class="abar-title">Dues</span><div class="abar-btn"><svg class="ic"><use href="#i-plus"/></svg></div></div>
+      <div class="body">
+        <div class="snap-row">
+          <div class="snap owe"><div class="sn-l">You Owe</div><div class="sn-v">₹8,200</div></div>
+          <div class="snap earn"><div class="sn-l">Owed to You</div><div class="sn-v">₹3,500</div></div>
+        </div>
+        <div class="sec">You Owe</div>
+        <div class="card">
+          <div class="crow">
+            <div style="width:32px;height:32px;border-radius:50%;background:#3B1F6A;border:1px solid #5B2FA8;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#A78BFA">R</div>
+            <div><div class="ct">Rahul</div><div class="cs">Since Jan 12</div></div>
+            <div class="cr"><div class="ca" style="color:#FF5577">₹5,200</div><div class="bdg bdg-r">Borrowed</div></div>
+          </div>
+          <div class="crow">
+            <div style="width:32px;height:32px;border-radius:50%;background:#0C2A3B;border:1px solid #0891B2;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#22D3EE">P</div>
+            <div><div class="ct">Priya</div><div class="cs">Since Feb 3</div></div>
+            <div class="cr"><div class="ca" style="color:#FF5577">₹3,000</div><div class="bdg bdg-r">Borrowed</div></div>
+          </div>
+        </div>
+        <div class="sec">Owed to You</div>
+        <div class="card">
+          <div class="crow">
+            <div style="width:32px;height:32px;border-radius:50%;background:#063320;border:1px solid #059669;display:flex;align-items:center;justify-content:center;flex-shrink:0;font-size:13px;font-weight:700;color:#00FF88">A</div>
+            <div><div class="ct">Arjun</div><div class="cs">Since Mar 1</div></div>
+            <div class="cr"><div class="ca" style="color:#00FF88">₹3,500</div><div class="bdg bdg-g">Lent</div></div>
+          </div>
+        </div>
+      </div>
+      <div class="nav"><div class="nav-inner">
+        <div class="ni"><svg class="ic-sm"><use href="#i-home"/></svg><span>Home</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-bill"/></svg><span>Bills</span></div>
+        <div class="ni act"><svg class="ic-sm"><use href="#i-dues"/></svg><span>Dues</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-wallet"/></svg><span>Expenses</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-pig"/></svg><span>Budgets</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-user"/></svg><span>Profile</span></div>
+      </div></div>
+    </div></div>
+    <span class="plbl">Dark · Colored avatars · Neon amounts</span>
+  </div>
+</div>
+
+<!-- ══════════════════ NAV ══════════════════ -->
+<div id="page-nav" class="page">
+
+  <div class="pw">
+    <span class="ptag told">Current — Flat bar</span>
+    <div class="phone" style="width:260px"><div class="screen" style="height:130px;background:#FAF8F5;justify-content:flex-end">
+      <div style="flex:1;display:flex;align-items:center;justify-content:center"><span style="font-size:11px;color:#A8A29E;font-family:-apple-system,sans-serif">content</span></div>
+      <div style="border-top:1px solid #EDE6DC;background:#fff;height:58px;display:flex;align-items:center">
+        <div style="display:flex;width:100%;justify-content:space-around">
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px;position:relative">
+            <div style="position:absolute;top:-1px;left:50%;transform:translateX(-50%);width:22px;height:2.5px;background:#F97316;border-radius:100px"></div>
+            <svg class="ic-sm" style="fill:#F97316;margin-top:4px"><use href="#i-home"/></svg>
+            <span style="font-size:8px;font-weight:600;color:#F97316;font-family:-apple-system,sans-serif">Home</span>
+          </div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><svg class="ic-sm" style="fill:#A8A29E"><use href="#i-bill"/></svg><span style="font-size:8px;color:#A8A29E;font-family:-apple-system,sans-serif">Bills</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><svg class="ic-sm" style="fill:#A8A29E"><use href="#i-dues"/></svg><span style="font-size:8px;color:#A8A29E;font-family:-apple-system,sans-serif">Dues</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><svg class="ic-sm" style="fill:#A8A29E"><use href="#i-wallet"/></svg><span style="font-size:8px;color:#A8A29E;font-family:-apple-system,sans-serif">Expenses</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><svg class="ic-sm" style="fill:#A8A29E"><use href="#i-pig"/></svg><span style="font-size:8px;color:#A8A29E;font-family:-apple-system,sans-serif">Budgets</span></div>
+          <div style="display:flex;flex-direction:column;align-items:center;gap:2px"><svg class="ic-sm" style="fill:#A8A29E"><use href="#i-user"/></svg><span style="font-size:8px;color:#A8A29E;font-family:-apple-system,sans-serif">Profile</span></div>
+        </div>
+      </div>
+    </div></div>
+    <span class="plbl">Flat · Top orange line · No depth</span>
+  </div>
+
+  <div class="pw">
+    <span class="ptag t1">1 — Glass Floating</span>
+    <div class="phone" style="width:260px"><div class="screen glass" style="height:130px;justify-content:flex-end">
+      <div style="flex:1;display:flex;align-items:center;justify-content:center"><span style="font-size:11px;color:rgba(255,255,255,.2)">content</span></div>
+      <div class="nav"><div class="nav-inner">
+        <div class="ni act"><svg class="ic-sm"><use href="#i-home"/></svg><span>Home</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-bill"/></svg><span>Bills</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-dues"/></svg><span>Dues</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-wallet"/></svg><span>Expenses</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-pig"/></svg><span>Budgets</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-user"/></svg><span>Profile</span></div>
+      </div></div>
+    </div></div>
+    <span class="plbl">Frosted glass pill · Violet glow active</span>
+  </div>
+
+  <div class="pw">
+    <span class="ptag t2">2 — Bold Black Pill</span>
+    <div class="phone" style="width:260px"><div class="screen bold" style="height:130px;justify-content:flex-end">
+      <div style="flex:1;display:flex;align-items:center;justify-content:center;background:#F5F5F0"><span style="font-size:11px;color:#ccc;font-family:Space Grotesk,sans-serif">content</span></div>
+      <div class="nav" style="background:#F5F5F0"><div class="nav-inner">
+        <div class="ni act"><svg class="ic-sm"><use href="#i-home"/></svg><span>Home</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-bill"/></svg><span>Bills</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-dues"/></svg><span>Dues</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-wallet"/></svg><span>Expenses</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-pig"/></svg><span>Budgets</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-user"/></svg><span>Profile</span></div>
+      </div></div>
+    </div></div>
+    <span class="plbl">Black pill · Lime selected bg · White icons</span>
+  </div>
+
+  <div class="pw">
+    <span class="ptag t4">4 — Neon Dark Pill</span>
+    <div class="phone" style="width:260px"><div class="screen neon" style="height:130px;justify-content:flex-end">
+      <div style="flex:1;display:flex;align-items:center;justify-content:center"><span style="font-size:11px;color:#1A2A40">content</span></div>
+      <div class="nav"><div class="nav-inner">
+        <div class="ni act"><svg class="ic-sm"><use href="#i-home"/></svg><span>Home</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-bill"/></svg><span>Bills</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-dues"/></svg><span>Dues</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-wallet"/></svg><span>Expenses</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-pig"/></svg><span>Budgets</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-user"/></svg><span>Profile</span></div>
+      </div></div>
+    </div></div>
+    <span class="plbl">Dark pill · Electric green active · No border</span>
+  </div>
+
+  <div class="pw">
+    <span class="ptag t5">5 — Coral Float</span>
+    <div class="phone" style="width:260px"><div class="screen coral" style="height:130px;justify-content:flex-end">
+      <div style="flex:1;display:flex;align-items:center;justify-content:center"><span style="font-size:11px;color:#C4B8B0">content</span></div>
+      <div class="nav"><div class="nav-inner">
+        <div class="ni act"><svg class="ic-sm"><use href="#i-home"/></svg><span>Home</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-bill"/></svg><span>Bills</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-dues"/></svg><span>Dues</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-wallet"/></svg><span>Expenses</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-pig"/></svg><span>Budgets</span></div>
+        <div class="ni"><svg class="ic-sm"><use href="#i-user"/></svg><span>Profile</span></div>
+      </div></div>
+    </div></div>
+    <span class="plbl">Warm white pill · Coral active · Warm glow</span>
+  </div>
+</div>
+
+<script>
+function show(id,btn){
+  document.querySelectorAll('.page').forEach(p=>p.classList.remove('show'));
+  document.querySelectorAll('.tab').forEach(t=>t.classList.remove('active'));
+  document.getElementById('page-'+id).classList.add('show');
+  btn.classList.add('active');
+}
+</script>
+</body>
+</html>

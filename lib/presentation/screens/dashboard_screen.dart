@@ -1,4 +1,3 @@
-import 'dart:async';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
@@ -11,19 +10,20 @@ import '../widgets/app_toast.dart';
 import '../widgets/category_logo.dart';
 import '../../data/models/bill_model.dart';
 import '../../data/models/budget_model.dart';
+import '../../core/theme/app_colors.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 
-const _bg = Color(0xFFFAF8F5);
-const _card = Colors.white;
-const _surface2 = Color(0xFFFDF5ED);
-const _border = Color(0xFFEDE6DC);
-const _primary = Color(0xFFF97316);
-const _textPrimary = Color(0xFF1C1917);
-const _textSecondary = Color(0xFF78716C);
-const _textTertiary = Color(0xFFA8A29E);
-const _green = Color(0xFF16A34A);
-const _red = Color(0xFFDC2626);
+const _bg            = AppColors.bg;
+const _card          = AppColors.surface;
+const _surface2      = AppColors.surface2;
+const _border        = AppColors.border;
+const _primary       = AppColors.primary;
+const _textPrimary   = AppColors.textPrimary;
+const _textSecondary = AppColors.textSecondary;
+const _textTertiary  = AppColors.textTertiary;
+const _green         = AppColors.green;
+const _red           = AppColors.red;
 
 
 String _catLabel(String value) {
@@ -79,8 +79,6 @@ class DashboardScreen extends StatefulWidget {
 }
 
 class _DashboardScreenState extends State<DashboardScreen> {
-  bool _showWelcome = true;
-  Timer? _timer;
   late final PageController _summaryPageCtrl;
   int _summaryPage = 0;
 
@@ -88,14 +86,10 @@ class _DashboardScreenState extends State<DashboardScreen> {
   void initState() {
     super.initState();
     _summaryPageCtrl = PageController();
-    _timer = Timer(const Duration(seconds: 10), () {
-      if (mounted) setState(() => _showWelcome = false);
-    });
   }
 
   @override
   void dispose() {
-    _timer?.cancel();
     _summaryPageCtrl.dispose();
     super.dispose();
   }
@@ -108,7 +102,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
   }) {
     showModalBottomSheet(
       context: context,
-      backgroundColor: _card,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -202,8 +196,6 @@ class _DashboardScreenState extends State<DashboardScreen> {
 
     final money = context.watch<AppSettingsProvider>().money;
     final df = DateFormat('EEE, dd MMM');
-    final dayLabel = DateFormat('EEEE').format(now);
-    final dateLabel = DateFormat('d MMM').format(now);
     final monthLabel = DateFormat('MMMM yyyy').format(now);
 
     return Scaffold(
@@ -212,82 +204,76 @@ class _DashboardScreenState extends State<DashboardScreen> {
         backgroundColor: _bg,
         elevation: 0,
         automaticallyImplyLeading: false,
-        centerTitle: true,
-        leadingWidth: 48,
-        leading: Builder(
-          builder: (ctx) => IconButton(
-            icon: const Icon(Icons.settings_outlined,
-                color: _textSecondary, size: 22),
-            tooltip: 'Settings',
-            onPressed: () => Navigator.pushNamed(context, '/settings'),
+        centerTitle: false,
+        titleSpacing: 16,
+        title: const Text(
+          'Bill Buddy',
+          style: TextStyle(
+            fontSize: 26,
+            fontWeight: FontWeight.w800,
+            color: _textPrimary,
+            letterSpacing: -0.5,
           ),
-        ),
-        title: Column(
-          crossAxisAlignment: CrossAxisAlignment.center,
-          mainAxisSize: MainAxisSize.min,
-          children: [
-            AnimatedSize(
-              duration: const Duration(milliseconds: 450),
-              curve: Curves.easeInOut,
-              child: AnimatedOpacity(
-                opacity: _showWelcome ? 1.0 : 0.0,
-                duration: const Duration(milliseconds: 500),
-                child: _showWelcome
-                    ? const Text(
-                        'Welcome Back',
-                        style: TextStyle(
-                          fontSize: 17,
-                          fontWeight: FontWeight.w700,
-                          color: _textPrimary,
-                          height: 1.2,
-                        ),
-                      )
-                    : const SizedBox(width: double.infinity, height: 0),
-              ),
-            ),
-            Text(
-              '$dayLabel, $dateLabel',
-              style: const TextStyle(
-                fontSize: 12,
-                color: _textSecondary,
-                fontWeight: FontWeight.w400,
-              ),
-            ),
-          ],
         ),
         actions: [
-          Builder(
-            builder: (ctx) => IconButton(
-              icon: Stack(
-                clipBehavior: Clip.none,
-                children: [
-                  const Icon(Icons.notifications_outlined,
-                      color: _textSecondary, size: 22),
-                  if (hasAlerts)
-                    Positioned(
-                      top: -1,
-                      right: -1,
-                      child: Container(
-                        width: 8,
-                        height: 8,
-                        decoration: const BoxDecoration(
-                          color: _red,
-                          shape: BoxShape.circle,
-                        ),
-                      ),
-                    ),
-                ],
-              ),
-              tooltip: 'Notifications',
-              onPressed: () => _openNotifications(
-                ctx,
-                overdue: overdue,
-                dueToday: dueToday,
-                money: money,
+          Center(
+            child: GestureDetector(
+              onTap: () => Navigator.pushNamed(context, '/settings'),
+              child: Container(
+                width: 40,
+                height: 40,
+                decoration: BoxDecoration(
+                  color: AppColors.heroCard,
+                  borderRadius: BorderRadius.circular(12),
+                ),
+                child: const Icon(Icons.settings_outlined,
+                    color: Colors.white, size: 18),
               ),
             ),
           ),
-          const SizedBox(width: 4),
+          const SizedBox(width: 8),
+          Center(
+            child: Builder(
+              builder: (ctx) => GestureDetector(
+                onTap: () => _openNotifications(
+                  ctx,
+                  overdue: overdue,
+                  dueToday: dueToday,
+                  money: money,
+                ),
+                child: Stack(
+                  clipBehavior: Clip.none,
+                  children: [
+                    Container(
+                      width: 40,
+                      height: 40,
+                      decoration: BoxDecoration(
+                        color: AppColors.heroCard,
+                        borderRadius: BorderRadius.circular(12),
+                      ),
+                      child: const Icon(Icons.notifications_outlined,
+                          color: Colors.white, size: 18),
+                    ),
+                    if (hasAlerts)
+                      Positioned(
+                        top: -2,
+                        right: -2,
+                        child: Container(
+                          width: 9,
+                          height: 9,
+                          decoration: BoxDecoration(
+                            color: _red,
+                            shape: BoxShape.circle,
+                            border: Border.all(color: _bg, width: 1.5),
+                          ),
+                        ),
+                      ),
+                  ],
+                ),
+              ),
+            ),
+          ),
+          const SizedBox(width: 16),
         ],
       ),
       body: SelectionArea(child: ListView(
@@ -346,12 +332,12 @@ class _DashboardScreenState extends State<DashboardScreen> {
                 style: TextStyle(fontWeight: FontWeight.w600, fontSize: 15),
               ),
               style: ElevatedButton.styleFrom(
-                backgroundColor: _primary,
+                backgroundColor: AppColors.heroCard,
                 foregroundColor: Colors.white,
                 padding: const EdgeInsets.symmetric(vertical: 14),
                 elevation: 0,
                 shape: RoundedRectangleBorder(
-                  borderRadius: BorderRadius.circular(14),
+                  borderRadius: BorderRadius.circular(10),
                 ),
               ),
             ),
@@ -411,7 +397,7 @@ class _DashboardScreenState extends State<DashboardScreen> {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _red.withOpacity(0.08),
+                    color: _red.withValues(alpha:0.08),
                     borderRadius: BorderRadius.circular(20),
                   ),
                   child: Text(
@@ -479,7 +465,7 @@ class _DuesSnapshotCard extends StatelessWidget {
           border: Border.all(color: _border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha:0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -505,12 +491,12 @@ class _DuesSnapshotCard extends StatelessWidget {
                       'View all',
                       style: TextStyle(
                           fontSize: 12,
-                          color: _primary,
+                          color: _textPrimary,
                           fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(width: 2),
                     const Icon(Icons.chevron_right_rounded,
-                        size: 16, color: _primary),
+                        size: 16, color: _textPrimary),
                   ],
                 ),
               ],
@@ -601,9 +587,9 @@ class _DuesChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 10),
       decoration: BoxDecoration(
-        color: color.withOpacity(0.07),
+        color: color.withValues(alpha:0.07),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: color.withOpacity(0.2)),
+        border: Border.all(color: color.withValues(alpha:0.2)),
       ),
       child: Row(
         children: [
@@ -684,10 +670,10 @@ class _BudgetsSnapshotCard extends StatelessWidget {
           color: _card,
           borderRadius: BorderRadius.circular(16),
           border: Border.all(
-              color: isOver ? _red.withOpacity(0.3) : _border),
+              color: isOver ? _red.withValues(alpha:0.3) : _border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha:0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -713,12 +699,12 @@ class _BudgetsSnapshotCard extends StatelessWidget {
                       'View all',
                       style: TextStyle(
                           fontSize: 12,
-                          color: _primary,
+                          color: _textPrimary,
                           fontWeight: FontWeight.w500),
                     ),
                     const SizedBox(width: 2),
                     const Icon(Icons.chevron_right_rounded,
-                        size: 16, color: _primary),
+                        size: 16, color: _textPrimary),
                   ],
                 ),
               ],
@@ -742,7 +728,7 @@ class _BudgetsSnapshotCard extends StatelessWidget {
                       child: LinearProgressIndicator(
                         value: progress,
                         minHeight: 6,
-                        backgroundColor: const Color(0xFFEDE6DC),
+                        backgroundColor: AppColors.border,
                         valueColor:
                             AlwaysStoppedAnimation<Color>(statusColor),
                       ),
@@ -922,7 +908,7 @@ class _NotificationsSheet extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 8, vertical: 3),
                   decoration: BoxDecoration(
-                    color: _red.withOpacity(0.10),
+                    color: _red.withValues(alpha:0.10),
                     borderRadius: BorderRadius.circular(10),
                   ),
                   child: Text(
@@ -967,7 +953,7 @@ class _NotificationsSheet extends StatelessWidget {
               child: ListView.separated(
                 shrinkWrap: true,
                 itemCount: items.length,
-                separatorBuilder: (_, __) =>
+                separatorBuilder: (_, _) =>
                     const Divider(color: _border, height: 1),
                 itemBuilder: (ctx, i) {
                   final (bill, label, color) = items[i];
@@ -1022,7 +1008,7 @@ class _NotifItem extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(9),
               decoration: BoxDecoration(
-                color: color.withOpacity(0.10),
+                color: color.withValues(alpha:0.10),
                 borderRadius: BorderRadius.circular(10),
               ),
               child: Icon(Icons.receipt_long_rounded, color: color, size: 18),
@@ -1064,7 +1050,7 @@ class _NotifItem extends StatelessWidget {
                   padding: const EdgeInsets.symmetric(
                       horizontal: 6, vertical: 2),
                   decoration: BoxDecoration(
-                    color: color.withOpacity(0.10),
+                    color: color.withValues(alpha:0.10),
                     borderRadius: BorderRadius.circular(4),
                   ),
                   child: Text(
@@ -1106,19 +1092,8 @@ class _SummaryCard extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 18, vertical: 16),
       decoration: BoxDecoration(
+        color: AppColors.heroCard,
         borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF292524), Color(0xFF57534E)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: Color(0xFF1C1917).withOpacity(0.22),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1127,23 +1102,31 @@ class _SummaryCard extends StatelessWidget {
             mainAxisAlignment: MainAxisAlignment.spaceBetween,
             crossAxisAlignment: CrossAxisAlignment.start,
             children: [
-              const Text('Monthly Total',
+              const Text('MONTHLY TOTAL',
                   style: TextStyle(
-                      fontSize: 11,
-                      color: Colors.white70,
-                      fontWeight: FontWeight.w500,
-                      letterSpacing: 0.3)),
-              Text('${(progress * 100).toStringAsFixed(0)}% paid',
-                  style: const TextStyle(
-                      fontSize: 11,
-                      color: Colors.white54,
-                      fontWeight: FontWeight.w500)),
+                      fontSize: 10,
+                      color: Colors.white38,
+                      fontWeight: FontWeight.w700,
+                      letterSpacing: 1.2)),
+              Container(
+                padding: const EdgeInsets.symmetric(horizontal: 8, vertical: 3),
+                decoration: BoxDecoration(
+                  color: AppColors.primary,
+                  borderRadius: BorderRadius.circular(6),
+                ),
+                child: Text('${(progress * 100).toStringAsFixed(0)}% PAID',
+                    style: const TextStyle(
+                        fontSize: 10,
+                        color: AppColors.textPrimary,
+                        fontWeight: FontWeight.w700,
+                        letterSpacing: 0.5)),
+              ),
             ],
           ),
           const SizedBox(height: 4),
           Text(total,
               style: const TextStyle(
-                  fontSize: 28,
+                  fontSize: 30,
                   fontWeight: FontWeight.w800,
                   color: Colors.white,
                   letterSpacing: -0.5)),
@@ -1161,9 +1144,8 @@ class _SummaryCard extends StatelessWidget {
             child: LinearProgressIndicator(
               value: progress,
               minHeight: 5,
-              backgroundColor: Colors.white24,
-              valueColor:
-                  const AlwaysStoppedAnimation<Color>(Color(0xFFF97316)),
+              backgroundColor: Colors.white12,
+              valueColor: const AlwaysStoppedAnimation<Color>(AppColors.primary),
             ),
           ),
           const SizedBox(height: 10),
@@ -1175,11 +1157,11 @@ class _SummaryCard extends StatelessWidget {
                 Text('View Bills',
                     style: TextStyle(
                         fontSize: 11,
-                        color: Colors.white54,
-                        fontWeight: FontWeight.w500)),
+                        color: Colors.white38,
+                        fontWeight: FontWeight.w600)),
                 SizedBox(width: 2),
                 Icon(Icons.chevron_right_rounded,
-                    size: 14, color: Colors.white54),
+                    size: 14, color: Colors.white38),
               ],
             ),
           ),
@@ -1200,15 +1182,16 @@ class _StatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 12, vertical: 8),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
+        color: Colors.white.withValues(alpha:0.08),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: Colors.white24),
+        border: Border.all(color: Colors.white12),
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
         children: [
           Text(label,
-              style: const TextStyle(fontSize: 10, color: Colors.white70)),
+              style: const TextStyle(fontSize: 10, color: Colors.white38,
+                  fontWeight: FontWeight.w600, letterSpacing: 0.5)),
           const SizedBox(height: 3),
           Text(value,
               style: const TextStyle(
@@ -1301,7 +1284,8 @@ class _BillCalendarCardState extends State<_BillCalendarCard> {
     final money = context.read<AppSettingsProvider>().money;
     showModalBottomSheet(
       context: context,
-      backgroundColor: _card,
+      backgroundColor: AppColors.surface,
+      useSafeArea: true,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(20)),
       ),
@@ -1323,7 +1307,7 @@ class _BillCalendarCardState extends State<_BillCalendarCard> {
       ...List.filled(startOffset, null),
       ...List.generate(daysInMonth, (i) => i + 1),
     ];
-    while (cells.length % 7 != 0) cells.add(null);
+    while (cells.length % 7 != 0) { cells.add(null); }
 
     // Split into rows of 7
     final rows = <List<int?>>[];
@@ -1334,19 +1318,8 @@ class _BillCalendarCardState extends State<_BillCalendarCard> {
     return Container(
       padding: const EdgeInsets.fromLTRB(14, 10, 14, 10),
       decoration: BoxDecoration(
+        color: AppColors.heroCard,
         borderRadius: BorderRadius.circular(20),
-        gradient: const LinearGradient(
-          colors: [Color(0xFF292524), Color(0xFF57534E)],
-          begin: Alignment.topLeft,
-          end: Alignment.bottomRight,
-        ),
-        boxShadow: [
-          BoxShadow(
-            color: const Color(0xFF1C1917).withOpacity(0.22),
-            blurRadius: 20,
-            offset: const Offset(0, 8),
-          ),
-        ],
       ),
       child: Column(
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1409,6 +1382,7 @@ class _BillCalendarCardState extends State<_BillCalendarCard> {
                   child: GestureDetector(
                     onTap: dayEntries.isEmpty ? null
                         : () => _showDaySheet(context, date, dayEntries),
+                    behavior: HitTestBehavior.opaque,
                     child: Column(
                       mainAxisAlignment: MainAxisAlignment.center,
                       children: [
@@ -1442,7 +1416,7 @@ class _BillCalendarCardState extends State<_BillCalendarCard> {
                               mainAxisAlignment: MainAxisAlignment.center,
                               mainAxisSize: MainAxisSize.min,
                               children: [
-                                if (hasUnpaid) _dot(_primary),
+                                if (hasUnpaid) _dot(_red),
                                 if (hasUnpaid && hasPaid)
                                   const SizedBox(width: 2),
                                 if (hasPaid) _dot(_green),
@@ -1492,8 +1466,9 @@ class _DayBillsSheet extends StatelessWidget {
 
   @override
   Widget build(BuildContext context) {
+    final bottomPad = MediaQuery.viewPaddingOf(context).bottom;
     return Padding(
-      padding: const EdgeInsets.fromLTRB(20, 16, 20, 32),
+      padding: EdgeInsets.fromLTRB(20, 16, 20, 16 + bottomPad),
       child: Column(
         mainAxisSize: MainAxisSize.min,
         crossAxisAlignment: CrossAxisAlignment.start,
@@ -1544,8 +1519,8 @@ class _DayBillsSheet extends StatelessWidget {
                         horizontal: 8, vertical: 3),
                     decoration: BoxDecoration(
                       color: isPaid
-                          ? _green.withOpacity(0.1)
-                          : _primary.withOpacity(0.1),
+                          ? _green.withValues(alpha:0.1)
+                          : _red.withValues(alpha:0.1),
                       borderRadius: BorderRadius.circular(8),
                     ),
                     child: Text(
@@ -1553,7 +1528,7 @@ class _DayBillsSheet extends StatelessWidget {
                       style: TextStyle(
                         fontSize: 11,
                         fontWeight: FontWeight.w600,
-                        color: isPaid ? _green : _primary,
+                        color: isPaid ? _green : _red,
                       ),
                     ),
                   ),
@@ -1599,10 +1574,10 @@ class _BillCard extends StatelessWidget {
         color: _card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-            color: (isToday || isOverdue) ? _red.withOpacity(0.3) : _border),
+            color: (isToday || isOverdue) ? _red.withValues(alpha:0.3) : _border),
         boxShadow: [
           BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha:0.04),
               blurRadius: 8,
               offset: const Offset(0, 2)),
         ],
@@ -1630,7 +1605,7 @@ class _BillCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 6, vertical: 2),
                         decoration: BoxDecoration(
-                          color: _red.withOpacity(0.10),
+                          color: _red.withValues(alpha:0.10),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(isOverdue ? 'Overdue' : 'Due Today',
@@ -1668,9 +1643,9 @@ class _BillCard extends StatelessWidget {
                   padding:
                       const EdgeInsets.symmetric(horizontal: 10, vertical: 4),
                   decoration: BoxDecoration(
-                    color: _green.withOpacity(0.08),
+                    color: _green.withValues(alpha:0.08),
                     borderRadius: BorderRadius.circular(20),
-                    border: Border.all(color: _green.withOpacity(0.3)),
+                    border: Border.all(color: _green.withValues(alpha:0.3)),
                   ),
                   child: const Text('Mark Paid',
                       style: TextStyle(
@@ -1718,7 +1693,7 @@ class _ExpensesSnapshotCard extends StatelessWidget {
           border: Border.all(color: _border),
           boxShadow: [
             BoxShadow(
-              color: Colors.black.withOpacity(0.04),
+              color: Colors.black.withValues(alpha:0.04),
               blurRadius: 8,
               offset: const Offset(0, 2),
             ),
@@ -1729,10 +1704,10 @@ class _ExpensesSnapshotCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: _primary.withOpacity(0.10),
+                color: _surface2,
                 borderRadius: BorderRadius.circular(12),
               ),
-              child: const Icon(Icons.wallet_rounded, color: _primary, size: 20),
+              child: const Icon(Icons.wallet_rounded, color: _textSecondary, size: 20),
             ),
             const SizedBox(width: 14),
             Expanded(

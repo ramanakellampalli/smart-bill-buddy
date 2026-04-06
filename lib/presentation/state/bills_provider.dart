@@ -10,9 +10,6 @@ import '../../services/notification_service.dart';
 
 // ── Helpers ───────────────────────────────────────────────────────────────────
 
-bool _isSameDay(DateTime a, DateTime b) =>
-    a.year == b.year && a.month == b.month && a.day == b.day;
-
 ExpenseCategory _billCategoryToExpense(String billCategory) => switch (billCategory) {
       'rent' => ExpenseCategory.housing,
       'utilities' => ExpenseCategory.housing,

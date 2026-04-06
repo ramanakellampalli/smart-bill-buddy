@@ -2,6 +2,7 @@ import 'dart:math';
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../core/theme/app_colors.dart';
 import '../../data/models/expense_model.dart';
 import '../state/app_settings_provider.dart';
 import '../state/expenses_provider.dart';
@@ -9,13 +10,14 @@ import 'expenses_screen.dart' show MonthPicker;
 
 // ── Palette ────────────────────────────────────────────────────────────────────
 
-const _bg = Color(0xFFFAF8F5);
-const _card = Colors.white;
-const _border = Color(0xFFEDE6DC);
-const _primary = Color(0xFFF97316);
-const _textPrimary = Color(0xFF1C1917);
-const _textSecondary = Color(0xFF78716C);
-const _textTertiary = Color(0xFFA8A29E);
+const _bg            = AppColors.bg;
+const _card          = AppColors.surface;
+const _surface2      = AppColors.surface2;
+const _border        = AppColors.border;
+const _primary       = AppColors.primary;
+const _textPrimary   = AppColors.textPrimary;
+const _textSecondary = AppColors.textSecondary;
+const _textTertiary  = AppColors.textTertiary;
 
 const _categoryColors = <ExpenseCategory, Color>{
   ExpenseCategory.food: Color(0xFFF59E0B),
@@ -262,7 +264,7 @@ class _BreakdownCard extends StatelessWidget {
         border: Border.all(color: _border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha:0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -458,7 +460,7 @@ class _TopExpensesCard extends StatelessWidget {
         border: Border.all(color: _border),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.04),
+            color: Colors.black.withValues(alpha:0.04),
             blurRadius: 12,
             offset: const Offset(0, 4),
           ),
@@ -492,7 +494,7 @@ class _TopExpensesCard extends StatelessWidget {
                       width: 36,
                       height: 36,
                       decoration: BoxDecoration(
-                        color: _colorFor(e.category).withOpacity(0.12),
+                        color: _colorFor(e.category).withValues(alpha:0.12),
                         borderRadius: BorderRadius.circular(10),
                       ),
                       child: Center(
@@ -567,10 +569,10 @@ class _EmptyAnalytics extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: _primary.withOpacity(0.08),
+                color: _surface2,
                 shape: BoxShape.circle,
               ),
-              child: const Icon(Icons.bar_chart_rounded, size: 36, color: _primary),
+              child: const Icon(Icons.bar_chart_rounded, size: 36, color: _textSecondary),
             ),
             const SizedBox(height: 16),
             const Text(

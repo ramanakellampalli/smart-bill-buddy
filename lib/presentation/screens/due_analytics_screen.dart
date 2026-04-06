@@ -3,6 +3,7 @@ import 'dart:math' as math;
 import 'package:flutter/material.dart';
 import 'package:intl/intl.dart';
 import 'package:provider/provider.dart';
+import '../../core/theme/app_colors.dart';
 import 'package:path_provider/path_provider.dart';
 import 'package:share_plus/share_plus.dart';
 import '../../data/models/due_model.dart';
@@ -11,16 +12,17 @@ import '../state/dues_provider.dart';
 
 // ── Palette ────────────────────────────────────────────────────────────────────
 
-const _bg = Color(0xFFFAF8F5);
-const _card = Colors.white;
-const _border = Color(0xFFEDE6DC);
-const _primary = Color(0xFFF97316);
-const _textPrimary = Color(0xFF1C1917);
-const _textSecondary = Color(0xFF78716C);
-const _textTertiary = Color(0xFFA8A29E);
-const _green = Color(0xFF16A34A);
-const _red = Color(0xFFDC2626);
-const _amber = Color(0xFFD97706);
+const _bg            = AppColors.bg;
+const _card          = AppColors.surface;
+const _surface2      = AppColors.surface2;
+const _border        = AppColors.border;
+const _primary       = AppColors.primary;
+const _textPrimary   = AppColors.textPrimary;
+const _textSecondary = AppColors.textSecondary;
+const _textTertiary  = AppColors.textTertiary;
+const _green         = AppColors.green;
+const _red           = AppColors.red;
+const _amber         = AppColors.amber;
 
 // ── Aging thresholds (days) ────────────────────────────────────────────────────
 
@@ -269,7 +271,7 @@ class _BalanceSummaryCard extends StatelessWidget {
         ),
         boxShadow: [
           BoxShadow(
-            color: const Color(0xFF1C1917).withOpacity(0.22),
+            color: const Color(0xFF1C1917).withValues(alpha:0.22),
             blurRadius: 20,
             offset: const Offset(0, 8),
           ),
@@ -323,9 +325,9 @@ class _BalanceSummaryCard extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(12),
               decoration: BoxDecoration(
-                color: _red.withOpacity(0.1),
+                color: _red.withValues(alpha:0.1),
                 borderRadius: BorderRadius.circular(12),
-                border: Border.all(color: _red.withOpacity(0.3)),
+                border: Border.all(color: _red.withValues(alpha:0.3)),
               ),
               child: Row(
                 children: [
@@ -364,7 +366,7 @@ class _StatChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 10),
       decoration: BoxDecoration(
-        color: Colors.white.withOpacity(0.18),
+        color: Colors.white.withValues(alpha:0.18),
         borderRadius: BorderRadius.circular(12),
         border: Border.all(color: Colors.white24),
       ),
@@ -479,7 +481,7 @@ class _AgingBucket extends StatelessWidget {
         color: _card,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: count > 0 ? color.withOpacity(0.35) : _border,
+          color: count > 0 ? color.withValues(alpha:0.35) : _border,
         ),
       ),
       child: Column(
@@ -488,7 +490,7 @@ class _AgingBucket extends StatelessWidget {
           Container(
             padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 3),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.12),
+              color: color.withValues(alpha:0.12),
               borderRadius: BorderRadius.circular(6),
             ),
             child: Text(
@@ -539,9 +541,9 @@ class _OverdueBanner extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 12),
       decoration: BoxDecoration(
-        color: _red.withOpacity(0.07),
+        color: _red.withValues(alpha:0.07),
         borderRadius: BorderRadius.circular(12),
-        border: Border.all(color: _red.withOpacity(0.25)),
+        border: Border.all(color: _red.withValues(alpha:0.25)),
       ),
       child: Row(
         children: [
@@ -663,7 +665,7 @@ class _DueRow extends StatelessWidget {
         color: _card,
         borderRadius: BorderRadius.circular(14),
         border: Border.all(
-          color: isOverdue ? _red.withOpacity(0.4) : _border,
+          color: isOverdue ? _red.withValues(alpha:0.4) : _border,
         ),
       ),
       child: Row(
@@ -671,7 +673,7 @@ class _DueRow extends StatelessWidget {
           Container(
             padding: const EdgeInsets.all(7),
             decoration: BoxDecoration(
-              color: color.withOpacity(0.10),
+              color: color.withValues(alpha:0.10),
               borderRadius: BorderRadius.circular(8),
             ),
             child: Icon(
@@ -746,7 +748,7 @@ class _DueRow extends StatelessWidget {
                     padding: const EdgeInsets.symmetric(
                         horizontal: 7, vertical: 2),
                     decoration: BoxDecoration(
-                      color: color.withOpacity(0.10),
+                      color: color.withValues(alpha:0.10),
                       borderRadius: BorderRadius.circular(5),
                     ),
                     child: Text(
@@ -809,11 +811,11 @@ class _PersonCard extends StatelessWidget {
         color: _card,
         borderRadius: BorderRadius.circular(16),
         border: Border.all(
-          color: overdueCount > 0 ? _red.withOpacity(0.3) : _border,
+          color: overdueCount > 0 ? _red.withValues(alpha:0.3) : _border,
         ),
         boxShadow: [
           BoxShadow(
-            color: Colors.black.withOpacity(0.03),
+            color: Colors.black.withValues(alpha:0.03),
             blurRadius: 6,
             offset: const Offset(0, 2),
           ),
@@ -825,7 +827,7 @@ class _PersonCard extends StatelessWidget {
             width: 42,
             height: 42,
             decoration: BoxDecoration(
-              color: color.withOpacity(0.15),
+              color: color.withValues(alpha:0.15),
               borderRadius: BorderRadius.circular(12),
             ),
             child: Center(
@@ -865,7 +867,7 @@ class _PersonCard extends StatelessWidget {
                         padding: const EdgeInsets.symmetric(
                             horizontal: 5, vertical: 1),
                         decoration: BoxDecoration(
-                          color: _red.withOpacity(0.10),
+                          color: _red.withValues(alpha:0.10),
                           borderRadius: BorderRadius.circular(4),
                         ),
                         child: Text(
@@ -898,7 +900,7 @@ class _PersonCard extends StatelessWidget {
               Container(
                 padding: const EdgeInsets.symmetric(horizontal: 6, vertical: 2),
                 decoration: BoxDecoration(
-                  color: color.withOpacity(0.10),
+                  color: color.withValues(alpha:0.10),
                   borderRadius: BorderRadius.circular(6),
                 ),
                 child: Text(
@@ -934,13 +936,13 @@ class _EmptyState extends StatelessWidget {
             Container(
               padding: const EdgeInsets.all(20),
               decoration: BoxDecoration(
-                color: _primary.withOpacity(0.08),
+                color: _surface2,
                 shape: BoxShape.circle,
               ),
               child: const Icon(
                 Icons.people_alt_outlined,
                 size: 36,
-                color: _primary,
+                color: _textSecondary,
               ),
             ),
             const SizedBox(height: 16),

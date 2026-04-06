@@ -1,19 +1,20 @@
 import 'package:flutter/material.dart';
 import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
+import '../../core/theme/app_colors.dart';
 import '../state/user_provider.dart';
 
-// ── Palette ───────────────────────────────────────────────────────────────────
+// ── Palette ────────────────────────────────────────────────────────────────────
 
-const _bg = Color(0xFFFAF8F5);
-const _card = Colors.white;
-const _border = Color(0xFFEDE6DC);
-const _primary = Color(0xFFF97316);
-const _textPrimary = Color(0xFF1C1917);
-const _textSecondary = Color(0xFF78716C);
-const _textTertiary = Color(0xFFA8A29E);
-const _red = Color(0xFFDC2626);
-const _green = Color(0xFF16A34A);
+const _bg            = AppColors.bg;
+const _card          = AppColors.surface;
+const _border        = AppColors.border;
+const _primary       = AppColors.primary;
+const _textPrimary   = AppColors.textPrimary;
+const _textSecondary = AppColors.textSecondary;
+const _textTertiary  = AppColors.textTertiary;
+const _green         = AppColors.green;
+const _red           = AppColors.red;
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -86,22 +87,27 @@ class _RegisterScreenState extends State<RegisterScreen>
         await userCredential.user?.updateDisplayName(_nameCtrl.text.trim());
       }
 
-      if (mounted) {
+      if (context.mounted) {
         // Clear any existing errors first
         setState(() {
           _error = null;
         });
-        
-        // Initialize user profile after successful registration
-        try {
-          await context.read<UserProvider>().loadUserProfile(userCredential.user!.uid);
-          Navigator.pushReplacementNamed(context, '/home');
-        } catch (e) {
-          setState(() {
-            _loading = false;
-            _error = 'Failed to create user profile: ${e.toString()}';
-          });
-        }
+      }
+
+      // Initialize user profile after successful registration
+      if (!context.mounted) return;
+      try {
+        // ignore: use_build_context_synchronously
+        final userProvider = context.read<UserProvider>();
+        await userProvider.loadUserProfile(userCredential.user!.uid);
+        if (!context.mounted) return;
+        // ignore: use_build_context_synchronously
+        Navigator.pushReplacementNamed(context, '/home');
+      } catch (e) {
+        setState(() {
+          _loading = false;
+          _error = 'Failed to create user profile: ${e.toString()}';
+        });
       }
     } on FirebaseAuthException catch (e) {
       setState(() {
@@ -133,13 +139,12 @@ class _RegisterScreenState extends State<RegisterScreen>
 
   @override
   Widget build(BuildContext context) {
-    return WillPopScope(
-      onWillPop: () async {
-        // If user is authenticated, sign them out when going back from registration
+    return PopScope(
+      canPop: true,
+      onPopInvokedWithResult: (_, _) async {
         if (FirebaseAuth.instance.currentUser != null) {
           await FirebaseAuth.instance.signOut();
         }
-        return true; // Allow back navigation
       },
       child: Scaffold(
         backgroundColor: _bg,
@@ -153,6 +158,7 @@ class _RegisterScreenState extends State<RegisterScreen>
               if (FirebaseAuth.instance.currentUser != null) {
                 await FirebaseAuth.instance.signOut();
               }
+              if (!context.mounted) return;
               Navigator.pop(context);
             },
           ),
@@ -295,9 +301,9 @@ class _RegisterScreenState extends State<RegisterScreen>
                         padding: const EdgeInsets.symmetric(
                             horizontal: 14, vertical: 12),
                         decoration: BoxDecoration(
-                          color: _red.withOpacity(0.06),
+                          color: _red.withValues(alpha:0.06),
                           borderRadius: BorderRadius.circular(12),
-                          border: Border.all(color: _red.withOpacity(0.2)),
+                          border: Border.all(color: _red.withValues(alpha:0.2)),
                         ),
                         child: Row(
                           children: [
@@ -321,8 +327,8 @@ class _RegisterScreenState extends State<RegisterScreen>
                       child: ElevatedButton(
                         onPressed: _loading ? null : _register,
                         style: ElevatedButton.styleFrom(
-                          backgroundColor: _primary,
-                          disabledBackgroundColor: _primary.withOpacity(0.45),
+                          backgroundColor: AppColors.heroCard,
+                          disabledBackgroundColor: AppColors.border,
                           padding: const EdgeInsets.symmetric(vertical: 16),
                           elevation: 0,
                           shape: RoundedRectangleBorder(
@@ -375,7 +381,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                         border: Border.all(color: _border),
                         boxShadow: [
                           BoxShadow(
-                              color: Colors.black.withOpacity(0.04),
+                              color: Colors.black.withValues(alpha:0.04),
                               blurRadius: 10,
                               offset: const Offset(0, 2)),
                         ],
@@ -388,7 +394,7 @@ class _RegisterScreenState extends State<RegisterScreen>
                               Container(
                                 padding: const EdgeInsets.all(6),
                                 decoration: BoxDecoration(
-                                  color: _green.withOpacity(0.10),
+                                  color: _green.withValues(alpha:0.10),
                                   borderRadius: BorderRadius.circular(8),
                                 ),
                                 child: const Icon(Icons.security_rounded,

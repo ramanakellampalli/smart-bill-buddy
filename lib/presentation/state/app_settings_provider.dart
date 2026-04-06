@@ -42,7 +42,7 @@ class AppSettingsProvider extends ChangeNotifier {
 
   NumberFormat get money => NumberFormat.currency(
         locale: currency.locale,
-        symbol: currency.symbol,
+        symbol: '${currency.symbol}\u2009',
         decimalDigits: currency.code == 'JPY' ? 0 : 0,
       );
 

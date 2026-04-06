@@ -3,21 +3,27 @@ import 'package:firebase_auth/firebase_auth.dart';
 import 'package:provider/provider.dart';
 import '../state/user_provider.dart';
 import '../../services/biometric_service.dart';
+import '../../core/theme/app_colors.dart';
 
 // ── Palette ───────────────────────────────────────────────────────────────────
 
-const _bgStart      = Color(0xFF667EEA);
-const _bgEnd        = Color(0xFF764BA2);
-const _card         = Color(0x1AFFFFFF);
-const _glassBorder  = Color(0x33FFFFFF);
-const _textPrimary  = Colors.white;
-const _textSecondary = Color(0xCCFFFFFF);
-const _textTertiary  = Color(0x99FFFFFF);
-const _red          = Color(0xFFFF6B6B);
-const _btnGradient  = LinearGradient(colors: [Color(0xFF667EEA), Color(0xFF764BA2)]);
-const _underline    = Color(0x33FFFFFF);
-const _orange       = Color(0xFFFFB86C);
-const _socialBg     = Color(0x1AFFFFFF);
+// Branding section (black bg at top)
+const _bgStart    = Color(0xFF111111);
+const _bgEnd      = Color(0xFF1A1A1A);
+const _brandText  = Colors.white;
+const _brandDim   = Color(0x99FFFFFF);
+
+// Card / form section (white surface)
+const _card        = AppColors.surface;
+const _cardBorder  = AppColors.border;
+const _formPrimary = AppColors.textPrimary;
+const _formSub     = AppColors.textSecondary;
+const _formDim     = AppColors.textTertiary;
+
+// Actions
+const _lime     = AppColors.primary;
+const _limeDark = AppColors.primaryDark;
+const _red      = AppColors.red;
 
 // ── Screen ────────────────────────────────────────────────────────────────────
 
@@ -158,7 +164,7 @@ class _LoginScreenState extends State<LoginScreen>
 
     final enable = await showModalBottomSheet<bool>(
       context: context,
-      backgroundColor: Colors.white,
+      backgroundColor: AppColors.surface,
       shape: const RoundedRectangleBorder(
         borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
       ),
@@ -170,7 +176,7 @@ class _LoginScreenState extends State<LoginScreen>
             Container(
               width: 36, height: 4,
               decoration: BoxDecoration(
-                color: const Color(0xFFEDE6DC),
+                color: AppColors.border,
                 borderRadius: BorderRadius.circular(2),
               ),
             ),
@@ -178,24 +184,24 @@ class _LoginScreenState extends State<LoginScreen>
             Container(
               width: 60, height: 60,
               decoration: BoxDecoration(
-                color: const Color(0xFFF97316).withOpacity(0.10),
+                color: AppColors.primary.withValues(alpha:0.15),
                 shape: BoxShape.circle,
               ),
               child: const Icon(Icons.fingerprint_rounded,
-                  size: 32, color: Color(0xFFF97316)),
+                  size: 32, color: AppColors.primaryDark),
             ),
             const SizedBox(height: 16),
             const Text(
               'Enable Biometric Login?',
               style: TextStyle(
                 fontSize: 18, fontWeight: FontWeight.w700,
-                color: Color(0xFF1C1917),
+                color: AppColors.textPrimary,
               ),
             ),
             const SizedBox(height: 8),
             const Text(
               'Use your fingerprint or face ID to unlock the app next time instead of typing your password.',
-              style: TextStyle(fontSize: 14, color: Color(0xFF78716C), height: 1.5),
+              style: TextStyle(fontSize: 14, color: AppColors.textSecondary, height: 1.5),
               textAlign: TextAlign.center,
             ),
             const SizedBox(height: 28),
@@ -204,7 +210,7 @@ class _LoginScreenState extends State<LoginScreen>
               child: ElevatedButton(
                 onPressed: () => Navigator.pop(context, true),
                 style: ElevatedButton.styleFrom(
-                  backgroundColor: const Color(0xFFF97316),
+                  backgroundColor: AppColors.heroCard,
                   foregroundColor: Colors.white,
                   padding: const EdgeInsets.symmetric(vertical: 15),
                   elevation: 0,
@@ -222,7 +228,7 @@ class _LoginScreenState extends State<LoginScreen>
               child: TextButton(
                 onPressed: () => Navigator.pop(context, false),
                 child: const Text('Not now',
-                    style: TextStyle(fontSize: 14, color: Color(0xFF78716C))),
+                    style: TextStyle(fontSize: 14, color: AppColors.textSecondary)),
               ),
             ),
           ],
@@ -263,10 +269,13 @@ class _LoginScreenState extends State<LoginScreen>
       if (_signupNameCtrl.text.trim().isNotEmpty) {
         await cred.user?.updateDisplayName(_signupNameCtrl.text.trim());
       }
-      if (mounted) {
-        await context.read<UserProvider>().loadUserProfile(cred.user!.uid);
-        Navigator.pushReplacementNamed(context, '/home');
-      }
+      if (!context.mounted) return;
+      // ignore: use_build_context_synchronously
+      final userProvider = context.read<UserProvider>();
+      await userProvider.loadUserProfile(cred.user!.uid);
+      if (!context.mounted) return;
+      // ignore: use_build_context_synchronously
+      Navigator.pushReplacementNamed(context, '/home');
     } on FirebaseAuthException catch (e) {
       if (!mounted) return;
       setState(() { _signupLoading = false; _signupError = _authMsg(e.code); });
@@ -316,7 +325,7 @@ class _LoginScreenState extends State<LoginScreen>
                 // Floating particles
                 AnimatedBuilder(
                   animation: _particleCtrl,
-                  builder: (_, __) => Stack(
+                  builder: (_, _) => Stack(
                     children: [
                       Positioned(
                         top: 20 + _particleCtrl.value * 30,
@@ -344,7 +353,7 @@ class _LoginScreenState extends State<LoginScreen>
                 // Floating orbs
                 AnimatedBuilder(
                   animation: _orbCtrl,
-                  builder: (_, __) => Stack(
+                  builder: (_, _) => Stack(
                     children: [
                       Positioned(
                         top: 10 + _orbCtrl.value * 18,
@@ -385,7 +394,7 @@ class _LoginScreenState extends State<LoginScreen>
                           style: TextStyle(
                             fontSize: 32,
                             fontWeight: FontWeight.w900,
-                            color: _textPrimary,
+                            color: _brandText,
                             letterSpacing: 3.5,
                             shadows: [
                               Shadow(
@@ -402,7 +411,7 @@ class _LoginScreenState extends State<LoginScreen>
                           style: TextStyle(
                             fontSize: 12,
                             fontWeight: FontWeight.w600,
-                            color: _textTertiary,
+                            color: _brandDim,
                             letterSpacing: 3.0,
                           ),
                         ),
@@ -422,20 +431,9 @@ class _LoginScreenState extends State<LoginScreen>
                 position: _cardSlide,
                 child: Container(
                   width: double.infinity,
-                  decoration: BoxDecoration(
+                  decoration: const BoxDecoration(
                     color: _card,
-                    borderRadius: const BorderRadius.vertical(top: Radius.circular(36)),
-                    border: Border.all(
-                      color: _glassBorder,
-                      width: 1,
-                    ),
-                    boxShadow: [
-                      BoxShadow(
-                        color: Colors.black.withOpacity(0.1),
-                        blurRadius: 20,
-                        spreadRadius: 5,
-                      ),
-                    ],
+                    borderRadius: BorderRadius.vertical(top: Radius.circular(36)),
                   ),
                   child: Column(
                     crossAxisAlignment: CrossAxisAlignment.start,
@@ -547,7 +545,7 @@ class _TabItem extends StatelessWidget {
             style: TextStyle(
               fontSize: 18,
               fontWeight: selected ? FontWeight.w700 : FontWeight.w400,
-              color: selected ? _textPrimary : _textTertiary,
+              color: selected ? _formPrimary : _formDim,
             ),
           ),
           const SizedBox(height: 6),
@@ -556,7 +554,7 @@ class _TabItem extends StatelessWidget {
             height: 3,
             width: selected ? 28 : 0,
             decoration: BoxDecoration(
-              color: _textPrimary,
+              color: _lime,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -627,7 +625,7 @@ class _LoginTab extends StatelessWidget {
                 onTap: onToggle,
                 child: Icon(
                   obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                  color: _textTertiary,
+                  color: _formDim,
                   size: 20,
                 ),
               ),
@@ -644,7 +642,7 @@ class _LoginTab extends StatelessWidget {
                 'Forgot password?',
                 style: TextStyle(
                   fontSize: 13,
-                  color: _textSecondary,
+                  color: _formSub,
                   fontWeight: FontWeight.w600,
                 ),
               ),
@@ -738,7 +736,7 @@ class _SignupTab extends StatelessWidget {
                 onTap: onToggle,
                 child: Icon(
                   obscure ? Icons.visibility_outlined : Icons.visibility_off_outlined,
-                  color: _textTertiary,
+                  color: _formDim,
                   size: 20,
                 ),
               ),
@@ -812,18 +810,26 @@ class _ModernFieldState extends State<_ModernField> {
 
   @override
   Widget build(BuildContext context) {
-    final labelSize = _isFocused || _hasText ? 11.0 : 14.0;
-    final labelColor = _isFocused ? _textPrimary : _textSecondary;
+    final labelColor = _isFocused ? _formPrimary : _formSub;
 
     return Column(
       crossAxisAlignment: CrossAxisAlignment.start,
       children: [
+        Text(
+          widget.label,
+          style: TextStyle(
+            fontSize: 12,
+            fontWeight: FontWeight.w600,
+            color: labelColor,
+          ),
+        ),
+        const SizedBox(height: 6),
         Container(
           decoration: BoxDecoration(
-            color: Colors.white.withOpacity(0.1),
+            color: AppColors.surface2,
             borderRadius: BorderRadius.circular(12),
             border: Border.all(
-              color: _isFocused ? _textPrimary.withOpacity(0.5) : _underline,
+              color: _isFocused ? _lime : _cardBorder,
               width: _isFocused ? 1.5 : 1.0,
             ),
           ),
@@ -831,14 +837,14 @@ class _ModernFieldState extends State<_ModernField> {
             controller: widget.controller,
             obscureText: widget.obscure,
             keyboardType: widget.keyboardType,
-            style: const TextStyle(fontSize: 15, color: _textPrimary),
+            style: const TextStyle(fontSize: 15, color: _formPrimary),
             validator: widget.validator,
             onTap: () => setState(() => _isFocused = true),
             onTapOutside: (_) => setState(() => _isFocused = false),
             decoration: InputDecoration(
               hintText: widget.hint,
-              hintStyle: TextStyle(color: _textTertiary.withOpacity(0.7), fontSize: 14),
-              prefixIcon: Icon(widget.icon, color: _textTertiary, size: 20),
+              hintStyle: const TextStyle(color: _formDim, fontSize: 14),
+              prefixIcon: Icon(widget.icon, color: _formDim, size: 20),
               prefixIconConstraints: const BoxConstraints(minWidth: 36, minHeight: 0),
               suffixIcon: widget.suffix != null
                   ? Padding(padding: const EdgeInsets.only(right: 4), child: widget.suffix)
@@ -850,19 +856,6 @@ class _ModernFieldState extends State<_ModernField> {
               errorBorder: InputBorder.none,
               focusedErrorBorder: InputBorder.none,
               errorStyle: const TextStyle(color: _red, fontSize: 11),
-            ),
-          ),
-        ),
-        const SizedBox(height: 8),
-        AnimatedContainer(
-          duration: const Duration(milliseconds: 200),
-          curve: Curves.easeInOut,
-          child: Text(
-            widget.label,
-            style: TextStyle(
-              fontSize: labelSize,
-              fontWeight: FontWeight.w500,
-              color: labelColor,
             ),
           ),
         ),
@@ -924,7 +917,7 @@ class _DarkButton extends StatelessWidget {
           borderRadius: BorderRadius.circular(16),
           boxShadow: [
             BoxShadow(
-              color: _bgStart.withOpacity(0.3),
+              color: _lime.withValues(alpha:0.25),
               blurRadius: 12,
               offset: const Offset(0, 4),
             ),
@@ -940,9 +933,7 @@ class _DarkButton extends StatelessWidget {
           ),
           child: Ink(
             decoration: BoxDecoration(
-              gradient: loading 
-                  ? LinearGradient(colors: [_textTertiary.withOpacity(0.3), _textTertiary.withOpacity(0.2)])
-                  : _btnGradient,
+              color: loading ? AppColors.border : AppColors.heroCard,
               borderRadius: BorderRadius.circular(16),
             ),
             child: Container(
@@ -953,7 +944,7 @@ class _DarkButton extends StatelessWidget {
                       width: 22,
                       height: 22,
                       child: CircularProgressIndicator(
-                        color: Colors.white,
+                        color: Colors.white54,
                         strokeWidth: 3,
                       ),
                     )
@@ -983,9 +974,9 @@ class _ErrorBox extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 11),
       decoration: BoxDecoration(
-        color: _red.withOpacity(0.06),
+        color: _red.withValues(alpha:0.06),
         borderRadius: BorderRadius.circular(10),
-        border: Border.all(color: _red.withOpacity(0.2)),
+        border: Border.all(color: _red.withValues(alpha:0.2)),
       ),
       child: Row(
         children: [
@@ -1015,10 +1006,10 @@ class _Particle extends StatelessWidget {
       height: size,
       decoration: BoxDecoration(
         shape: BoxShape.circle,
-        color: Colors.white.withOpacity(opacity),
+        color: Colors.white.withValues(alpha:opacity),
         boxShadow: [
           BoxShadow(
-            color: Colors.white.withOpacity(opacity * 0.5),
+            color: Colors.white.withValues(alpha:opacity * 0.5),
             blurRadius: size * 2,
             spreadRadius: size * 0.5,
           ),
@@ -1044,13 +1035,13 @@ class _Orb extends StatelessWidget {
         shape: BoxShape.circle,
         gradient: RadialGradient(
           colors: [
-            _orange.withOpacity(opacity),
-            _orange.withOpacity(opacity * 0.3),
+            _lime.withValues(alpha:opacity),
+            _lime.withValues(alpha:opacity * 0.3),
           ],
         ),
         boxShadow: [
           BoxShadow(
-            color: _orange.withOpacity(opacity * 0.3),
+            color: _lime.withValues(alpha:opacity * 0.3),
             blurRadius: size * 0.8,
             spreadRadius: size * 0.2,
           ),
@@ -1074,7 +1065,7 @@ class _SocialLoginRow extends StatelessWidget {
             Expanded(
               child: Container(
                 height: 1,
-                color: _underline,
+                color: _cardBorder,
               ),
             ),
             Padding(
@@ -1084,7 +1075,7 @@ class _SocialLoginRow extends StatelessWidget {
                 style: TextStyle(
                   fontSize: 12,
                   fontWeight: FontWeight.w600,
-                  color: _textTertiary,
+                  color: _formDim,
                   letterSpacing: 1.0,
                 ),
               ),
@@ -1092,7 +1083,7 @@ class _SocialLoginRow extends StatelessWidget {
             Expanded(
               child: Container(
                 height: 1,
-                color: _underline,
+                color: _cardBorder,
               ),
             ),
           ],
@@ -1144,10 +1135,10 @@ class _SocialButton extends StatelessWidget {
       child: Container(
         padding: const EdgeInsets.symmetric(vertical: 12),
         decoration: BoxDecoration(
-          color: _socialBg,
+          color: AppColors.surface2,
           borderRadius: BorderRadius.circular(12),
           border: Border.all(
-            color: _glassBorder,
+            color: _cardBorder,
             width: 1,
           ),
         ),
@@ -1156,7 +1147,7 @@ class _SocialButton extends StatelessWidget {
           children: [
             Icon(
               icon,
-              color: _textSecondary,
+              color: _formSub,
               size: 18,
             ),
             const SizedBox(width: 8),
@@ -1165,7 +1156,7 @@ class _SocialButton extends StatelessWidget {
               style: const TextStyle(
                 fontSize: 13,
                 fontWeight: FontWeight.w600,
-                color: _textSecondary,
+                color: _formSub,
               ),
             ),
           ],
@@ -1219,7 +1210,7 @@ class _FeatureRowState extends State<_FeatureRow> with TickerProviderStateMixin 
 
   @override
   void dispose() {
-    for (final c in _ctls) c.dispose();
+    for (final c in _ctls) { c.dispose(); }
     super.dispose();
   }
 
@@ -1349,7 +1340,7 @@ class _FormView extends StatelessWidget {
           child: Container(
             width: 36, height: 4,
             decoration: BoxDecoration(
-              color: const Color(0xFFEDE6DC),
+              color: AppColors.border,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -1360,11 +1351,11 @@ class _FormView extends StatelessWidget {
         Container(
           width: 52, height: 52,
           decoration: BoxDecoration(
-            color: const Color(0xFF667EEA).withOpacity(0.10),
+            color: AppColors.primary.withValues(alpha:0.15),
             shape: BoxShape.circle,
           ),
           child: const Icon(Icons.lock_reset_rounded,
-              size: 26, color: Color(0xFF667EEA)),
+              size: 26, color: AppColors.primaryDark),
         ),
         const SizedBox(height: 16),
 
@@ -1373,36 +1364,36 @@ class _FormView extends StatelessWidget {
           'Reset your password',
           style: TextStyle(
             fontSize: 18, fontWeight: FontWeight.w700,
-            color: Color(0xFF1C1917),
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 6),
         const Text(
           "Enter your email and we'll send you a link to reset your password.",
-          style: TextStyle(fontSize: 13, color: Color(0xFF78716C), height: 1.5),
+          style: TextStyle(fontSize: 13, color: AppColors.textSecondary, height: 1.5),
         ),
         const SizedBox(height: 24),
 
         // Email field
         Container(
           decoration: BoxDecoration(
-            color: const Color(0xFFFAF8F5),
+            color: AppColors.surface2,
             borderRadius: BorderRadius.circular(12),
-            border: Border.all(color: const Color(0xFFEDE6DC)),
+            border: Border.all(color: AppColors.border),
           ),
           child: TextField(
             controller: emailCtrl,
             keyboardType: TextInputType.emailAddress,
             autofocus: true,
-            style: const TextStyle(fontSize: 15, color: Color(0xFF1C1917)),
+            style: const TextStyle(fontSize: 15, color: AppColors.textPrimary),
             decoration: const InputDecoration(
               contentPadding:
                   EdgeInsets.symmetric(horizontal: 14, vertical: 14),
               border: InputBorder.none,
               hintText: 'hello@example.com',
-              hintStyle: TextStyle(color: Color(0xFFA8A29E), fontSize: 15),
+              hintStyle: TextStyle(color: AppColors.textTertiary, fontSize: 15),
               prefixIcon: Icon(Icons.mail_outline_rounded,
-                  color: Color(0xFFA8A29E), size: 20),
+                  color: AppColors.textTertiary, size: 20),
             ),
             onChanged: (_) {},
           ),
@@ -1414,12 +1405,12 @@ class _FormView extends StatelessWidget {
           Row(
             children: [
               const Icon(Icons.error_outline_rounded,
-                  size: 15, color: Color(0xFFDC2626)),
+                  size: 15, color: AppColors.red),
               const SizedBox(width: 6),
               Expanded(
                 child: Text(error!,
                     style: const TextStyle(
-                        fontSize: 12, color: Color(0xFFDC2626))),
+                        fontSize: 12, color: AppColors.red)),
               ),
             ],
           ),
@@ -1433,9 +1424,8 @@ class _FormView extends StatelessWidget {
           child: ElevatedButton(
             onPressed: loading ? null : onSend,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF667EEA),
-              disabledBackgroundColor:
-                  const Color(0xFF667EEA).withOpacity(0.45),
+              backgroundColor: AppColors.heroCard,
+              disabledBackgroundColor: AppColors.border,
               foregroundColor: Colors.white,
               padding: const EdgeInsets.symmetric(vertical: 15),
               elevation: 0,
@@ -1446,7 +1436,7 @@ class _FormView extends StatelessWidget {
                 ? const SizedBox(
                     width: 20, height: 20,
                     child: CircularProgressIndicator(
-                        strokeWidth: 2.5, color: Colors.white),
+                        strokeWidth: 2.5, color: AppColors.textSecondary),
                   )
                 : const Text('Send Reset Link',
                     style: TextStyle(
@@ -1462,7 +1452,7 @@ class _FormView extends StatelessWidget {
             onPressed: onCancel,
             child: const Text('Cancel',
                 style: TextStyle(
-                    fontSize: 14, color: Color(0xFF78716C))),
+                    fontSize: 14, color: AppColors.textSecondary)),
           ),
         ),
       ],
@@ -1485,7 +1475,7 @@ class _SuccessView extends StatelessWidget {
           child: Container(
             width: 36, height: 4,
             decoration: BoxDecoration(
-              color: const Color(0xFFEDE6DC),
+              color: AppColors.border,
               borderRadius: BorderRadius.circular(2),
             ),
           ),
@@ -1496,11 +1486,11 @@ class _SuccessView extends StatelessWidget {
         Container(
           width: 64, height: 64,
           decoration: BoxDecoration(
-            color: const Color(0xFF16A34A).withOpacity(0.10),
+            color: AppColors.green.withValues(alpha:0.10),
             shape: BoxShape.circle,
           ),
           child: const Icon(Icons.mark_email_read_outlined,
-              size: 32, color: Color(0xFF16A34A)),
+              size: 32, color: AppColors.green),
         ),
         const SizedBox(height: 20),
 
@@ -1508,7 +1498,7 @@ class _SuccessView extends StatelessWidget {
           'Check your inbox',
           style: TextStyle(
             fontSize: 18, fontWeight: FontWeight.w700,
-            color: Color(0xFF1C1917),
+            color: AppColors.textPrimary,
           ),
         ),
         const SizedBox(height: 8),
@@ -1516,13 +1506,13 @@ class _SuccessView extends StatelessWidget {
           "We've sent a password reset link to\n$email",
           textAlign: TextAlign.center,
           style: const TextStyle(
-              fontSize: 13, color: Color(0xFF78716C), height: 1.5),
+              fontSize: 13, color: AppColors.textSecondary, height: 1.5),
         ),
         const SizedBox(height: 8),
         const Text(
           "Didn't get it? Check your spam folder.",
           textAlign: TextAlign.center,
-          style: TextStyle(fontSize: 12, color: Color(0xFFA8A29E)),
+          style: TextStyle(fontSize: 12, color: AppColors.textTertiary),
         ),
         const SizedBox(height: 32),
 
@@ -1531,8 +1521,8 @@ class _SuccessView extends StatelessWidget {
           child: ElevatedButton(
             onPressed: onDone,
             style: ElevatedButton.styleFrom(
-              backgroundColor: const Color(0xFF16A34A),
-              foregroundColor: Colors.white,
+              backgroundColor: AppColors.primary,
+              foregroundColor: AppColors.textPrimary,
               padding: const EdgeInsets.symmetric(vertical: 15),
               elevation: 0,
               shape: RoundedRectangleBorder(
@@ -1560,31 +1550,24 @@ class _FeatureChip extends StatelessWidget {
     return Container(
       padding: const EdgeInsets.symmetric(horizontal: 14, vertical: 8),
       decoration: BoxDecoration(
-        color: _orange.withOpacity(0.15),
+        color: _lime.withValues(alpha:0.12),
         borderRadius: BorderRadius.circular(20),
         border: Border.all(
-          color: _orange.withOpacity(0.3),
+          color: _lime.withValues(alpha:0.4),
           width: 1,
         ),
-        boxShadow: [
-          BoxShadow(
-            color: _orange.withOpacity(0.1),
-            blurRadius: 8,
-            offset: const Offset(0, 2),
-          ),
-        ],
       ),
       child: Row(
         mainAxisSize: MainAxisSize.min,
         children: [
-          Icon(icon, size: 14, color: _orange),
+          Icon(icon, size: 14, color: _limeDark),
           const SizedBox(width: 6),
           Text(
             label,
             style: const TextStyle(
               fontSize: 11,
               fontWeight: FontWeight.w700,
-              color: _textSecondary,
+              color: _formPrimary,
               letterSpacing: 0.3,
             ),
           ),
