@@ -7,143 +7,146 @@ class WelcomePromoSheet extends StatelessWidget {
   const WelcomePromoSheet({super.key, this.firstName});
 
   static Future<void> show(BuildContext context, {String? firstName}) {
-    return showModalBottomSheet(
+    return showDialog(
       context: context,
-      backgroundColor: Colors.transparent,
-      useSafeArea: true,
-      isScrollControlled: true,
+      barrierColor: Colors.black54,
+      barrierDismissible: false,
       builder: (_) => WelcomePromoSheet(firstName: firstName),
     );
   }
 
   @override
   Widget build(BuildContext context) {
-    final bottomPad = MediaQuery.viewPaddingOf(context).bottom;
     final greeting = firstName != null && firstName!.isNotEmpty
         ? 'Welcome back, $firstName!'
         : 'Welcome to Bill Buddy!';
 
-    return Container(
-      margin: const EdgeInsets.fromLTRB(12, 0, 12, 0),
-      decoration: const BoxDecoration(
-        color: AppColors.heroCard,
-        borderRadius: BorderRadius.vertical(top: Radius.circular(24)),
-      ),
-      padding: EdgeInsets.fromLTRB(24, 20, 24, 24 + bottomPad),
-      child: Column(
-        mainAxisSize: MainAxisSize.min,
-        crossAxisAlignment: CrossAxisAlignment.start,
-        children: [
-          // Handle
-          Center(
-            child: Container(
-              width: 36,
-              height: 4,
+    return Dialog(
+      backgroundColor: Colors.transparent,
+      insetPadding: const EdgeInsets.symmetric(horizontal: 24),
+      child: Container(
+        decoration: BoxDecoration(
+          color: AppColors.surface,
+          borderRadius: BorderRadius.circular(24),
+          border: Border.all(color: AppColors.border),
+        ),
+        padding: const EdgeInsets.all(24),
+        child: Column(
+          mainAxisSize: MainAxisSize.min,
+          crossAxisAlignment: CrossAxisAlignment.start,
+          children: [
+            // Icon badge
+            Container(
+              padding: const EdgeInsets.all(10),
               decoration: BoxDecoration(
-                color: Colors.white24,
-                borderRadius: BorderRadius.circular(2),
+                color: AppColors.heroCard,
+                borderRadius: BorderRadius.circular(14),
+              ),
+              child: const Icon(
+                Icons.waving_hand_rounded,
+                color: AppColors.primary,
+                size: 22,
               ),
             ),
-          ),
-          const SizedBox(height: 24),
+            const SizedBox(height: 16),
 
-          // Greeting
-          Text(
-            greeting,
-            style: const TextStyle(
-              fontSize: 22,
-              fontWeight: FontWeight.w800,
-              color: Colors.white,
-              letterSpacing: -0.5,
+            // Greeting
+            Text(
+              greeting,
+              style: const TextStyle(
+                fontSize: 20,
+                fontWeight: FontWeight.w800,
+                color: AppColors.textPrimary,
+                letterSpacing: -0.5,
+              ),
             ),
-          ),
-          const SizedBox(height: 6),
-          const Text(
-            'Your finances, under control.',
-            style: TextStyle(
-              fontSize: 14,
-              color: Colors.white60,
-              fontWeight: FontWeight.w400,
+            const SizedBox(height: 4),
+            const Text(
+              'Your finances, under control.',
+              style: TextStyle(
+                fontSize: 13,
+                color: AppColors.textSecondary,
+              ),
             ),
-          ),
 
-          const SizedBox(height: 28),
+            const SizedBox(height: 20),
 
-          // Teaser card
-          Container(
-            padding: const EdgeInsets.all(16),
-            decoration: BoxDecoration(
-              color: Colors.white.withValues(alpha: 0.07),
-              borderRadius: BorderRadius.circular(14),
-              border: Border.all(color: Colors.white12),
-            ),
-            child: Column(
-              crossAxisAlignment: CrossAxisAlignment.start,
-              children: [
-                Row(
-                  children: [
-                    Container(
-                      padding: const EdgeInsets.all(6),
-                      decoration: BoxDecoration(
-                        color: AppColors.primary.withValues(alpha: 0.15),
-                        borderRadius: BorderRadius.circular(8),
+            // Teaser card
+            Container(
+              padding: const EdgeInsets.all(14),
+              decoration: BoxDecoration(
+                color: AppColors.surface2,
+                borderRadius: BorderRadius.circular(14),
+                border: Border.all(color: AppColors.border),
+              ),
+              child: Column(
+                crossAxisAlignment: CrossAxisAlignment.start,
+                children: [
+                  Row(
+                    children: [
+                      Container(
+                        padding: const EdgeInsets.all(5),
+                        decoration: BoxDecoration(
+                          color: AppColors.heroCard,
+                          borderRadius: BorderRadius.circular(8),
+                        ),
+                        child: const Icon(
+                          Icons.rocket_launch_rounded,
+                          color: AppColors.primary,
+                          size: 14,
+                        ),
                       ),
-                      child: const Icon(
-                        Icons.rocket_launch_rounded,
-                        color: AppColors.primary,
-                        size: 16,
+                      const SizedBox(width: 8),
+                      const Text(
+                        'Exciting things are coming',
+                        style: TextStyle(
+                          fontSize: 13,
+                          fontWeight: FontWeight.w700,
+                          color: AppColors.textPrimary,
+                        ),
                       ),
-                    ),
-                    const SizedBox(width: 10),
-                    const Text(
-                      'Exciting things are coming',
-                      style: TextStyle(
-                        fontSize: 13,
-                        fontWeight: FontWeight.w700,
-                        color: Colors.white,
-                      ),
-                    ),
-                  ],
-                ),
-                const SizedBox(height: 10),
-                const Text(
-                  'We\'re building powerful new features — smarter insights, shared budgets, auto-categorisation, and more. Stay tuned for early access.',
-                  style: TextStyle(
-                    fontSize: 12,
-                    color: Colors.white54,
-                    height: 1.5,
+                    ],
                   ),
-                ),
-              ],
+                  const SizedBox(height: 8),
+                  const Text(
+                    'We\'re building smarter insights, shared budgets, auto-categorisation, and more. Stay tuned for early access.',
+                    style: TextStyle(
+                      fontSize: 12,
+                      color: AppColors.textSecondary,
+                      height: 1.5,
+                    ),
+                  ),
+                ],
+              ),
             ),
-          ),
 
-          const SizedBox(height: 24),
+            const SizedBox(height: 20),
 
-          // CTA
-          SizedBox(
-            width: double.infinity,
-            child: GestureDetector(
-              onTap: () => Navigator.pop(context),
-              child: Container(
-                padding: const EdgeInsets.symmetric(vertical: 14),
-                decoration: BoxDecoration(
-                  color: AppColors.primary,
-                  borderRadius: BorderRadius.circular(14),
-                ),
-                alignment: Alignment.center,
-                child: const Text(
-                  'Got it!',
-                  style: TextStyle(
-                    fontSize: 15,
-                    fontWeight: FontWeight.w700,
+            // CTA
+            SizedBox(
+              width: double.infinity,
+              child: GestureDetector(
+                onTap: () => Navigator.pop(context),
+                child: Container(
+                  padding: const EdgeInsets.symmetric(vertical: 14),
+                  decoration: BoxDecoration(
                     color: AppColors.heroCard,
+                    borderRadius: BorderRadius.circular(14),
+                  ),
+                  alignment: Alignment.center,
+                  child: const Text(
+                    'Got it!',
+                    style: TextStyle(
+                      fontSize: 15,
+                      fontWeight: FontWeight.w700,
+                      color: AppColors.primary,
+                    ),
                   ),
                 ),
               ),
             ),
-          ),
-        ],
+          ],
+        ),
       ),
     );
   }
