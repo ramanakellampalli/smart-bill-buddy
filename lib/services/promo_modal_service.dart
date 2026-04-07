@@ -18,4 +18,5 @@ class PromoModalService {
     final prefs = await SharedPreferences.getInstance();
     await prefs.setInt(_key, DateTime.now().millisecondsSinceEpoch);
   }
+
 }
