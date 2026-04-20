@@ -1,6 +1,10 @@
 import 'package:flutter/material.dart';
 import 'package:font_awesome_flutter/font_awesome_flutter.dart';
+import 'package:provider/provider.dart';
 import '../../core/theme/app_colors.dart';
+import '../../services/promo_modal_service.dart';
+import '../state/user_provider.dart';
+import '../widgets/welcome_promo_sheet.dart';
 import 'dashboard_screen.dart';
 import 'bills_screen.dart';
 import 'dues_screen.dart';
@@ -23,6 +27,7 @@ class _HomeShellState extends State<HomeShell> {
   @override
   void initState() {
     super.initState();
+    WidgetsBinding.instance.addPostFrameCallback((_) => _maybeShowPromo());
     _screens = [
       DashboardScreen(
         onNavigateToBills: () => setState(() => _currentIndex = 1),
@@ -36,6 +41,19 @@ class _HomeShellState extends State<HomeShell> {
       const BudgetsScreen(),
       const ProfileScreen(),
     ];
+  }
+
+  Future<void> _maybeShowPromo() async {
+    if (!mounted) return;
+    final should = await PromoModalService.shouldShow();
+    if (!should || !mounted) return;
+    await Future.delayed(const Duration(milliseconds: 400));
+    if (!mounted) return;
+    final name = context.read<UserProvider>().profile?.displayName?.split(' ').first;
+    await PromoModalService.markShown();
+    if (!context.mounted) return;
+    // ignore: use_build_context_synchronously
+    await WelcomePromoSheet.show(context, firstName: name);
   }
 
   @override

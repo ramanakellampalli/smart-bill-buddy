@@ -876,7 +876,7 @@ class _NotificationsSheet extends StatelessWidget {
     // Combine: overdue first, then due-today
     final items = [
       ...overdue.map((b) => (b, 'Overdue', _red)),
-      ...dueToday.map((b) => (b, 'Due Today', _primary)),
+      ...dueToday.map((b) => (b, 'Due Today', _textPrimary)),
     ];
 
     return Padding(
